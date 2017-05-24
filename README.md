@@ -201,3 +201,26 @@ cd ../bin
     http://root:root@127.0.0.1:8080
 ```
 
+
+## Quick DEBUG
+
+this way is suit for IDEA
+
+0. import whole source into IDEA:
+
+	- open idea terminal
+    ```
+mvn clean install -Dmaven.test.skip
+```
+
+0. open dubbo-demo-provider with Idea 
+
+	- copy aseembly/conf/dubbo.properties into resources
+	- config idea and create application in run/debug configurations
+	- set Main class: com.alibaba.dubbo.container.Main
+	- you can set other parametes with document
+	- run.
+
+0. open dubbo-demo-consumer with Idea 
+
+	- do operation like dubbo-demo-provider
