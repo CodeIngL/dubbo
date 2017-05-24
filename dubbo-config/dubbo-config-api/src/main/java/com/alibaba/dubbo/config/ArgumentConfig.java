@@ -23,6 +23,7 @@ import com.alibaba.dubbo.config.support.Parameter;
  * @author chao.liuc
  * @export
  */
+//这个是嵌套在method配置中使用的
 public class ArgumentConfig implements Serializable {
 
     private static final long serialVersionUID = -2165482463925213595L;
@@ -34,15 +35,18 @@ public class ArgumentConfig implements Serializable {
     private String  type;
     
     //callback interface
+    //参数是否为callback接口，如果为callback，服务提供方将生成反向代理，可以从服务提供方反向调用消费方，通常用于事件推送.
     private Boolean callback;
 
     public void setIndex(Integer index) {
         this.index = index;
     }
+
     @Parameter(excluded = true)
     public Integer getIndex() {
         return index;
     }
+
     @Parameter(excluded = true)
     public String getType() {
         return type;

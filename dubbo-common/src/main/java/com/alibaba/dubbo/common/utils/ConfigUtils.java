@@ -117,7 +117,11 @@ public class ConfigUtils {
 
     private static Pattern VARIABLE_PATTERN = Pattern.compile(
             "\\$\\s*\\{?\\s*([\\._0-9a-zA-Z]+)\\s*\\}?");
-    
+
+    //替换表达式${}
+    //优先使用系统配置
+    //然后使用params中的属性
+    //都没有会被替换成空串""
 	public static String replaceProperty(String expression, Map<String, String> params) {
         if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {
             return expression;
@@ -140,18 +144,31 @@ public class ConfigUtils {
     }
 	
     private static volatile Properties PROPERTIES;
-    
+
+    /**
+     * 系统配置读取的顺序
+     * System.getProperty-->dubbo.properties.file
+     * System.getenv-->dubbo.properties.file
+     * dubbo.properties
+     * 从所有的jar中找到配置文件，一般不允许重复出现
+     * @return
+     */
     public static Properties getProperties() {
         if (PROPERTIES == null) {
             synchronized (ConfigUtils.class) {
                 if (PROPERTIES == null) {
+                    //获取dubbo.properties.file的文件配置
                     String path = System.getProperty(Constants.DUBBO_PROPERTIES_KEY);
                     if (path == null || path.length() == 0) {
+                        //获取应用dubbo.properties.file的文件配置
                         path = System.getenv(Constants.DUBBO_PROPERTIES_KEY);
                         if (path == null || path.length() == 0) {
+                            //默认配置dubbo.properties
                             path = Constants.DEFAULT_DUBBO_PROPERTIES;
                         }
                     }
+                    //加载配置文件
+                    //不允许找多个，多个会认出异常
                     PROPERTIES = ConfigUtils.loadProperties(path, false, true);
                 }
             }
@@ -177,10 +194,12 @@ public class ConfigUtils {
 	
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static String getProperty(String key, String defaultValue) {
+        //尝试先从系统配置中获得(配置项)
         String value = System.getProperty(key);
         if (value != null && value.length() > 0) {
             return value;
         }
+        //获取配置(配置文件获得)
         Properties properties = getProperties();
         return replaceProperty(properties.getProperty(key, defaultValue), (Map)properties);
     }

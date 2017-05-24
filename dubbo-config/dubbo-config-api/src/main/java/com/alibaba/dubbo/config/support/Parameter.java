@@ -31,13 +31,13 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface Parameter {
 
-    String key() default "";
+    String key() default ""; //有值的时候作为键名
     
     boolean required() default false;
     
-    boolean excluded() default false;
+    boolean excluded() default false; //是否排除
 
-    boolean escaped() default false;
+    boolean escaped() default false; //是否编码
     
     boolean attribute() default false;
 

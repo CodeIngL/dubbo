@@ -34,10 +34,11 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
     public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
         return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));
     }
-
+    //对proxy进行包装，实际返回AbstractProxyInvoker的实现，其中doInvoke总是wrapper的调用。关键wrapper
+    //且wrapper会被管理，系统的type或者proxy包装的type对应的wraper总是单例的
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
         // TODO Wrapper类不能正确处理带$的类名
-        final Wrapper wrapper = Wrapper.getWrapper(proxy.getClass().getName().indexOf('$') < 0 ? proxy.getClass() : type);
+        final Wrapper wrapper = Wrapper.getWrapper(proxy.getClass().getName().indexOf('$') != -1 ? proxy.getClass() : type);
         return new AbstractProxyInvoker<T>(proxy, type, url) {
             @Override
             protected Object doInvoke(T proxy, String methodName, 

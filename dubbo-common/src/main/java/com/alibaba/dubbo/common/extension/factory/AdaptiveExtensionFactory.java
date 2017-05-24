@@ -30,7 +30,8 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
-    
+
+    //包含类被加载的各类ExtensionFactory实现，除掉被@Adaptive修饰的，以及作为构造参数传入被装饰的
     private final List<ExtensionFactory> factories;
     
     public AdaptiveExtensionFactory() {
@@ -42,6 +43,7 @@ public class AdaptiveExtensionFactory implements ExtensionFactory {
         factories = Collections.unmodifiableList(list);
     }
 
+    //factories在spring中总是先从SpiExtensionFactory处理，再SpringExtensionFactory处理
     public <T> T getExtension(Class<T> type, String name) {
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);

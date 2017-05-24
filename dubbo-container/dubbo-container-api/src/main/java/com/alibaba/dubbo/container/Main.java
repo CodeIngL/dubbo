@@ -47,16 +47,23 @@ public class Main {
     public static void main(String[] args) {
         try {
             if (args == null || args.length == 0) {
+                //ex:demo-provider---->dubbo.container=log4j,spring
+                //loader.getDefaultExtensionName() equal to "spring"
                 String config = ConfigUtils.getProperty(CONTAINER_KEY, loader.getDefaultExtensionName());
                 args = Constants.COMMA_SPLIT_PATTERN.split(config);
+                //args equal to [log4j,spring]
             }
             
             final List<Container> containers = new ArrayList<Container>();
             for (int i = 0; i < args.length; i ++) {
+                //container includes log4j，spring，jetty，api，logback
+                //now is log4j,spring
                 containers.add(loader.getExtension(args[i]));
             }
+
             logger.info("Use container type(" + Arrays.toString(args) + ") to run dubbo serivce.");
-            
+
+            //dubbo.shutdown.hook属性的设置
             if ("true".equals(System.getProperty(SHUTDOWN_HOOK_KEY))) {
 	            Runtime.getRuntime().addShutdownHook(new Thread() {
 	                public void run() {
@@ -75,7 +82,8 @@ public class Main {
 	                }
 	            });
             }
-            
+
+            //启动所有的containers
             for (Container container : containers) {
                 container.start();
                 logger.info("Dubbo " + container.getClass().getSimpleName() + " started!");

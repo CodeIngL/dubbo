@@ -201,6 +201,13 @@ public abstract class Wrapper
 	 */
 	abstract public Object invokeMethod(Object instance, String mn, Class<?>[] types, Object[] args) throws NoSuchMethodException, InvocationTargetException;
 
+	/**
+	 * 对class进行wrapper
+	 * setProertyValue的说明:对对象Object(实际类型c) o的属性n（基本类型）进行设置，设置值为v
+	 * getPropertyValue的说明：获得对象Object(实际类型c) o的属性n（基本类型）
+	 * @param c
+	 * @return
+	 */
 	private static Wrapper makeWrapper(Class<?> c)
 	{
 		if( c.isPrimitive() )
@@ -209,27 +216,41 @@ public abstract class Wrapper
 		String name = c.getName();
 		ClassLoader cl = ClassHelper.getClassLoader(c);
 
-		StringBuilder c1 = new StringBuilder("public void setPropertyValue(Object o, String n, Object v){ ");
-		StringBuilder c2 = new StringBuilder("public Object getPropertyValue(Object o, String n){ ");
-		StringBuilder c3 = new StringBuilder("public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws " + InvocationTargetException.class.getName() + "{ ");
+		/*c的全类名 w;
+		try {
+			w = ((c的全类名) $1);
+		} catch (Throwable e) {
+			throw new IllegalArgumentException(e);
+		}*/
+		//增加方法setPropertyValue
+		StringBuilder c1 = new StringBuilder("public void setPropertyValue(Object o, String n, Object v){ ")
+				.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");;
+		//增加方法getPropertyValue
+		StringBuilder c2 = new StringBuilder("public Object getPropertyValue(Object o, String n){ ")
+				.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
+		//增肌方法invokeMethod
+		StringBuilder c3 = new StringBuilder("public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws " + InvocationTargetException.class.getName() + "{ ")
+				.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
 
-		c1.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
-		c2.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
-		c3.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
 
+		//字段名，和字段类型，不包括静态类型和不可序列化字段，当然前提是getFileds
 		Map<String, Class<?>> pts = new HashMap<String, Class<?>>(); // <property name, property types>
 		Map<String, Method> ms = new LinkedHashMap<String, Method>(); // <method desc, Method instance>
+		//方法名
 		List<String> mns = new ArrayList<String>(); // method names.
+		//宣称的方法名
 		List<String> dmns = new ArrayList<String>(); // declaring method names.
-		
-		// get all public field.
+
+		//遍历所有公开字段
 		for( Field f : c.getFields() )
 		{
+			//字段名
 			String fn = f.getName();
+			//字段类型
 			Class<?> ft = f.getType();
+			//对于静态或者不可序列化的字段忽略
 			if( Modifier.isStatic(f.getModifiers()) || Modifier.isTransient(f.getModifiers()) )
 				continue;
-
 			c1.append(" if( $2.equals(\"").append(fn).append("\") ){ w.").append(fn).append("=").append(arg(ft, "$3")).append("; return; }");
 			c2.append(" if( $2.equals(\"").append(fn).append("\") ){ return ($w)w.").append(fn).append("; }");
 			pts.put(fn, ft);
@@ -237,20 +258,45 @@ public abstract class Wrapper
 		
 		Method[] methods = c.getMethods();
 		// get all public method.
+		//检测是否有除了Object类上的其他方法
 		boolean hasMethod = hasMethods(methods);
 		if( hasMethod ){
 		    c3.append(" try{");
 		}
-		for( Method m : methods )
-		{
-			if( m.getDeclaringClass() == Object.class ) //ignore Object's method.
+		//遍历方法
+		//对invokeMethod(Object o, String n, Class[] p, Object[] v)的设置
+		/*try {
+			if (方法名.equals($2) && $3.length == 方法名对应的参数长度) {
+				return ($w) w.sayName((java.lang.String) $4[0]);
+			}
+			if ("getBox".equals($2) && $3.length == 0) {
+				return ($w) w.getBox();
+			}
+			if ("getPrefix".equals($2) && $3.length == 0) {
+				return ($w) w.getPrefix();
+			}
+			//void形式
+			if ("setPrefix".equals($2) && $3.length == 1) {
+				w.setPrefix((java.lang.String) $4[0]);
+				return null;
+			}
+		} catch (Throwable e) {
+			throw new java.lang.reflect.InvocationTargetException(e);
+		}*/
+		for( Method m : methods ) {
+			//忽略Object的方法
+			if( m.getDeclaringClass() == Object.class )
 				continue;
-
+			//方法名
 			String mn = m.getName();
+			//如果方法名等于第二个参数
 			c3.append(" if( \"").append(mn).append("\".equals( $2 ) ");
+			//方法参数长度
             int len = m.getParameterTypes().length;
+			//且第三长度和方法参数长度一样
             c3.append(" && ").append(" $3.length == ").append(len);
-			
+
+			//是否有覆盖方法，方法名一致
 			boolean override = false;
 			for( Method m2 : methods ) {
 				if (m != m2 && m.getName().equals(m2.getName())) {
@@ -258,9 +304,12 @@ public abstract class Wrapper
 					break;
 				}
 			}
+			//有覆盖方法，区分方法
 			if (override) {
 				if (len > 0) {
+					//变量方法长度,
 					for (int l = 0; l < len; l ++) {
+						/*追加条件，第三个参数和方法参数列表需要一一对应*/
 						c3.append(" && ").append(" $3[").append(l).append("].getName().equals(\"")
 							.append(m.getParameterTypes()[l].getName()).append("\")");
 					}
@@ -268,29 +317,36 @@ public abstract class Wrapper
 			}
 			
 			c3.append(" ) { ");
-			
+
+			//返回类是是void
 			if( m.getReturnType() == Void.TYPE )
-				c3.append(" w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");").append(" return null;");
+				c3.append(" w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");").append(" return null;"); //调用
 			else
-				c3.append(" return ($w)w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");");
+				c3.append(" return ($w)w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");");//调用
 
 			c3.append(" }");
 			
 			mns.add(mn);
+			//如果方法的类型是C
+			//加入dmns
 			if( m.getDeclaringClass() == c )
 				dmns.add(mn);
+			//转换为特殊格式放入
 			ms.put(ReflectUtils.getDesc(m), m);
 		}
+
+		//有方法
 		if( hasMethod ){
 		    c3.append(" } catch(Throwable e) { " );
 		    c3.append("     throw new java.lang.reflect.InvocationTargetException(e); " );
 	        c3.append(" }");
         }
-		
+		//扔出异常
 		c3.append(" throw new " + NoSuchMethodException.class.getName() + "(\"Not found method \\\"\"+$2+\"\\\" in class " + c.getName() + ".\"); }");
 		
 		// deal with get/set method.
 		Matcher matcher;
+		//遍历get/set方法
 		for( Map.Entry<String,Method> entry : ms.entrySet() )
 		{
 			String md = entry.getKey();

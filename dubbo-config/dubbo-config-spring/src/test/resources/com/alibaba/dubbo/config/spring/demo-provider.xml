@@ -25,7 +25,7 @@
     
     <!-- 连接注册中心配置 -->
     <dubbo:registry address="N/A" />
-     
+
     <!-- 暴露服务协议配置 -->
     <dubbo:protocol name="dubbo" port="20813" />
     
@@ -33,5 +33,27 @@
     <dubbo:service interface="com.alibaba.dubbo.config.spring.api.DemoService" ref="demoService" />
      
     <bean id="demoService" class="com.alibaba.dubbo.config.spring.impl.DemoServiceImpl" />
+
+<!--
+    <dubbo:application name="" />
+    <dubbo:method name=""  />
+    <dubbo:module name="" id=""/>
+    <dubbo:provider id="" default="">
+        <dubbo:service interface="" class=""/>
+        <dubbo:service interface=""/>
+        <dubbo:service interface=""/>
+        <dubbo:parameter key="" value=""
+    </dubbo:provider>
+    <dubbo:service interface="" id=""/>
+    <dubbo:consumer id="">
+        <dubbo:parameter key="" value=""
+        <dubbo:parameter key="" value=""
+        <dubbo:parameter key="" value=""
+    </dubbo:consumer>
+    <dubbo:annotation id=""/>
+    <dubbo:argument />
+    <dubbo:monitor/>
+    <dubbo:reference interface="" id=""/>-->
+
  
 </beans>

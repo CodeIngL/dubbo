@@ -42,6 +42,7 @@ import com.alibaba.dubbo.config.support.Parameter;
  * @author william.liangf
  * @export
  */
+//为了spring而特定使用
 public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean {
 
 	private static final long serialVersionUID = 213195494150089726L;

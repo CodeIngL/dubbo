@@ -41,6 +41,7 @@ public class SpringExtensionFactory implements ExtensionFactory {
 
     @SuppressWarnings("unchecked")
     public <T> T getExtension(Class<T> type, String name) {
+        //从spring上下文中中获取bean
         for (ApplicationContext context : contexts) {
             if (context.containsBean(name)) {
                 Object bean = context.getBean(name);

@@ -30,6 +30,7 @@ import com.alibaba.dubbo.common.utils.ClassHelper;
  * 
  * @author william.liangf
  */
+//版本
 public final class Version {
 
     private Version() {}

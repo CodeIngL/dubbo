@@ -15,6 +15,7 @@
  */
 package com.alibaba.dubbo.common.extension.factory;
 
+import com.alibaba.dubbo.common.extension.Adaptive;
 import com.alibaba.dubbo.common.extension.ExtensionFactory;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.common.extension.SPI;
@@ -27,9 +28,13 @@ import com.alibaba.dubbo.common.extension.SPI;
 public class SpiExtensionFactory implements ExtensionFactory {
 
     public <T> T getExtension(Class<T> type, String name) {
+        //type是一个interface。并且带有SPI注解
         if (type.isInterface() && type.isAnnotationPresent(SPI.class)) {
+            //尝试获得loader
             ExtensionLoader<T> loader = ExtensionLoader.getExtensionLoader(type);
+            //如果loader的扩展很多
             if (loader.getSupportedExtensions().size() > 0) {
+                //放回loader的@Adaptive扩展，没有也会生成
                 return loader.getAdaptiveExtension();
             }
         }

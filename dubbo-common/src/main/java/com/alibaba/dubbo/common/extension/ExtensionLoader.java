@@ -49,12 +49,10 @@ import com.alibaba.dubbo.common.utils.StringUtils;
  * <li>自动Wrap上扩展点的Wrap类。</li>
  * <li>缺省获得的的扩展点是一个Adaptive Instance。
  * </ul>
- * 
- * @see <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#Service%20Provider">JDK5.0的自动发现机制实现</a>
- * 
+ *
  * @author william.liangf
  * @author ding.lid
- *
+ * @see <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#Service%20Provider">JDK5.0的自动发现机制实现</a>
  * @see com.alibaba.dubbo.common.extension.SPI
  * @see com.alibaba.dubbo.common.extension.Adaptive
  * @see com.alibaba.dubbo.common.extension.Activate
@@ -62,60 +60,100 @@ import com.alibaba.dubbo.common.utils.StringUtils;
 public class ExtensionLoader<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtensionLoader.class);
-    
+
+    //services目录
     private static final String SERVICES_DIRECTORY = "META-INF/services/";
 
+    //dubbo目录
     private static final String DUBBO_DIRECTORY = "META-INF/dubbo/";
-    
+
+    //dubbo内部目录
     private static final String DUBBO_INTERNAL_DIRECTORY = DUBBO_DIRECTORY + "internal/";
 
+    //名字分割符
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
-    
+
+    //全局，缓存了class（这个class特指interface），与ExtensionLoader（interface扩展的实现）的映射
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
 
+    //实例结构
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
 
+    //T的类型，interface类型
     private final Class<?> type;
 
+    //T为ExtensionFactory类实例(应用单例)该项为空
+    //others:AdaptiveExtensionFactory实例(单例)
     private final ExtensionFactory objectFactory;
 
-    private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
-    
-    private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String,Class<?>>>();
+//    三种情况介绍:
+//    1. 带有@Adaptive注解的实现
+//    2. T被构造函数作为包装的实现
+//    3. 普通class.forName的实现
 
+    //缓存:普通实现实例和名字的缓存,一个普通实现实例可以带有多个名字哦
+    //ex:aa,bb=com.codeL.Demo;
+    //则会缓存com.codeL.Demo:aa
+    private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
+
+    //缓存:名字和普通实现实例的缓存，这个名字总是配置的第一项。
+    //ex:aa,bb=com.codeL.Demo;
+    //则会缓存aa:com.codeL.Demo和bb:com.codeL.Demo
+    private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String, Class<?>>>();
+
+    //缓存:名字和普通实现实例的缓存，这个名字总是配置的第一项。
+    //同时这个实现类，必须带有注解Activate
     private final Map<String, Activate> cachedActivates = new ConcurrentHashMap<String, Activate>();
 
+    //适配类型的缓存，带有注解@Adaptive。
     private volatile Class<?> cachedAdaptiveClass = null;
 
+    //缓存实例
     private final ConcurrentMap<String, Holder<Object>> cachedInstances = new ConcurrentHashMap<String, Holder<Object>>();
 
+    //名字:总是SPI注解名字的第一项
+    //ex:@SPI(value="aa,bb")
+    //则名字就是aa
     private String cachedDefaultName;
 
+    //适配类型实例缓存，即带有注解@Adaptive的缓存，没有会被代码生成实现
     private final Holder<Object> cachedAdaptiveInstance = new Holder<Object>();
+
+    //错误关于AdaptiveInstance
     private volatile Throwable createAdaptiveInstanceError;
 
+    //T被装饰后的实例缓存，等价于静态代理，代理必须还有类型的构造函数。
     private Set<Class<?>> cachedWrapperClasses;
-    
+
+    //错误
     private Map<String, IllegalStateException> exceptions = new ConcurrentHashMap<String, IllegalStateException>();
-    
+
+
     private static <T> boolean withExtensionAnnotation(Class<T> type) {
         return type.isAnnotationPresent(SPI.class);
     }
-    
+
+    //对传递进啦的interfac类type进行扩展实现，
+    //这个实现可能是编码实现的存在文件中
+    //亦可能是运行生成的
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
+        //参数非空检查
         if (type == null)
             throw new IllegalArgumentException("Extension type == null");
-        if(!type.isInterface()) {
+        //参数类型检查，必须是interface
+        if (!type.isInterface()) {
             throw new IllegalArgumentException("Extension type(" + type + ") is not interface!");
         }
-        if(!withExtensionAnnotation(type)) {
-            throw new IllegalArgumentException("Extension type(" + type + 
+        //interface必须带有spi注解
+        if (!withExtensionAnnotation(type)) {
+            throw new IllegalArgumentException("Extension type(" + type +
                     ") is not extension, because WITHOUT @" + SPI.class.getSimpleName() + " Annotation!");
         }
-        
+        //尝试从全局EXTENSION_LOADERS实例缓存集合中获取，loader
+        //没有则新建loader,并放置type和loader映射
         ExtensionLoader<T> loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         if (loader == null) {
             EXTENSION_LOADERS.putIfAbsent(type, new ExtensionLoader<T>(type));
@@ -124,11 +162,20 @@ public class ExtensionLoader<T> {
         return loader;
     }
 
+    //内部构造
+    //对于objectFactory，如果type是ExtensionFactory，那么objectFactory是空的，否则，都是适配,总是ExtensionLoader<ExtensionFactory>的适配，这个是单例的
     private ExtensionLoader(Class<?> type) {
+        //赋值类型
         this.type = type;
-        objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
+        //使用ExtensionFactory包装
+        if (type == ExtensionFactory.class) {
+            objectFactory = null;
+        } else {
+            ExtensionLoader<ExtensionFactory> factory = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
+            objectFactory = factory.getAdaptiveExtension();
+        }
     }
-    
+
     public String getExtensionName(T extensionInstance) {
         return getExtensionName(extensionInstance.getClass());
     }
@@ -156,10 +203,10 @@ public class ExtensionLoader<T> {
      *     getActivateExtension(url, values, null);
      * </pre>
      *
-     * @see #getActivateExtension(com.alibaba.dubbo.common.URL, String[], String)
-     * @param url url
+     * @param url    url
      * @param values extension point names
      * @return extension list which are activated
+     * @see #getActivateExtension(com.alibaba.dubbo.common.URL, String[], String)
      */
     public List<T> getActivateExtension(URL url, String[] values) {
         return getActivateExtension(url, values, null);
@@ -170,38 +217,39 @@ public class ExtensionLoader<T> {
      *     getActivateExtension(url, url.getParameter(key).split(","), null);
      * </pre>
      *
-     * @see #getActivateExtension(com.alibaba.dubbo.common.URL, String[], String)
-     * @param url url
-     * @param key url parameter key which used to get extension point names
+     * @param url   url
+     * @param key   url parameter key which used to get extension point names
      * @param group group
      * @return extension list which are activated.
+     * @see #getActivateExtension(com.alibaba.dubbo.common.URL, String[], String)
      */
     public List<T> getActivateExtension(URL url, String key, String group) {
         String value = url.getParameter(key);
+        //This is equivalent to getActivateExtension(url, url.getParameter(key).split(","), null);
         return getActivateExtension(url, value == null || value.length() == 0 ? null : Constants.COMMA_SPLIT_PATTERN.split(value), group);
     }
 
     /**
      * Get activate extensions.
      *
-     * @see com.alibaba.dubbo.common.extension.Activate
-     * @param url url
+     * @param url    url
      * @param values extension point names
-     * @param group group
+     * @param group  group
      * @return extension list which are activated
+     * @see com.alibaba.dubbo.common.extension.Activate
      */
     public List<T> getActivateExtension(URL url, String[] values, String group) {
         List<T> exts = new ArrayList<T>();
         List<String> names = values == null ? new ArrayList<String>(0) : Arrays.asList(values);
-        if (! names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {
+        if (!names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {
             getExtensionClasses();
             for (Map.Entry<String, Activate> entry : cachedActivates.entrySet()) {
                 String name = entry.getKey();
                 Activate activate = entry.getValue();
                 if (isMatchGroup(group, activate.group())) {
                     T ext = getExtension(name);
-                    if (! names.contains(name)
-                            && ! names.contains(Constants.REMOVE_VALUE_PREFIX + name) 
+                    if (!names.contains(name)
+                            && !names.contains(Constants.REMOVE_VALUE_PREFIX + name)
                             && isActive(activate, url)) {
                         exts.add(ext);
                     }
@@ -210,27 +258,28 @@ public class ExtensionLoader<T> {
             Collections.sort(exts, ActivateComparator.COMPARATOR);
         }
         List<T> usrs = new ArrayList<T>();
-        for (int i = 0; i < names.size(); i ++) {
-        	String name = names.get(i);
-            if (! name.startsWith(Constants.REMOVE_VALUE_PREFIX)
-            		&& ! names.contains(Constants.REMOVE_VALUE_PREFIX + name)) {
-            	if (Constants.DEFAULT_KEY.equals(name)) {
-            		if (usrs.size() > 0) {
-	            		exts.addAll(0, usrs);
-	            		usrs.clear();
-            		}
-            	} else {
-	            	T ext = getExtension(name);
-	            	usrs.add(ext);
-            	}
+        for (int i = 0; i < names.size(); i++) {
+            String name = names.get(i);
+            if (!name.startsWith(Constants.REMOVE_VALUE_PREFIX)
+                    && !names.contains(Constants.REMOVE_VALUE_PREFIX + name)) {
+                if (Constants.DEFAULT_KEY.equals(name)) {
+                    if (usrs.size() > 0) {
+                        exts.addAll(0, usrs);
+                        usrs.clear();
+                    }
+                } else {
+                    T ext = getExtension(name);
+                    usrs.add(ext);
+                }
             }
         }
         if (usrs.size() > 0) {
-        	exts.addAll(usrs);
+            exts.addAll(usrs);
         }
         return exts;
     }
-    
+
+
     private boolean isMatchGroup(String group, String[] groups) {
         if (group == null || group.length() == 0) {
             return true;
@@ -244,7 +293,7 @@ public class ExtensionLoader<T> {
         }
         return false;
     }
-    
+
     private boolean isActive(Activate activate, URL url) {
         String[] keys = activate.value();
         if (keys == null || keys.length == 0) {
@@ -265,7 +314,7 @@ public class ExtensionLoader<T> {
 
     /**
      * 返回扩展点实例，如果没有指定的扩展点或是还没加载（即实例化）则返回<code>null</code>。注意：此方法不会触发扩展点的加载。
-     * <p />
+     * <p/>
      * 一般应该调用{@link #getExtension(String)}方法获得扩展，这个方法会触发扩展点加载。
      *
      * @see #getExtension(String)
@@ -284,7 +333,7 @@ public class ExtensionLoader<T> {
 
     /**
      * 返回已经加载的扩展点的名字。
-     * <p />
+     * <p/>
      * 一般应该调用{@link #getSupportedExtensions()}方法获得扩展，这个方法会返回所有的扩展点。
      *
      * @see #getSupportedExtensions()
@@ -295,103 +344,99 @@ public class ExtensionLoader<T> {
 
     /**
      * 返回指定名字的扩展。如果指定名字的扩展不存在，则抛异常 {@link IllegalStateException}.
-     *
+     * 这个方法通常被$Adaptive中使用的
      * @param name
      * @return
      */
-	@SuppressWarnings("unchecked")
-	public T getExtension(String name) {
-		if (name == null || name.length() == 0)
-		    throw new IllegalArgumentException("Extension name == null");
-		if ("true".equals(name)) {
-		    return getDefaultExtension();
-		}
-		Holder<Object> holder = cachedInstances.get(name);
-		if (holder == null) {
-		    cachedInstances.putIfAbsent(name, new Holder<Object>());
-		    holder = cachedInstances.get(name);
-		}
-		Object instance = holder.get();
-		if (instance == null) {
-		    synchronized (holder) {
-	            instance = holder.get();
-	            if (instance == null) {
-	                instance = createExtension(name);
-	                holder.set(instance);
-	            }
-	        }
-		}
-		return (T) instance;
-	}
-	
-	/**
-	 * 返回缺省的扩展，如果没有设置则返回<code>null</code>。 
-	 */
-	public T getDefaultExtension() {
-	    getExtensionClasses();
-        if(null == cachedDefaultName || cachedDefaultName.length() == 0
+    @SuppressWarnings("unchecked")
+    public T getExtension(String name) {
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Extension name == null");
+        if ("true".equals(name)) {
+            return getDefaultExtension();
+        }
+        //尝试从缓存中获得
+        Holder<Object> holder = cachedInstances.get(name);
+        if (holder == null) {
+            cachedInstances.putIfAbsent(name, new Holder<Object>());
+            holder = cachedInstances.get(name);
+        }
+        Object instance = holder.get();
+        if (instance == null) {
+            synchronized (holder) {
+                instance = holder.get();
+                if (instance == null) {
+                    //创建实例，
+                    instance = createExtension(name);
+                    holder.set(instance);
+                }
+            }
+        }
+        return (T) instance;
+    }
+
+    /**
+     * 返回缺省的扩展，如果没有设置则返回<code>null</code>。
+     */
+    public T getDefaultExtension() {
+        getExtensionClasses();
+        if (null == cachedDefaultName || cachedDefaultName.length() == 0
                 || "true".equals(cachedDefaultName)) {
             return null;
         }
         return getExtension(cachedDefaultName);
-	}
-
-	public boolean hasExtension(String name) {
-	    if (name == null || name.length() == 0)
-	        throw new IllegalArgumentException("Extension name == null");
-	    try {
-	        return getExtensionClass(name) != null;
-	    } catch (Throwable t) {
-	        return false;
-	    }
-	}
-    
-	public Set<String> getSupportedExtensions() {
-        Map<String, Class<?>> clazzes = getExtensionClasses();
-        return Collections.unmodifiableSet(new TreeSet<String>(clazzes.keySet()));
     }
-    
-	/**
-	 * 返回缺省的扩展点名，如果没有设置缺省则返回<code>null</code>。 
-	 */
-	public String getDefaultExtensionName() {
-	    getExtensionClasses();
-	    return cachedDefaultName;
-	}
+
+    public boolean hasExtension(String name) {
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Extension name == null");
+        try {
+            return getExtensionClass(name) != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * 返回缺省的扩展点名，如果没有设置缺省则返回<code>null</code>。
+     */
+    public String getDefaultExtensionName() {
+        getExtensionClasses();
+        return cachedDefaultName;
+    }
 
     /**
      * 编程方式添加新扩展点。
      *
-     * @param name 扩展点名
+     * @param name  扩展点名
      * @param clazz 扩展点类
      * @throws IllegalStateException 要添加扩展点名已经存在。
      */
     public void addExtension(String name, Class<?> clazz) {
         getExtensionClasses(); // load classes
 
-        if(!type.isAssignableFrom(clazz)) {
+        if (!type.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Input type " +
                     clazz + "not implement Extension " + type);
         }
-        if(clazz.isInterface()) {
+        if (clazz.isInterface()) {
             throw new IllegalStateException("Input type " +
                     clazz + "can not be interface!");
         }
 
-        if(!clazz.isAnnotationPresent(Adaptive.class)) {
-            if(StringUtils.isBlank(name)) {
+        if (!clazz.isAnnotationPresent(Adaptive.class)) {
+            if (StringUtils.isBlank(name)) {
                 throw new IllegalStateException("Extension name is blank (Extension " + type + ")!");
             }
-            if(cachedClasses.get().containsKey(name)) {
+            if (cachedClasses.get().containsKey(name)) {
                 throw new IllegalStateException("Extension name " +
                         name + " already existed(Extension " + type + ")!");
             }
 
             cachedNames.put(clazz, name);
             cachedClasses.get().put(name, clazz);
-        }
-        else {
-            if(cachedAdaptiveClass != null) {
+        } else {
+            if (cachedAdaptiveClass != null) {
                 throw new IllegalStateException("Adaptive Extension already existed(Extension " + type + ")!");
             }
 
@@ -402,7 +447,7 @@ public class ExtensionLoader<T> {
     /**
      * 编程方式添加替换已有扩展点。
      *
-     * @param name 扩展点名
+     * @param name  扩展点名
      * @param clazz 扩展点类
      * @throws IllegalStateException 要添加扩展点名已经存在。
      * @deprecated 不推荐应用使用，一般只在测试时可以使用
@@ -411,20 +456,20 @@ public class ExtensionLoader<T> {
     public void replaceExtension(String name, Class<?> clazz) {
         getExtensionClasses(); // load classes
 
-        if(!type.isAssignableFrom(clazz)) {
+        if (!type.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Input type " +
                     clazz + "not implement Extension " + type);
         }
-        if(clazz.isInterface()) {
+        if (clazz.isInterface()) {
             throw new IllegalStateException("Input type " +
                     clazz + "can not be interface!");
         }
 
-        if(!clazz.isAnnotationPresent(Adaptive.class)) {
-            if(StringUtils.isBlank(name)) {
+        if (!clazz.isAnnotationPresent(Adaptive.class)) {
+            if (StringUtils.isBlank(name)) {
                 throw new IllegalStateException("Extension name is blank (Extension " + type + ")!");
             }
-            if(!cachedClasses.get().containsKey(name)) {
+            if (!cachedClasses.get().containsKey(name)) {
                 throw new IllegalStateException("Extension name " +
                         name + " not existed(Extension " + type + ")!");
             }
@@ -432,9 +477,8 @@ public class ExtensionLoader<T> {
             cachedNames.put(clazz, name);
             cachedClasses.get().put(name, clazz);
             cachedInstances.remove(name);
-        }
-        else {
-            if(cachedAdaptiveClass == null) {
+        } else {
+            if (cachedAdaptiveClass == null) {
                 throw new IllegalStateException("Adaptive Extension not existed(Extension " + type + ")!");
             }
 
@@ -443,16 +487,27 @@ public class ExtensionLoader<T> {
         }
     }
 
+    /**
+     * 获得一个T的适配扩张
+     * 参考来自spring，xmlBeanFactory
+     * 一般情况下不会有并发访问这个情况
+     * cachedAdaptiveInstance这个属性只有在该函数调用后才会发生设置
+     * 对应ExtensionLoader<T>实例这总是可选调用的，而这个实例总是被维护在EXTENSION_LOADERS中，是线程安全且单例存在的
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
+        //尝试从cachedAdaptiveInstance属性中直接获取，没有则委托给createAdaptiveExtension创建interface的适配实例T
         Object instance = cachedAdaptiveInstance.get();
         if (instance == null) {
-            if(createAdaptiveInstanceError == null) {
+            if (createAdaptiveInstanceError == null) {
                 synchronized (cachedAdaptiveInstance) {
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
+                            //创建适配实例
                             instance = createAdaptiveExtension();
+                            //设置cachedAdaptiveInstance属性
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
                             createAdaptiveInstanceError = t;
@@ -460,12 +515,10 @@ public class ExtensionLoader<T> {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 throw new IllegalStateException("fail to create adaptive instance: " + createAdaptiveInstanceError.toString(), createAdaptiveInstanceError);
             }
         }
-
         return (T) instance;
     }
 
@@ -480,12 +533,12 @@ public class ExtensionLoader<T> {
 
         int i = 1;
         for (Map.Entry<String, IllegalStateException> entry : exceptions.entrySet()) {
-            if(i == 1) {
+            if (i == 1) {
                 buf.append(", possible causes: ");
             }
 
             buf.append("\r\n(");
-            buf.append(i ++);
+            buf.append(i++);
             buf.append(") ");
             buf.append(entry.getKey());
             buf.append(":\r\n");
@@ -494,42 +547,27 @@ public class ExtensionLoader<T> {
         return new IllegalStateException(buf.toString());
     }
 
-    @SuppressWarnings("unchecked")
-    private T createExtension(String name) {
-        Class<?> clazz = getExtensionClasses().get(name);
-        if (clazz == null) {
-            throw findException(name);
-        }
-        try {
-            T instance = (T) EXTENSION_INSTANCES.get(clazz);
-            if (instance == null) {
-                EXTENSION_INSTANCES.putIfAbsent(clazz, (T) clazz.newInstance());
-                instance = (T) EXTENSION_INSTANCES.get(clazz);
-            }
-            injectExtension(instance);
-            Set<Class<?>> wrapperClasses = cachedWrapperClasses;
-            if (wrapperClasses != null && wrapperClasses.size() > 0) {
-                for (Class<?> wrapperClass : wrapperClasses) {
-                    instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
-                }
-            }
-            return instance;
-        } catch (Throwable t) {
-            throw new IllegalStateException("Extension instance(name: " + name + ", class: " +
-                    type + ")  could not be instantiated: " + t.getMessage(), t);
-        }
-    }
-    
+    /**
+     * 注入实例
+     * @param instance
+     * @return
+     */
     private T injectExtension(T instance) {
         try {
+            //不是Factory
             if (objectFactory != null) {
+                //遍历所有的方法
                 for (Method method : instance.getClass().getMethods()) {
+                    //set方法，1个参数，公有
                     if (method.getName().startsWith("set")
                             && method.getParameterTypes().length == 1
                             && Modifier.isPublic(method.getModifiers())) {
+                        //获得参数类型
                         Class<?> pt = method.getParameterTypes()[0];
                         try {
                             String property = method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
+                            //尝试从Factory中获取
+                            //这个factory总是AdaptiveExtensionFactory，
                             Object object = objectFactory.getExtension(pt, property);
                             if (object != null) {
                                 method.invoke(instance, object);
@@ -546,54 +584,137 @@ public class ExtensionLoader<T> {
         }
         return instance;
     }
-    
-	private Class<?> getExtensionClass(String name) {
-	    if (type == null)
-	        throw new IllegalArgumentException("Extension type == null");
-	    if (name == null)
-	        throw new IllegalArgumentException("Extension name == null");
-	    Class<?> clazz = getExtensionClasses().get(name);
-	    if (clazz == null)
-	        throw new IllegalStateException("No such extension \"" + name + "\" for " + type.getName() + "!");
-	    return clazz;
-	}
-	
-	private Map<String, Class<?>> getExtensionClasses() {
+
+
+    /**
+     * 新建扩展
+     * 首先尝试根据名字在缓存中获得calss
+     * @param name
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private T createExtension(String name) {
+        Class<?> clazz = getExtensionClasses().get(name);
+        if (clazz == null) {
+            throw findException(name);
+        }
+        try {
+            //直接新建
+            T instance = (T) EXTENSION_INSTANCES.get(clazz);
+            if (instance == null) {
+                EXTENSION_INSTANCES.putIfAbsent(clazz, (T) clazz.newInstance());
+                instance = (T) EXTENSION_INSTANCES.get(clazz);
+            }
+
+            //注入相关的实例
+            injectExtension(instance);
+
+            //层层包装
+            Set<Class<?>> wrapperClasses = cachedWrapperClasses;
+            if (wrapperClasses != null && wrapperClasses.size() > 0) {
+                for (Class<?> wrapperClass : wrapperClasses) {
+                    //注入包装实例，
+                    //返回新实例
+                    instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
+                }
+            }
+            return instance;
+        } catch (Throwable t) {
+            throw new IllegalStateException("Extension instance(name: " + name + ", class: " +
+                    type + ")  could not be instantiated: " + t.getMessage(), t);
+        }
+    }
+
+
+
+
+    /**
+     * 获得所有支持的扩展，排序后的
+     *
+     * @return
+     */
+    public Set<String> getSupportedExtensions() {
+        Map<String, Class<?>> clazzes = getExtensionClasses();
+        return Collections.unmodifiableSet(new TreeSet<String>(clazzes.keySet()));
+    }
+
+    /**
+     *
+     * @param name
+     * @return
+     */
+    private Class<?> getExtensionClass(String name) {
+        if (type == null)
+            throw new IllegalArgumentException("Extension type == null");
+        if (name == null)
+            throw new IllegalArgumentException("Extension name == null");
+        Class<?> clazz = getExtensionClasses().get(name);
+        if (clazz == null)
+            throw new IllegalStateException("No such extension \"" + name + "\" for " + type.getName() + "!");
+        return clazz;
+    }
+
+    /**
+     * 获得扩张类
+     * 这些类会被设置到属性cachedClasses中
+     * @return
+     */
+    private Map<String, Class<?>> getExtensionClasses() {
+        //尝试从缓存中获取
         Map<String, Class<?>> classes = cachedClasses.get();
+        //和之前一样的策略
         if (classes == null) {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
+                    //尝试加载
                     classes = loadExtensionClasses();
+                    //把map返回出来
                     cachedClasses.set(classes);
                 }
             }
         }
         return classes;
-	}
+    }
 
-    // 此方法已经getExtensionClasses方法同步过。
+    /**
+     * 加载扩展类
+     * 从配置文件中加载
+     * @return
+     */
+    // 此方法已经getExtensionClasses方法調用过。
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
-        if(defaultAnnotation != null) {
+        if (defaultAnnotation != null) {
             String value = defaultAnnotation.value();
-            if(value != null && (value = value.trim()).length() > 0) {
+            if (value != null && (value = value.trim()).length() > 0) {
+                //有不合法，存在，爆出异常
                 String[] names = NAME_SEPARATOR.split(value);
-                if(names.length > 1) {
+                if (names.length > 1) {
                     throw new IllegalStateException("more than 1 default extension name on extension " + type.getName()
                             + ": " + Arrays.toString(names));
                 }
-                if(names.length == 1) cachedDefaultName = names[0];
+                if (names.length == 1) cachedDefaultName = names[0];
             }
         }
-        
+        //尝试加载，名字和类的关系，在配置文件中体现，比如a,b=com.codeL.A,则名字会存储，a:com.codeL.A和b:com.codeL.
+        //但是实际缓存中保存使用的名字是A，这个可以通过com.codeL.A拿到，因为他们是双向存储
         Map<String, Class<?>> extensionClasses = new HashMap<String, Class<?>>();
         loadFile(extensionClasses, DUBBO_INTERNAL_DIRECTORY);
         loadFile(extensionClasses, DUBBO_DIRECTORY);
         loadFile(extensionClasses, SERVICES_DIRECTORY);
         return extensionClasses;
     }
-    
+
+    /**
+     * 搜索jar包中内置文件
+     * 完成适配类的设置cachedAdaptiveClass
+     * 设置cachedWrapperClasses：对于能被包装类
+     * 设置cachedActivates，key是name，value是类Activates
+     * 设置cachedNames，key是class，value是别名
+     * @param extensionClasses
+     * @param dir
+     */
     private void loadFile(Map<String, Class<?>> extensionClasses, String dir) {
         String fileName = dir + type.getName();
         try {
@@ -624,31 +745,38 @@ public class ExtensionLoader<T> {
                                             line = line.substring(i + 1).trim();
                                         }
                                         if (line.length() > 0) {
+                                            //放射实例化
                                             Class<?> clazz = Class.forName(line, true, classLoader);
-                                            if (! type.isAssignableFrom(clazz)) {
+                                            if (!type.isAssignableFrom(clazz)) {
                                                 throw new IllegalStateException("Error when load extension class(interface: " +
-                                                        type + ", class line: " + clazz.getName() + "), class " 
+                                                        type + ", class line: " + clazz.getName() + "), class "
                                                         + clazz.getName() + "is not subtype of interface.");
                                             }
+                                            //是否含有Adaptive注解
                                             if (clazz.isAnnotationPresent(Adaptive.class)) {
-                                                if(cachedAdaptiveClass == null) {
+                                                if (cachedAdaptiveClass == null) {
                                                     cachedAdaptiveClass = clazz;
-                                                } else if (! cachedAdaptiveClass.equals(clazz)) {
+                                                } else if (!cachedAdaptiveClass.equals(clazz)) {
+                                                    //找到多个不合法
                                                     throw new IllegalStateException("More than 1 adaptive class found: "
                                                             + cachedAdaptiveClass.getClass().getName()
                                                             + ", " + clazz.getClass().getName());
                                                 }
                                             } else {
                                                 try {
+                                                    //反射实例含有type参数的构造函数
                                                     clazz.getConstructor(type);
                                                     Set<Class<?>> wrappers = cachedWrapperClasses;
                                                     if (wrappers == null) {
                                                         cachedWrapperClasses = new ConcurrentHashSet<Class<?>>();
                                                         wrappers = cachedWrapperClasses;
                                                     }
+                                                    //适配加入
                                                     wrappers.add(clazz);
                                                 } catch (NoSuchMethodException e) {
+                                                    //没有上述构造函数，不能适配类
                                                     clazz.getConstructor();
+                                                    //忘记写名字。tip：这一步不会发生的，配置的时候我们会配置的
                                                     if (name == null || name.length() == 0) {
                                                         name = findAnnotationName(clazz);
                                                         if (name == null || name.length() == 0) {
@@ -660,16 +788,22 @@ public class ExtensionLoader<T> {
                                                             }
                                                         }
                                                     }
+                                                    //拆分名字
                                                     String[] names = NAME_SEPARATOR.split(name);
                                                     if (names != null && names.length > 0) {
+                                                        //获取类上的激活注解
                                                         Activate activate = clazz.getAnnotation(Activate.class);
                                                         if (activate != null) {
+                                                            //放入激活缓存
                                                             cachedActivates.put(names[0], activate);
                                                         }
+                                                        //遍历名字，
                                                         for (String n : names) {
-                                                            if (! cachedNames.containsKey(clazz)) {
+                                                            //放置第一个名字，和class的关系
+                                                            if (!cachedNames.containsKey(clazz)) {
                                                                 cachedNames.put(clazz, n);
                                                             }
+                                                            //反向放置名字和类的关系，这个要返回出去的，map是带进来的e
                                                             Class<?> c = extensionClasses.get(n);
                                                             if (c == null) {
                                                                 extensionClasses.put(n, clazz);
@@ -692,7 +826,7 @@ public class ExtensionLoader<T> {
                         }
                     } catch (Throwable t) {
                         logger.error("Exception when load extension class(interface: " +
-                                            type + ", class file: " + url + ") in " + url, t);
+                                type + ", class file: " + url + ") in " + url, t);
                     }
                 } // end of while urls
             }
@@ -701,7 +835,15 @@ public class ExtensionLoader<T> {
                     type + ", description file: " + fileName + ").", t);
         }
     }
-    
+
+    /**
+     * 找名字,如果class带有注解，且注解的value存在，不为空串和空，名字value值
+     * 注解不存在，就是简单名字。
+     * ex ：class equal to XxxInvoker and type equal to Invoker
+     * result：xxx
+     * @param clazz
+     * @return
+     */
     @SuppressWarnings("deprecation")
     private String findAnnotationName(Class<?> clazz) {
         com.alibaba.dubbo.common.Extension extension = clazz.getAnnotation(com.alibaba.dubbo.common.Extension.class);
@@ -714,49 +856,80 @@ public class ExtensionLoader<T> {
         }
         return extension.value();
     }
-    
+
+
+
+
+
+
+    /**
+     * 创建interface的适配，这个适配可能经过多次包装
+     * 这个适配会被注入到相关的实例里面
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
+            //获得封装扩展的实例，并注入
             return injectExtension((T) getAdaptiveExtensionClass().newInstance());
         } catch (Exception e) {
             throw new IllegalStateException("Can not create adaptive extenstion " + type + ", cause: " + e.getMessage(), e);
         }
     }
-    
+
+
+    /**
+     * 获得interface的适配实例
+     * 这个实例就是属性cachedAdaptiveClass,
+     * 首先尝试获得扩展类，getExtensionClasses。里面包括对cachedAdaptiveClass的设置
+     * 如果都没有。则直接通过运行编译器生成。
+     * @return
+     */
     private Class<?> getAdaptiveExtensionClass() {
         getExtensionClasses();
+        //有适配的
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
+        //没有则新建
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
-    
+
+
+    /**
+     * 没有@Adaptive的适配，使用编译器直接生成类
+     *
+     * @return
+     */
     private Class<?> createAdaptiveExtensionClass() {
         String code = createAdaptiveExtensionClassCode();
         ClassLoader classLoader = findClassLoader();
         com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
+        //编译加载
         return compiler.compile(code, classLoader);
     }
-    
+
+    //生成代码，
     private String createAdaptiveExtensionClassCode() {
         StringBuilder codeBuidler = new StringBuilder();
         Method[] methods = type.getMethods();
         boolean hasAdaptiveAnnotation = false;
-        for(Method m : methods) {
-            if(m.isAnnotationPresent(Adaptive.class)) {
+        for (Method m : methods) {
+            if (m.isAnnotationPresent(Adaptive.class)) {
                 hasAdaptiveAnnotation = true;
                 break;
             }
         }
-        // 完全没有Adaptive方法，则不需要生成Adaptive类
-        if(! hasAdaptiveAnnotation)
+        // 完全没有Adaptive方法，则不需要生成Adaptive类,抛出异常
+        if (!hasAdaptiveAnnotation)
             throw new IllegalStateException("No adaptive method on extension " + type.getName() + ", refuse to create the adaptive class!");
-        
+        //导包
         codeBuidler.append("package " + type.getPackage().getName() + ";");
         codeBuidler.append("\nimport " + ExtensionLoader.class.getName() + ";");
         codeBuidler.append("\npublic class " + type.getSimpleName() + "$Adpative" + " implements " + type.getCanonicalName() + " {");
-        
+
+        //遍历方法
+        //方法上没有标注@Adaptive
         for (Method method : methods) {
             Class<?> rt = method.getReturnType();
             Class<?>[] pts = method.getParameterTypes();
@@ -764,11 +937,15 @@ public class ExtensionLoader<T> {
 
             Adaptive adaptiveAnnotation = method.getAnnotation(Adaptive.class);
             StringBuilder code = new StringBuilder(512);
+            //对应没有注解的认出异常
             if (adaptiveAnnotation == null) {
                 code.append("throw new UnsupportedOperationException(\"method ")
                         .append(method.toString()).append(" of interface ")
                         .append(type.getName()).append(" is not adaptive method!\");");
-            } else {
+            }
+            //含有注解
+            else {
+                //如果方法含有URL参数，确定URL的位置
                 int urlTypeIndex = -1;
                 for (int i = 0; i < pts.length; ++i) {
                     if (pts[i].equals(URL.class)) {
@@ -776,20 +953,23 @@ public class ExtensionLoader<T> {
                         break;
                     }
                 }
+
                 // 有类型为URL的参数
                 if (urlTypeIndex != -1) {
                     // Null Point check
+                    //对url参数进行校验
                     String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"url == null\");",
-                                    urlTypeIndex);
+                            urlTypeIndex);
                     code.append(s);
-                    
-                    s = String.format("\n%s url = arg%d;", URL.class.getName(), urlTypeIndex); 
+
+                    //定义变量URL url =url对应的参数argx
+                    s = String.format("\n%s url = arg%d;", URL.class.getName(), urlTypeIndex);
                     code.append(s);
                 }
-                // 参数没有URL类型
+                // 参数没有URL类型，寻找参数实例中是否有URL的类型的方法
                 else {
                     String attribMethod = null;
-                    
+
                     // 找到参数的URL属性
                     LBL_PTS:
                     for (int i = 0; i < pts.length; ++i) {
@@ -807,81 +987,90 @@ public class ExtensionLoader<T> {
                             }
                         }
                     }
-                    if(attribMethod == null) {
+                    //参数类里面属性依旧找不到
+                    if (attribMethod == null) {
                         throw new IllegalStateException("fail to create adative class for interface " + type.getName()
-                        		+ ": not found url parameter or url attribute in parameters of method " + method.getName());
+                                + ": not found url parameter or url attribute in parameters of method " + method.getName());
                     }
-                    
+
+                    //某个参数含有URL类型的方法
                     // Null point check
+                    //先检验参数不为空
                     String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"%s argument == null\");",
-                                    urlTypeIndex, pts[urlTypeIndex].getName());
+                            urlTypeIndex, pts[urlTypeIndex].getName());
                     code.append(s);
+                    //校验参数的url方法得到的url不为空
                     s = String.format("\nif (arg%d.%s() == null) throw new IllegalArgumentException(\"%s argument %s() == null\");",
-                                    urlTypeIndex, attribMethod, pts[urlTypeIndex].getName(), attribMethod);
+                            urlTypeIndex, attribMethod, pts[urlTypeIndex].getName(), attribMethod);
                     code.append(s);
 
-                    s = String.format("%s url = arg%d.%s();",URL.class.getName(), urlTypeIndex, attribMethod); 
+                    //得到url
+                    s = String.format("%s url = arg%d.%s();", URL.class.getName(), urlTypeIndex, attribMethod);
                     code.append(s);
                 }
-                
+
                 String[] value = adaptiveAnnotation.value();
                 // 没有设置Key，则使用“扩展点接口名的点分隔 作为Key
-                if(value.length == 0) {
+                if (value.length == 0) {
+                    //if charArrary equal to simpleName the result is simple.name
                     char[] charArray = type.getSimpleName().toCharArray();
                     StringBuilder sb = new StringBuilder(128);
                     for (int i = 0; i < charArray.length; i++) {
-                        if(Character.isUpperCase(charArray[i])) {
-                            if(i != 0) {
+                        if (Character.isUpperCase(charArray[i])) {
+                            if (i != 0) {
                                 sb.append(".");
                             }
                             sb.append(Character.toLowerCase(charArray[i]));
-                        }
-                        else {
+                        } else {
                             sb.append(charArray[i]);
                         }
                     }
-                    value = new String[] {sb.toString()};
+                    value = new String[]{sb.toString()};
                 }
-                
+
+                //寻找参数类型是com.alibaba.dubbo.rpc.Invocation
                 boolean hasInvocation = false;
                 for (int i = 0; i < pts.length; ++i) {
                     if (pts[i].getName().equals("com.alibaba.dubbo.rpc.Invocation")) {
                         // Null Point check
+                        //校验Invocation
                         String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"invocation == null\");", i);
                         code.append(s);
-                        s = String.format("\nString methodName = arg%d.getMethodName();", i); 
+                        //获得方法名
+                        s = String.format("\nString methodName = arg%d.getMethodName();", i);
                         code.append(s);
+                        //设置标记含有Invocation
                         hasInvocation = true;
                         break;
                     }
                 }
-                
+
+                //默认的名称
                 String defaultExtName = cachedDefaultName;
                 String getNameCode = null;
                 for (int i = value.length - 1; i >= 0; --i) {
-                    if(i == value.length - 1) {
-                        if(null != defaultExtName) {
-                            if(!"protocol".equals(value[i]))
-                                if (hasInvocation) 
+                    if (i == value.length - 1) {
+                        //有默认参数名
+                        if (null != defaultExtName) {
+                            if (!"protocol".equals(value[i]))
+                                if (hasInvocation)
                                     getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
                                 else
                                     getNameCode = String.format("url.getParameter(\"%s\", \"%s\")", value[i], defaultExtName);
                             else
                                 getNameCode = String.format("( url.getProtocol() == null ? \"%s\" : url.getProtocol() )", defaultExtName);
-                        }
-                        else {
-                            if(!"protocol".equals(value[i]))
-                                if (hasInvocation) 
+                        } else {
+                            if (!"protocol".equals(value[i]))
+                                if (hasInvocation)
                                     getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
                                 else
                                     getNameCode = String.format("url.getParameter(\"%s\")", value[i]);
                             else
                                 getNameCode = "url.getProtocol()";
                         }
-                    }
-                    else {
-                        if(!"protocol".equals(value[i]))
-                            if (hasInvocation) 
+                    } else {
+                        if (!"protocol".equals(value[i]))
+                            if (hasInvocation)
                                 getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
                             else
                                 getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
@@ -892,14 +1081,14 @@ public class ExtensionLoader<T> {
                 code.append("\nString extName = ").append(getNameCode).append(";");
                 // check extName == null?
                 String s = String.format("\nif(extName == null) " +
-                		"throw new IllegalStateException(\"Fail to get extension(%s) name from url(\" + url.toString() + \") use keys(%s)\");",
+                                "throw new IllegalStateException(\"Fail to get extension(%s) name from url(\" + url.toString() + \") use keys(%s)\");",
                         type.getName(), Arrays.toString(value));
                 code.append(s);
-                
+
                 s = String.format("\n%s extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);",
                         type.getName(), ExtensionLoader.class.getSimpleName(), type.getName());
                 code.append(s);
-                
+
                 // return statement
                 if (!rt.equals(void.class)) {
                     code.append("\nreturn ");
@@ -914,9 +1103,9 @@ public class ExtensionLoader<T> {
                 }
                 code.append(");");
             }
-            
+
             codeBuidler.append("\npublic " + rt.getCanonicalName() + " " + method.getName() + "(");
-            for (int i = 0; i < pts.length; i ++) {
+            for (int i = 0; i < pts.length; i++) {
                 if (i > 0) {
                     codeBuidler.append(", ");
                 }
@@ -927,7 +1116,7 @@ public class ExtensionLoader<T> {
             codeBuidler.append(")");
             if (ets.length > 0) {
                 codeBuidler.append(" throws ");
-                for (int i = 0; i < ets.length; i ++) {
+                for (int i = 0; i < ets.length; i++) {
                     if (i > 0) {
                         codeBuidler.append(", ");
                     }
@@ -945,13 +1134,14 @@ public class ExtensionLoader<T> {
         return codeBuidler.toString();
     }
 
+
     private static ClassLoader findClassLoader() {
-        return  ExtensionLoader.class.getClassLoader();
+        return ExtensionLoader.class.getClassLoader();
     }
-    
+
     @Override
     public String toString() {
         return this.getClass().getName() + "[" + type.getName() + "]";
     }
-    
+
 }
