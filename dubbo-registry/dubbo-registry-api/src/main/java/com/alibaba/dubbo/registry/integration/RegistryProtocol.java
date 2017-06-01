@@ -101,25 +101,38 @@ public class RegistryProtocol implements Protocol {
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
-    
+
+    @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        //export invoker
+        //export invoker 导出invoker和export的代理封装
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
-        //registry provider
+        //registry provider 获得注册中心
         final Registry registry = getRegistry(originInvoker);
+        //获得协议配置的URL，该URL经过过滤，某些键值对不需要暴露
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
+        //使用注册中心注册协议配置URL
         registry.register(registedProviderUrl);
+
         // 订阅override数据
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
+
+        //新建订阅者
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
+
+        //放置缓存
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
+
+        //订阅信心注册进注册中心
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
+
         //保证每次export都返回一个新的exporter实例
         return new Exporter<T>() {
+
             public Invoker<T> getInvoker() {
                 return exporter.getInvoker();
             }
+
             public void unexport() {
             	try {
             		exporter.unexport();
@@ -138,12 +151,18 @@ public class RegistryProtocol implements Protocol {
                 	logger.warn(t.getMessage(), t);
                 }
             }
+
         };
     }
 
     /**
      * 尝试从缓存中直接取出
      * 没有则新建
+     * <ul>
+     *     <li>使用原始的originInvoker，和其中得到的配置URL构建Invoker的委托实现</li><br/>
+     *     <li>使用Protocol$Adpative来导出委托Invoker，其中使用委托的URL（协议配置URL），来获得具体扩展类，使用具体扩展类导出委托的Invoker</li><br/>
+     *     <li>构建ExporterChangeableWrapper使用（导出的export和原始的originInvoker）</li><br/>
+     * </ul>
      * @param originInvoker 需要暴露的invoker
      * @param <T>
      * @return
@@ -186,14 +205,17 @@ public class RegistryProtocol implements Protocol {
     /**
      * 根据invoker的地址获取registry实例
      * @param originInvoker
-     * @return
+     * @return 注册中心实例
      */
     private Registry getRegistry(final Invoker<?> originInvoker){
+        //获得注册中心URL
         URL registryUrl = originInvoker.getUrl();
+        //转换回来
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
         }
+        //进行注册，获得对象
         return registryFactory.getRegistry(registryUrl);
     }
 
@@ -208,7 +230,14 @@ public class RegistryProtocol implements Protocol {
         final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl)).removeParameter(Constants.MONITOR_KEY);
         return registedProviderUrl;
     }
-    
+
+    /**
+     * 改变url的协议为provider
+     * 添加键值对k:category v:configurators
+     * 添加键值对k:check v:false
+     * @param registedProviderUrl 注册的服务提供者的URL
+     * @return 订阅的URL
+     */
     private URL getSubscribedOverrideUrl(URL registedProviderUrl){
     	return registedProviderUrl.setProtocol(Constants.PROVIDER_PROTOCOL)
                 .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY, 
@@ -227,7 +256,6 @@ public class RegistryProtocol implements Protocol {
         if (export == null || export.length() == 0) {
             throw new IllegalArgumentException("The registry export url is null! registry: " + origininvoker.getUrl());
         }
-        
         URL providerUrl = URL.valueOf(export);
         return providerUrl;
     }
@@ -380,9 +408,15 @@ public class RegistryProtocol implements Protocol {
             return url;
         }
     }
-    
+
+    /**
+     *
+     * @param <T>
+     */
     public static class InvokerDelegete<T> extends InvokerWrapper<T>{
+
         private final Invoker<T> invoker;
+
         /**
          * @param invoker 
          * @param url invoker.getUrl返回此值
@@ -391,6 +425,11 @@ public class RegistryProtocol implements Protocol {
             super(invoker, url);
             this.invoker = invoker;
         }
+
+        /**
+         *
+         * @return
+         */
         public Invoker<T> getInvoker(){
             if (invoker instanceof InvokerDelegete){
                 return ((InvokerDelegete<T>)invoker).getInvoker();

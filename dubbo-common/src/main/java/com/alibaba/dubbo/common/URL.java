@@ -1230,6 +1230,11 @@ public final class URL implements Serializable {
         return getServiceInterface();
     }
 
+    /**
+     * 获得服务类名称
+     * 使用{@link Constants#INTERFACE_KEY}作为键从URL中获取，默认值是{@link #path}，即全类名
+     * @return
+     */
     public String getServiceInterface() {
         return getParameter(Constants.INTERFACE_KEY, path);
     }

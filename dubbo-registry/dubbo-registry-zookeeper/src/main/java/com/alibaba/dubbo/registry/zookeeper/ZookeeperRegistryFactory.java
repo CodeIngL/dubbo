@@ -26,13 +26,21 @@ import com.alibaba.dubbo.remoting.zookeeper.ZookeeperTransporter;
  * @author william.liangf
  */
 public class ZookeeperRegistryFactory extends AbstractRegistryFactory {
-	
+
+
 	private ZookeeperTransporter zookeeperTransporter;
+
 
     public void setZookeeperTransporter(ZookeeperTransporter zookeeperTransporter) {
 		this.zookeeperTransporter = zookeeperTransporter;
 	}
 
+	/**
+	 * 获得zookeeper的注册中心的实例
+	 * @param url 注册地址
+	 * @return zookeeper注册中心实例
+     * @see ZookeeperRegistry#ZookeeperRegistry(URL, ZookeeperTransporter)
+	 */
 	public Registry createRegistry(URL url) {
         return new ZookeeperRegistry(url, zookeeperTransporter);
     }

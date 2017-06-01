@@ -65,6 +65,7 @@ public abstract class AbstractRegistry implements Registry {
     // URL地址分隔正则表达式，用于解析文件缓存中服务提供者URL列表
     private static final String URL_SPLIT = "\\s+";
 
+    //注册的url
     private URL registryUrl;
 
     // 本地磁盘缓存文件
@@ -83,15 +84,34 @@ public abstract class AbstractRegistry implements Registry {
 
     private final Set<URL> registered = new ConcurrentHashSet<URL>();
 
+    //URL和其订阅者的集合
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<URL, Set<NotifyListener>>();
 
+    //key：URL  v:Map--->key:url的分组依据，v：同一组URL集合
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<URL, Map<String, List<URL>>>();
 
+    /**
+     * 抽象类AbstractRegistry构造函数，服务于抽象类FailbackRegistry
+     * <ul>
+     *     <li>保存注册的url:{@link #registryUrl}</li><br/>
+     *     <li>设定保存文件的标志{@link #syncSaveFile}。从url中键为{@link Constants#REGISTRY_FILESAVE_SYNC_KEY}对应的值，默认是false（异步保存）</li><br/>
+     *     <li>设定保存文件路劲{@link #file}。从url中键为{@link Constants#FILE_KEY}对应的值，默认是System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getHost() + ".cache"</li><br/>
+     *     <li>加载文件中的配置到{@link #properties}</li><br/>
+     *     <li>通知</li><br/>
+     * </ul>
+     * @param url 注册的url
+     * @see #loadProperties()
+     * @see #notify(List)
+     */
     public AbstractRegistry(URL url) {
+        //设置url
         setUrl(url);
-        // 启动文件保存定时器
+        // 启动文件保存定时器:key:save.file 默认false（异步保存）
         syncSaveFile = url.getParameter(Constants.REGISTRY_FILESAVE_SYNC_KEY, false);
+        //获得url中file的的值，默认$user.home$/.dubbo/dubbo-registry-url的host.cache
         String filename = url.getParameter(Constants.FILE_KEY, System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getHost() + ".cache");
+
+        //检查文件存在否，不存在相应处理
         File file = null;
         if (ConfigUtils.isNotEmpty(filename)) {
             file = new File(filename);
@@ -101,8 +121,13 @@ public abstract class AbstractRegistry implements Registry {
                 }
             }
         }
+        //本地磁盘文件
         this.file = file;
+
+        //加载文件配置
         loadProperties();
+
+        //通知备份的url
         notify(url.getBackupUrls());
     }
 
@@ -113,6 +138,7 @@ public abstract class AbstractRegistry implements Registry {
         this.registryUrl = url;
     }
 
+    @Override
     public URL getUrl() {
         return registryUrl;
     }
@@ -128,6 +154,9 @@ public abstract class AbstractRegistry implements Registry {
     public Map<URL, Map<String, List<URL>>> getNotified() {
         return notified;
     }
+
+
+
 
     public File getCacheFile() {
         return file;
@@ -150,7 +179,16 @@ public abstract class AbstractRegistry implements Registry {
             doSaveProperties(version);
         }
     }
-    
+
+    /**
+     * 保存信息到文件中
+     * <ul>
+     *     <li>先读取文件，在内存中形成键值对newProperties</li><br/>
+     *     <li>将缓存{@link #properties}合并到newProperties中</li><br/>
+     *     <li>写入新建的文件</li><br/>
+     * </ul>
+     * @param version
+     */
     public void doSaveProperties(long version) {
         if(version < lastCacheChanged.get()){
             return;
@@ -222,6 +260,9 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 尝试加载文件中的配置（键值对）到{@link #properties},如果文件存在的话
+     */
     private void loadProperties() {
         if (file != null && file.exists()) {
             InputStream in = null;
@@ -294,6 +335,11 @@ public abstract class AbstractRegistry implements Registry {
         return result;
     }
 
+    /**
+     * 注册url，简单将url添加到已注册的列表{@link #register(URL)}
+     * @param url 注册信息
+     * @see Registry#register(URL)
+     */
     public void register(URL url) {
         if (url == null) {
             throw new IllegalArgumentException("register url == null");
@@ -314,6 +360,12 @@ public abstract class AbstractRegistry implements Registry {
         registered.remove(url);
     }
 
+    /**
+     * 添加订阅信息
+     * 简单的加入的已订阅的映射中。k:url,v:listener
+     * @param url 订阅条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&application=kylin
+     * @param listener 变更事件监听器，不允许为空
+     */
     public void subscribe(URL url, NotifyListener listener) {
         if (url == null) {
             throw new IllegalArgumentException("subscribe url == null");
@@ -383,12 +435,25 @@ public abstract class AbstractRegistry implements Registry {
         return urls;
     }
 
+    /**
+     * 通知事件
+     * <ul>
+     *     <li>检验备用urls合法性</li><br/>
+     *     <li>遍历{@link #subscribed}，寻找能与备用urls匹配的映射元素</li><br/>
+     *     <li>遍历元素的所有订阅者，尝试通知</li><br/>
+     * </ul>
+     * @param urls 备用的url列表
+     * @see #notify(URL, NotifyListener, List)
+     */
     protected void notify(List<URL> urls) {
+
         if(urls == null || urls.isEmpty()) return;
-        
+
+        //遍历所有的监听者
         for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
             URL url = entry.getKey();
-            
+
+            //对于不匹配的直接忽略掉
             if(! UrlUtils.isMatch(url, urls.get(0))) {
                 continue;
             }
@@ -406,6 +471,19 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 通知事件
+     * <ul>
+     *     <li>检验传入参数</li><br/>
+     *     <li>遍历所有urls，寻找与url匹配的元素，获取元素中键为{@link Constants#CATEGORY_KEY}的值，默认{@link Constants#DEFAULT_CATEGORY}作为分组依据</li><br/>
+     *     <li>合并相关信息到{@link #notified}</li><br/>
+     * </ul>
+     * @param url   主url
+     * @param listener url的订阅者
+     * @param urls  备用的urls
+     * @see #saveProperties(URL)
+     * @see NotifyListener#notify(List)；
+     */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
         if (url == null) {
             throw new IllegalArgumentException("notify url == null");
@@ -421,8 +499,10 @@ public abstract class AbstractRegistry implements Registry {
         if (logger.isInfoEnabled()) {
             logger.info("Notify urls for subscribe url " + url + ", urls: " + urls);
         }
+        //分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
+            //匹配
             if (UrlUtils.isMatch(url, u)) {
             	String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
             	List<URL> categoryList = result.get(category);
@@ -436,20 +516,38 @@ public abstract class AbstractRegistry implements Registry {
         if (result.size() == 0) {
             return;
         }
+        //合并上面的分组信息到notified
+
+        //尝试获得依据分组的缓存
+        //没有则新建
         Map<String, List<URL>> categoryNotified = notified.get(url);
         if (categoryNotified == null) {
             notified.putIfAbsent(url, new ConcurrentHashMap<String, List<URL>>());
             categoryNotified = notified.get(url);
         }
+        //放入分组信息
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
             categoryNotified.put(category, categoryList);
+            //保存相关属性
             saveProperties(url);
+            //通知
             listener.notify(categoryList);
         }
     }
 
+    /**
+     * 保存URL中的信息
+     * <ul>
+     *     <li>从缓存中找到相应的组，对其URL的列表进行字符串上的合并 使用分割符{@link #URL_SEPARATOR}</li><br/>
+     *     <li>设置进缓存properties中，key为url对应的serviceKey，value为以上说明的字符串</li><br/>
+     *     <li>记录变化的次数{@link #lastCacheChanged}</li>
+     *     <li>根据同步标识{@link #syncSaveFile} 进行同步操作</li><br/>
+     * </ul>
+     * @param url 需要保存的URL
+     * @see #doSaveProperties(long)
+     */
     private void saveProperties(URL url) {
         if (file == null) {
             return;

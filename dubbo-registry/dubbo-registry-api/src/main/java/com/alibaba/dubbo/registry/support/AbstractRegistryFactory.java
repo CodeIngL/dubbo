@@ -79,18 +79,27 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
         }
     }
 
+    /**
+     * 获得注册中心实例
+     * @param url 注册中心地址，不允许为空
+     * @return 注册中心实例
+     */
     public Registry getRegistry(URL url) {
+        //写入path，增加键值对，移除会变化的部分，主要是export键和refer键
     	url = url.setPath(RegistryService.class.getName())
     			.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
     			.removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
+        //获得地址
     	String key = url.toServiceString();
         // 锁定注册中心获取过程，保证注册中心单一实例
+        //尝试从缓存中取，没有则新建
         LOCK.lock();
         try {
             Registry registry = REGISTRIES.get(key);
             if (registry != null) {
                 return registry;
             }
+            //创建注册中心实例，
             registry = createRegistry(url);
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
