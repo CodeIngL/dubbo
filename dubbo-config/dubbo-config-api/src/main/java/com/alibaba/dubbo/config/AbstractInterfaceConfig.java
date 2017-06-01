@@ -182,7 +182,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     //系统配置的地址
                     address = sysaddress;
                 }
-                //有地址且注册配置不是N/A
+                //有效的注册中心地址即不是N/A
                 if (address != null && address.length() > 0 
                         && ! RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
@@ -204,7 +204,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     if (! map.containsKey("protocol")) {
                         //检查是否有remote对应类
                         if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
-                            //放入
+                            //放入remote
                             map.put("protocol", "remote");
                         } else {
                             //放入dubbo
@@ -214,10 +214,17 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     //使用键值对解析地址
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
+                        //url中的map加入registry，url.getProtocol()
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
+                        //url中对protocol重新设置，为registry
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
-                        if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
-                                || (! provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
+                        //上面两个设置后不影响之前的url.getProtocol()
+                        if ((provider && url.getParameter(Constants.REGISTER_KEY, true))){
+                            //for服务提供者
+                            registryList.add(url);
+                        }
+                        if (! provider && url.getParameter(Constants.SUBSCRIBE_KEY, true)) {
+                            //for服务消费者
                             registryList.add(url);
                         }
                     }
@@ -262,7 +269,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
             return UrlUtils.parseURL(address, map);
         } else if (Constants.REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
-            return registryURL.setProtocol("dubbo").addParameter(Constants.PROTOCOL_KEY, "registry").addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
+            return registryURL.setProtocol("dubbo").addParameter(Constants.PROTOCOL_KEY, "registry")
+                    .addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
         }
         return null;
     }

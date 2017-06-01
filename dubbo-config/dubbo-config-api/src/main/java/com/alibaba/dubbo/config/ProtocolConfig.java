@@ -118,7 +118,7 @@ public class ProtocolConfig extends AbstractConfig {
     // 是否注册
     private Boolean             register;
     
-    // 参数
+    // 自定义参数
     private Map<String, String> parameters;
 
     // 是否为缺省

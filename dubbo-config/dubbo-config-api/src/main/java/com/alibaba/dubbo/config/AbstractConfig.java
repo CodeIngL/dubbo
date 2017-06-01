@@ -136,40 +136,52 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
-    //使用系统参数设置传入的对象的属性
-    //对于某个基本属性的设置，无论是config对象拥有的该属性是否已经被设置过，都会重新被设置（系统配置有）
-    //优先从系统配置中获取。如果获取不到系统的配置。对于已经被设置过值的属性，忽略设置，对未设置过属性使用
-    //ConfigUtil工具类获取设置值。
-    //ConfigUtils.getProperty(name)
-    //该方法也会先从系统先获取
-    //再尝试从配置文件中获取
+    /**
+     * <p>
+     * 完成对配置类基本属性的设置,基本思路调用基本属性（基本类型对应类）暴露出来的set方法完成对基本属性的设置<br/>
+     * 对于某个基本属性的设置，无论该属性是否已经被设置过，都会重新被设置（系统中存在的话）</br>
+     * 上述情况不发生的话，对于某个基本属性的设置，如果已经被设置，就不会触发配置，也就是说配置文件也无效了</br>
+     * ConfigUtils.getProperty(name)该方法也会先从系统先获取。再尝试从配置文件中获取<br/>
+     * <ul>
+     * <li>获得前缀prefix：config equal to ServiceConfig(ServiceBean) and result TagName is service and the prefix equal to "dubbo.service."</li><br/>
+     * <li>获得后缀suffix: config has method named setStudentName and result the suffix equal to "student-name"</li><br/>
+     * <li>尝试获得value: 使用System.getProperty(prefix + config.id + "." + suffix)获得</li><br/>
+     * <li>尝试获得value: 使用System.getProperty(prefix + suffix)获得</li><br/>
+     * <li>尝试获得value: 基本属性对应get or is方法获得是空值。使用ConfigUtils.getProperty(prefix + suffix)获得</li><br/>
+     * <li>尝试获得value: 基本属性对应get or is方法获得是空值。使用ConfigUtils.getProperty(prefix + config.id + "." + suffix)获得</li><br/>
+     * <li>尝试获得value: 基本属性对应get or is方法获得是空值。使用legacyProperties和ConfigUtils.getProperty()获得</li><br/>
+     * <ul>
+     * </p>
+     * @see ConfigUtils
+     * @see ConfigUtils#getProperty(String)
+     * @param config 配置类（简单配置类or复杂配置类）
+     * @apiNote
+     */
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
             return;
         }
         //系统参数属性的前缀
-        //ex config equal to  ServiceConfig(ServiceBean)  and result is service
-        //and the prefix equal to "dubbo.service."
-        String prefix = "dubbo." + getTagName(config.getClass()) + ".";//equal dubbo.xxx.
+        String prefix = "dubbo." + getTagName(config.getClass()) + ".";
 
         //遍历传入对象的方法
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
                 String name = method.getName();
-                //符合的方法:set方法，公有，方法参数是基本类型且长度为1
+                //暴露的基本属性set方法
                 if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 1 && isPrimitive(method.getParameterTypes()[0])) {
                     //方法名转换.
                     //ex: setStudentName will transform to "student-name"
-                    String property = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
+                    String suffix = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
                     String value = null;
 
                     //config对象的有Id属性
                     //ex:id equal to "aaaaa"
                     if (config.getId() != null && config.getId().length() > 0) {
                         //ex:dubbo.xxx.aaaaa.student-name
-                        String pn = prefix + config.getId() + "." + property;
+                        String pn = prefix + config.getId() + "." + suffix;
                         //尝试从操作系统中获得
                         value = System.getProperty(pn);
                         if (!StringUtils.isBlank(value)) {
@@ -180,7 +192,7 @@ public abstract class AbstractConfig implements Serializable {
                     if (value == null || value.length() == 0) {
                         //使用另一个key:
                         //dubbo.xxx.student-name
-                        String pn = prefix + property;
+                        String pn = prefix + suffix;
                         //尝试从系统获得
                         value = System.getProperty(pn);
                         if (!StringUtils.isBlank(value)) {
@@ -209,16 +221,16 @@ public abstract class AbstractConfig implements Serializable {
                                 if (config.getId() != null && config.getId().length() > 0) {
                                     //从Config工具类中获得
                                     //ex:dubbo.xxx.aaaaa.student-name
-                                    value = ConfigUtils.getProperty(prefix + config.getId() + "." + property);
+                                    value = ConfigUtils.getProperty(prefix + config.getId() + "." + suffix);
                                 }
                                 if (value == null || value.length() == 0) {
                                     //从Config工具类中获得
                                     //ex:dubbo.xxx.student-name
-                                    value = ConfigUtils.getProperty(prefix + property);
+                                    value = ConfigUtils.getProperty(prefix + suffix);
                                 }
                                 if (value == null || value.length() == 0) {
                                     //从本地缓存map中获取
-                                    String legacyKey = legacyProperties.get(prefix + property);
+                                    String legacyKey = legacyProperties.get(prefix + suffix);
                                     if (legacyKey != null && legacyKey.length() > 0) {
                                         value = convertLegacyValue(legacyKey, ConfigUtils.getProperty(legacyKey));
                                     }
@@ -254,11 +266,27 @@ public abstract class AbstractConfig implements Serializable {
     }
 
     /**
-     * 获取config中字段，形成配置追加进parameter中
+     * <p>
+     * 获取config中的基本类型字段，通过其暴露的get or is 方法，其中去掉了某些特殊方法，形成键值对放入parameter中
+     * <ul>
+     *  <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
+     *  <li>排除返回值为Objectde方法</li><br/>
+     *  <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
+     *  <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
+     *  <li>放入键值对</li><br/>
+     * </ul>
+     * </p>
+     * <p>
+     *  处理getParameters方法
+     *  <ul>
+     *      <li>根据有无前缀为key追加前缀</li>
+     *      <li>替换key中"-"符号,该符号由{@link #appendProperties(AbstractConfig)}处理引起</li>
+     *  </ul>
+     * </p>
+     * @param parameters 结果集合
+     * @param config 对象
+     * @param prefix 前缀
      *
-     * @param parameters
-     * @param config
-     * @param prefix
      */
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
@@ -302,7 +330,7 @@ public abstract class AbstractConfig implements Serializable {
                         if (parameter != null && parameter.escaped()) {
                             str = URL.encode(str);
                         }
-                        //设置了append，使用追加的方式
+                        //设置了append，使用追加的方式,为值增加前缀
                         if (parameter != null && parameter.append()) {
                             String pre = (String) parameters.get(Constants.DEFAULT_KEY + "." + key);
                             if (pre != null && pre.length() > 0) {
@@ -313,7 +341,7 @@ public abstract class AbstractConfig implements Serializable {
                                 str = pre + "," + str;
                             }
                         }
-                        //有前缀，追加
+                        //有前缀，为键追加前缀
                         if (prefix != null && prefix.length() > 0) {
                             key = prefix + "." + key;
                         }

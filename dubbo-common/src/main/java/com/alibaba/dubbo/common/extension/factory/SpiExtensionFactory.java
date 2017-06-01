@@ -15,7 +15,6 @@
  */
 package com.alibaba.dubbo.common.extension.factory;
 
-import com.alibaba.dubbo.common.extension.Adaptive;
 import com.alibaba.dubbo.common.extension.ExtensionFactory;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.common.extension.SPI;

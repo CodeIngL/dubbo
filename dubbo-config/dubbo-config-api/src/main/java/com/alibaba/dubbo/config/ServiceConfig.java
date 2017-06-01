@@ -129,7 +129,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 	}
 
     /**
-     * 导出行为
+     * 服务导出入口
      */
     public synchronized void export() {
         if (provider != null) {
@@ -168,14 +168,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     /**
-     * 导出实际逻辑
+     * 服务导出导出实际处理逻辑
+     *
      */
     protected synchronized void doExport() {
-        //检查已导出标志
+        //检查未导出标志
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
         }
-        //检查导出标志
+        //检查导出标志,
         if (exported) {
             return;
         }
@@ -187,7 +188,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
 
         //检查默认情况，设置基本数据
-        checkDefault();
+        checkProvider();
         //冗余相关属性，服务类属性和提供者一致，都是复杂类型
         if (provider != null) {
             if (application == null) {
@@ -202,7 +203,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             if (monitor == null) {
                 monitor = provider.getMonitor();
             }
-            if (protocols == null) {
+            if (protocols == null|| protocols.size() == 0) {
                 protocols = provider.getProtocols();
             }
         }
@@ -595,7 +596,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     /**
      * 设置provider
      */
-    private void checkDefault() {
+    private void checkProvider() {
         //服务提供者没有配置，使用默认的配置
         if (provider == null) {
             provider = new ProviderConfig();
@@ -608,10 +609,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * 校验设置protocols
      */
     private void checkProtocol() {
-        if ((protocols == null || protocols.size() == 0)
-                && provider != null) {
-            setProtocols(provider.getProtocols());
-        }
     	// 兼容旧版本
         if (protocols == null || protocols.size() == 0) {
             setProtocol(new ProtocolConfig());

@@ -26,14 +26,43 @@ import com.alibaba.dubbo.common.URL;
 
 public class UrlUtils {
 
+
+    /**
+     * <p>
+     *     解析字符串到URL的列表<br/>
+     *      ex: <br/>
+     *     <ul>
+     *     <li>zookeeper://127.0.0.1:2181</li><br/>
+     *     <li>127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183</li><br/>
+     *     </ul>
+     *   处理逻辑
+     *     <ul>
+     *         <li>根据是否有://符号来，有url直接为地址</li>
+     *         <li>没有://符号,处理分割符“，”对于多个地址，第一个地址为url，其他追加到为backup上</li>
+     *         <li>从defaults中获得protocol，username，password，port，path</li>
+     *         <li>根据url字符串解析为URL对象</li>
+     *         <li>对于URL对象没有配置的属性，使用defaults中的配置进行配置，主要是protocol，username，password，port，path</li>
+     *         <li>URL对象拥有的参数集合，与defaults进行合并，合并规则，遍历defaults中键值对，参数集合不存在相应键，就放入</li>
+     *     </ul>
+     * </p>
+     * @see  URL#valueOf(String)
+     * @param address 地址字符串
+     * @param defaults
+     * @return
+     */
     public static URL parseURL(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
         }
+
         String url;
         if (address.indexOf("://") >= 0) {
+            //address like zookeeper://127.0.0.1:2181
+            //url equal to zookeeper://127.0.0.1:2181
             url = address;
         } else {
+            //address like 127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183
+            //url equal to 127.0.0.1:2181?backup=127.0.0.1:2182,127.0.0.1:2183
             String[] addresses = Constants.COMMA_SPLIT_PATTERN.split(address);
             url = addresses[0];
             if (addresses.length > 1) {
@@ -47,15 +76,23 @@ public class UrlUtils {
                 url += "?" + Constants.BACKUP_KEY + "=" + backup.toString();
             }
         }
+
+        //获得protocol
         String defaultProtocol = defaults == null ? null : defaults.get("protocol");
         if (defaultProtocol == null || defaultProtocol.length() == 0) {
             defaultProtocol = "dubbo";
         }
+        //获得username
         String defaultUsername = defaults == null ? null : defaults.get("username");
+        //获得password
         String defaultPassword = defaults == null ? null : defaults.get("password");
+        //获得port
         int defaultPort = StringUtils.parseInteger(defaults == null ? null : defaults.get("port"));
+        //获得path
         String defaultPath = defaults == null ? null : defaults.get("path");
+
         Map<String, String> defaultParameters = defaults == null ? null : new HashMap<String, String>(defaults);
+        //移除这些，因为后面进行合并
         if (defaultParameters != null) {
             defaultParameters.remove("protocol");
             defaultParameters.remove("username");
@@ -64,15 +101,24 @@ public class UrlUtils {
             defaultParameters.remove("port");
             defaultParameters.remove("path");
         }
-        URL u = URL.valueOf(url);
+        //从url字符串解析为URL对象中解析
         boolean changed = false;
+        URL u = URL.valueOf(url);
+        //获得protocol
         String protocol = u.getProtocol();
+        //获得username
         String username = u.getUsername();
+        //获得password
         String password = u.getPassword();
+        //获得host
         String host = u.getHost();
+        //获得port
         int port = u.getPort();
+        //获得path
         String path = u.getPath();
+        //获得url中的参数集合
         Map<String, String> parameters = new HashMap<String, String>(u.getParameters());
+
         if ((protocol == null || protocol.length() == 0) && defaultProtocol != null && defaultProtocol.length() > 0) {
             changed = true;
             protocol = defaultProtocol;
@@ -85,10 +131,6 @@ public class UrlUtils {
             changed = true;
             password = defaultPassword;
         }
-        /*if (u.isAnyHost() || u.isLocalHost()) {
-            changed = true;
-            host = NetUtils.getLocalHost();
-        }*/
         if (port <= 0) {
             if (defaultPort > 0) {
                 changed = true;
@@ -98,12 +140,12 @@ public class UrlUtils {
                 port = 9090;
             }
         }
-        if (path == null || path.length() == 0) {
-            if (defaultPath != null && defaultPath.length() > 0) {
-                changed = true;
-                path = defaultPath;
-            }
+        if ((path == null || path.length() == 0) && defaultPath != null && defaultPath.length() > 0) {
+            changed = true;
+            path = defaultPath;
         }
+        //defaultParameters中的参数合并到parameters
+        //合并策略，defaultParameters中parameters不存在的参数
         if (defaultParameters != null && defaultParameters.size() > 0) {
             for (Map.Entry<String, String> entry : defaultParameters.entrySet()) {
                 String key = entry.getKey();
@@ -123,10 +165,23 @@ public class UrlUtils {
         return u;
     }
 
+    /**
+     * <p>
+     *     解析字符串到URL的列表<br/>
+     *     ex:address like zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183|redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381<br/>
+     *     result: address["zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183","redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381"]
+     * </p>
+     * @see UrlUtils#parseURL(String, Map)
+     * @param address 地址字符串
+     * @param defaults url参数map默认值
+     * @return URL对象列表
+     *
+     */
     public static List<URL> parseURLs(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
         }
+        //"|;"拆分
         String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
         if (addresses == null || addresses.length == 0) {
             return null; //here won't be empty
@@ -305,7 +360,7 @@ public class UrlUtils {
         if (forbid != null && forbid.size() > 0) {
             List<String> newForbid = new ArrayList<String>();
             for (String serviceName : forbid) {
-                if (! serviceName.contains(":") && ! serviceName.contains("/")) {
+                if (!serviceName.contains(":") && !serviceName.contains("/")) {
                     for (URL url : subscribed) {
                         if (serviceName.equals(url.getServiceInterface())) {
                             newForbid.add(url.getServiceKey());
@@ -334,10 +389,10 @@ public class UrlUtils {
             version = service.substring(i + 1);
             service = service.substring(0, i);
         }
-        return URL.valueOf(Constants.EMPTY_PROTOCOL + "://0.0.0.0/" + service + "?" 
-                    + Constants.CATEGORY_KEY + "=" + category
-                    + (group == null ? "" : "&" + Constants.GROUP_KEY + "=" + group)
-                    + (version == null ? "" : "&" + Constants.VERSION_KEY + "=" + version));
+        return URL.valueOf(Constants.EMPTY_PROTOCOL + "://0.0.0.0/" + service + "?"
+                + Constants.CATEGORY_KEY + "=" + category
+                + (group == null ? "" : "&" + Constants.GROUP_KEY + "=" + group)
+                + (version == null ? "" : "&" + Constants.VERSION_KEY + "=" + version));
     }
 
     public static boolean isMatchCategory(String category, String categories) {
@@ -346,7 +401,7 @@ public class UrlUtils {
         } else if (categories.contains(Constants.ANY_VALUE)) {
             return true;
         } else if (categories.contains(Constants.REMOVE_VALUE_PREFIX)) {
-            return ! categories.contains(Constants.REMOVE_VALUE_PREFIX + category);
+            return !categories.contains(Constants.REMOVE_VALUE_PREFIX + category);
         } else {
             return categories.contains(category);
         }
@@ -355,49 +410,50 @@ public class UrlUtils {
     public static boolean isMatch(URL consumerUrl, URL providerUrl) {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();
-        if( ! (Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface)) ) return false;
-        
-        if (! isMatchCategory(providerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY), 
+        if (!(Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface)))
+            return false;
+
+        if (!isMatchCategory(providerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY),
                 consumerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY))) {
             return false;
         }
-        if (! providerUrl.getParameter(Constants.ENABLED_KEY, true) 
-                && ! Constants.ANY_VALUE.equals(consumerUrl.getParameter(Constants.ENABLED_KEY))) {
+        if (!providerUrl.getParameter(Constants.ENABLED_KEY, true)
+                && !Constants.ANY_VALUE.equals(consumerUrl.getParameter(Constants.ENABLED_KEY))) {
             return false;
         }
-       
+
         String consumerGroup = consumerUrl.getParameter(Constants.GROUP_KEY);
         String consumerVersion = consumerUrl.getParameter(Constants.VERSION_KEY);
         String consumerClassifier = consumerUrl.getParameter(Constants.CLASSIFIER_KEY, Constants.ANY_VALUE);
-        
+
         String providerGroup = providerUrl.getParameter(Constants.GROUP_KEY);
         String providerVersion = providerUrl.getParameter(Constants.VERSION_KEY);
         String providerClassifier = providerUrl.getParameter(Constants.CLASSIFIER_KEY, Constants.ANY_VALUE);
         return (Constants.ANY_VALUE.equals(consumerGroup) || StringUtils.isEquals(consumerGroup, providerGroup) || StringUtils.isContains(consumerGroup, providerGroup))
-               && (Constants.ANY_VALUE.equals(consumerVersion) || StringUtils.isEquals(consumerVersion, providerVersion))
-               && (consumerClassifier == null || Constants.ANY_VALUE.equals(consumerClassifier) || StringUtils.isEquals(consumerClassifier, providerClassifier));
+                && (Constants.ANY_VALUE.equals(consumerVersion) || StringUtils.isEquals(consumerVersion, providerVersion))
+                && (consumerClassifier == null || Constants.ANY_VALUE.equals(consumerClassifier) || StringUtils.isEquals(consumerClassifier, providerClassifier));
     }
-    
+
     public static boolean isMatchGlobPattern(String pattern, String value, URL param) {
         if (param != null && pattern.startsWith("$")) {
             pattern = param.getRawParameter(pattern.substring(1));
         }
         return isMatchGlobPattern(pattern, value);
     }
-    
+
     public static boolean isMatchGlobPattern(String pattern, String value) {
         if ("*".equals(pattern))
             return true;
-        if((pattern == null || pattern.length() == 0) 
-                && (value == null || value.length() == 0)) 
+        if ((pattern == null || pattern.length() == 0)
+                && (value == null || value.length() == 0))
             return true;
-        if((pattern == null || pattern.length() == 0) 
-                || (value == null || value.length() == 0)) 
+        if ((pattern == null || pattern.length() == 0)
+                || (value == null || value.length() == 0))
             return false;
-        
+
         int i = pattern.lastIndexOf('*');
         // 没有找到星号
-        if(i == -1) {
+        if (i == -1) {
             return value.equals(pattern);
         }
         // 星号在末尾
@@ -417,12 +473,12 @@ public class UrlUtils {
     }
 
     public static boolean isServiceKeyMatch(URL pattern, URL value) {
-        return  pattern.getParameter(Constants.INTERFACE_KEY).equals(
-            value.getParameter(Constants.INTERFACE_KEY))
-            && isItemMatch(pattern.getParameter(Constants.GROUP_KEY),
-                           value.getParameter(Constants.GROUP_KEY))
-            && isItemMatch(pattern.getParameter(Constants.VERSION_KEY),
-                           value.getParameter(Constants.VERSION_KEY));
+        return pattern.getParameter(Constants.INTERFACE_KEY).equals(
+                value.getParameter(Constants.INTERFACE_KEY))
+                && isItemMatch(pattern.getParameter(Constants.GROUP_KEY),
+                value.getParameter(Constants.GROUP_KEY))
+                && isItemMatch(pattern.getParameter(Constants.VERSION_KEY),
+                value.getParameter(Constants.VERSION_KEY));
     }
 
     /**
@@ -430,7 +486,7 @@ public class UrlUtils {
      *
      * @param pattern pattern
      * @param value   value
-     * @return  true if match otherwise false
+     * @return true if match otherwise false
      */
     static boolean isItemMatch(String pattern, String value) {
         if (pattern == null) {

@@ -140,7 +140,14 @@ public class RegistryProtocol implements Protocol {
             }
         };
     }
-    
+
+    /**
+     * 尝试从缓存中直接取出
+     * 没有则新建
+     * @param originInvoker 需要暴露的invoker
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T>  doLocalExport(final Invoker<T> originInvoker){
         String key = getCacheKey(originInvoker);
@@ -210,6 +217,8 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * 通过invoker的url 获取 providerUrl的地址
+     * 通过注册中心的url从其中取出key为export的值
+     * 实际上就是配置协议的url
      * @param origininvoker
      * @return
      */

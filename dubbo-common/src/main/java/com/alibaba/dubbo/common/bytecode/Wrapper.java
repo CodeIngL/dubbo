@@ -202,11 +202,12 @@ public abstract class Wrapper
 	abstract public Object invokeMethod(Object instance, String mn, Class<?>[] types, Object[] args) throws NoSuchMethodException, InvocationTargetException;
 
 	/**
-	 * 对class进行wrapper
-	 * setProertyValue的说明:对对象Object(实际类型c) o的属性n（基本类型）进行设置，设置值为v
-	 * getPropertyValue的说明：获得对象Object(实际类型c) o的属性n（基本类型）
-	 * @param c
-	 * @return
+	 * <p>对class进行wrapper<br/>
+	 * setProertyValue(Object o, String n, Object v)的说明: 对象Object(实际类型c) o的属性n（基本类型）进行设置，设置值为v<br/>
+	 * getPropertyValue(Object o, String n)的说明：获得对象Object(实际类型c) o的属性n（基本类型）</p><br/>
+     * invokeMethod(Object o, String n, Class[] p, Object[] v)的说明:
+	 * @param c 需要的包装的参数
+	 * @return 包装对象
 	 */
 	private static Wrapper makeWrapper(Class<?> c)
 	{
@@ -228,19 +229,38 @@ public abstract class Wrapper
 		//增加方法getPropertyValue
 		StringBuilder c2 = new StringBuilder("public Object getPropertyValue(Object o, String n){ ")
 				.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
-		//增肌方法invokeMethod
+		//增加方法invokeMethod
 		StringBuilder c3 = new StringBuilder("public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws " + InvocationTargetException.class.getName() + "{ ")
 				.append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
 
 
 		//字段名，和字段类型，不包括静态类型和不可序列化字段，当然前提是getFileds
 		Map<String, Class<?>> pts = new HashMap<String, Class<?>>(); // <property name, property types>
+
 		Map<String, Method> ms = new LinkedHashMap<String, Method>(); // <method desc, Method instance>
+
 		//方法名
 		List<String> mns = new ArrayList<String>(); // method names.
+
 		//宣称的方法名
 		List<String> dmns = new ArrayList<String>(); // declaring method names.
 
+        /**
+         * equal
+         * 对于setProertyValue
+         *  if($2.equals(字段名1)){
+         *      w.字段名1=（字段类型1）$3;
+         *      return;
+         *  }
+         *  if($2.equals(字段名2)){
+         *      w.字段名2=（字段类型2）$3;
+         *      return;
+         *  }
+         *
+         * 对于getPropertyValue
+         *  if( $2.equals(字段名1)){ return ($w)w.字段名1;}
+         *  if( $2.equals(字段名2)){ return ($w)w.字段名2;}
+         */
 		//遍历所有公开字段
 		for( Field f : c.getFields() )
 		{
@@ -264,21 +284,22 @@ public abstract class Wrapper
 		    c3.append(" try{");
 		}
 		//遍历方法
-		//对invokeMethod(Object o, String n, Class[] p, Object[] v)的设置
+		//对invokeMethod(Object o, String n, Class[] p, Object[] v)的说明
 		/*try {
-			if (方法名.equals($2) && $3.length == 方法名对应的参数长度) {
-				return ($w) w.sayName((java.lang.String) $4[0]);
+			if (方法名1.equals($2) && $3.length == 方法名1对应的参数长度) {
+				return ($w) w.方法名1((参数类型0)$4[0],(参数类型1)$4[1],...);
 			}
-			if ("getBox".equals($2) && $3.length == 0) {
-				return ($w) w.getBox();
-			}
-			if ("getPrefix".equals($2) && $3.length == 0) {
-				return ($w) w.getPrefix();
+			if (方法名2.equals($2) && $3.length == 方法名2对应的参数长度) {
+				return ($w) w.方法名2((参数类型0)$4[0],(参数类型1)$4[1],...);
 			}
 			//void形式
-			if ("setPrefix".equals($2) && $3.length == 1) {
-				w.setPrefix((java.lang.String) $4[0]);
-				return null;
+			if (方法名3.equals($2) && $3.length == 方法名3对应的参数长度) {
+				w.方法名3((参数类型0)$4[0],(参数类型1)$4[1],...);
+				return null
+			}
+			//有重名的方法
+			if (方法名4.equals($2) && $3.length == 方法名4对应的参数长度&&$3[0].getName.equals(参数0.getName())&&$3[1].getName.equals(参数1.getName())...) {
+				return ($w) w.方法名2((参数类型0)$4[0],(参数类型1)$4[1],...);
 			}
 		} catch (Throwable e) {
 			throw new java.lang.reflect.InvocationTargetException(e);
@@ -341,7 +362,8 @@ public abstract class Wrapper
 		    c3.append("     throw new java.lang.reflect.InvocationTargetException(e); " );
 	        c3.append(" }");
         }
-		//扔出异常
+        //throw new com.alibaba.dubbo.common.bytecode.NoSuchMethodException("Not found method \"" + $2 + "\" in class c对应的类.");
+        //扔出异常
 		c3.append(" throw new " + NoSuchMethodException.class.getName() + "(\"Not found method \\\"\"+$2+\"\\\" in class " + c.getName() + ".\"); }");
 		
 		// deal with get/set method.

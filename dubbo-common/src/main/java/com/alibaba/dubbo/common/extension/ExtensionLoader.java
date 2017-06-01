@@ -76,7 +76,7 @@ public class ExtensionLoader<T> {
     //全局，缓存了class（这个class特指interface），与ExtensionLoader（interface扩展的实现）的映射
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
 
-    //实例结构
+    //实例结构：class来自普通实现类型，见cachedClasses
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
@@ -345,6 +345,7 @@ public class ExtensionLoader<T> {
     /**
      * 返回指定名字的扩展。如果指定名字的扩展不存在，则抛异常 {@link IllegalStateException}.
      * 这个方法通常被$Adaptive中使用的
+     *
      * @param name
      * @return
      */
@@ -493,6 +494,7 @@ public class ExtensionLoader<T> {
      * 一般情况下不会有并发访问这个情况
      * cachedAdaptiveInstance这个属性只有在该函数调用后才会发生设置
      * 对应ExtensionLoader<T>实例这总是可选调用的，而这个实例总是被维护在EXTENSION_LOADERS中，是线程安全且单例存在的
+     *
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -549,6 +551,7 @@ public class ExtensionLoader<T> {
 
     /**
      * 注入实例
+     *
      * @param instance
      * @return
      */
@@ -589,6 +592,7 @@ public class ExtensionLoader<T> {
     /**
      * 新建扩展
      * 首先尝试根据名字在缓存中获得calss
+     *
      * @param name
      * @return
      */
@@ -626,8 +630,6 @@ public class ExtensionLoader<T> {
     }
 
 
-
-
     /**
      * 获得所有支持的扩展，排序后的
      *
@@ -639,7 +641,6 @@ public class ExtensionLoader<T> {
     }
 
     /**
-     *
      * @param name
      * @return
      */
@@ -657,6 +658,7 @@ public class ExtensionLoader<T> {
     /**
      * 获得扩张类
      * 这些类会被设置到属性cachedClasses中
+     *
      * @return
      */
     private Map<String, Class<?>> getExtensionClasses() {
@@ -680,6 +682,7 @@ public class ExtensionLoader<T> {
     /**
      * 加载扩展类
      * 从配置文件中加载
+     *
      * @return
      */
     // 此方法已经getExtensionClasses方法調用过。
@@ -712,6 +715,7 @@ public class ExtensionLoader<T> {
      * 设置cachedWrapperClasses：对于能被包装类
      * 设置cachedActivates，key是name，value是类Activates
      * 设置cachedNames，key是class，value是别名
+     *
      * @param extensionClasses
      * @param dir
      */
@@ -841,6 +845,7 @@ public class ExtensionLoader<T> {
      * 注解不存在，就是简单名字。
      * ex ：class equal to XxxInvoker and type equal to Invoker
      * result：xxx
+     *
      * @param clazz
      * @return
      */
@@ -858,13 +863,10 @@ public class ExtensionLoader<T> {
     }
 
 
-
-
-
-
     /**
      * 创建interface的适配，这个适配可能经过多次包装
      * 这个适配会被注入到相关的实例里面
+     *
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -883,6 +885,7 @@ public class ExtensionLoader<T> {
      * 这个实例就是属性cachedAdaptiveClass,
      * 首先尝试获得扩展类，getExtensionClasses。里面包括对cachedAdaptiveClass的设置
      * 如果都没有。则直接通过运行编译器生成。
+     *
      * @return
      */
     private Class<?> getAdaptiveExtensionClass() {
@@ -1045,37 +1048,60 @@ public class ExtensionLoader<T> {
                     }
                 }
 
-                //默认的名称
+                //@SPI的value值
                 String defaultExtName = cachedDefaultName;
                 String getNameCode = null;
+                //value @Adaptive注解
                 for (int i = value.length - 1; i >= 0; --i) {
                     if (i == value.length - 1) {
-                        //有默认参数名
+                        //@SPI注解有值
                         if (null != defaultExtName) {
-                            if (!"protocol".equals(value[i]))
-                                if (hasInvocation)
+                            if (!"protocol".equals(value[i])) {
+                                //不是protocol的处理
+                                if (hasInvocation) {
+                                    //参数含有com.alibaba.dubbo.rpc.Invocation
+                                    //URL url.getMethodParameter(methodName,value[i],defaultExtName)
+                                    //先在URL上找key1的Value作为要Adapt成的Extension名；
+                                    //key1没有Value，则使用key2的Value作为要Adapt成的Extension名。
+                                    //key2没有Value，使用缺省的扩展。
+                                    //如果没有设定缺省扩展，则方法调用会抛出IllegalStateException。
                                     getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                                else
+                                } else {
                                     getNameCode = String.format("url.getParameter(\"%s\", \"%s\")", value[i], defaultExtName);
-                            else
+                                }
+                            } else {
+                                //是protocol
                                 getNameCode = String.format("( url.getProtocol() == null ? \"%s\" : url.getProtocol() )", defaultExtName);
+                            }
                         } else {
-                            if (!"protocol".equals(value[i]))
-                                if (hasInvocation)
+                            //@SPI注解没有值
+                            if (!"protocol".equals(value[i])) {
+                                //不是protocol的处理
+                                if (hasInvocation) {
+                                    //参数含有com.alibaba.dubbo.rpc.Invocation
                                     getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                                else
+                                } else {
                                     getNameCode = String.format("url.getParameter(\"%s\")", value[i]);
-                            else
+                                }
+                            } else {
+                                //是protocol
                                 getNameCode = "url.getProtocol()";
+                            }
                         }
                     } else {
-                        if (!"protocol".equals(value[i]))
-                            if (hasInvocation)
+                        //@SPI注解没有值
+                        if (!"protocol".equals(value[i])) {
+                            //不是protocol的处理
+                            if (hasInvocation) {
+                                //参数含有com.alibaba.dubbo.rpc.Invocation
                                 getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                            else
+                            } else {
                                 getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
-                        else
+                            }
+                        } else {
+                            //是protocol
                             getNameCode = String.format("url.getProtocol() == null ? (%s) : url.getProtocol()", getNameCode);
+                        }
                     }
                 }
                 code.append("\nString extName = ").append(getNameCode).append(";");
@@ -1104,6 +1130,12 @@ public class ExtensionLoader<T> {
                 code.append(");");
             }
 
+            /**
+             * 将上面生成的code追加进来
+             * public 返回类型 方法名([参数类型1 arg0，参数类型2 args1...]) [throw 异常类型1，异常类型2...]{
+             *      code.toString()
+             * }
+             */
             codeBuidler.append("\npublic " + rt.getCanonicalName() + " " + method.getName() + "(");
             for (int i = 0; i < pts.length; i++) {
                 if (i > 0) {
