@@ -34,7 +34,7 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
 
 /**
  * AbstractServer
- * 
+ * 服务的抽象。比如实现类，netty，mina，比如grizzly
  * @author qian.lei
  * @author ding.lid
  */
@@ -54,6 +54,21 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
     
     ExecutorService executor;
 
+    /**
+     * 抽象类AbstractServer的构造函数，服务具体实现类
+     * 完成自身属性的设置
+     * <ul>
+     *     <li>完成本地地址的设置localAddress,使用url中的host和port</li><br/>
+     *     <li>完成本地绑定地址的设置bindAddress,使用url中的host（处理）和port</li><br/>
+     *     <li>完成accepts的设置,使用url中键为accepts的值，默认为0</li><br/>
+     *     <li>完成idleTimeout的设置,使用url中键为idle.timeout的值，默认为600s</li><br/>
+     *     <li>回调子类实现的方法{@link #doOpen()}处理逻辑</li><br/>
+     *     <li>尝试完成executor的设置，来自handler</li><br/>
+     * </ul>
+     * @param url 元信息
+     * @param handler 处理器
+     * @throws RemotingException 异常类
+     */
     public AbstractServer(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
         localAddress = getUrl().toInetSocketAddress();
@@ -75,6 +90,22 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         if (handler instanceof WrappedChannelHandler ){
             executor = ((WrappedChannelHandler)handler).getExecutor();
         }
+    }
+
+    public InetSocketAddress getLocalAddress() {
+        return localAddress;
+    }
+
+    public InetSocketAddress getBindAddress() {
+        return bindAddress;
+    }
+
+    public int getAccepts() {
+        return accepts;
+    }
+
+    public int getIdleTimeout() {
+        return idleTimeout;
     }
     
     protected abstract void doOpen() throws Throwable;
@@ -161,22 +192,6 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
     public void close(int timeout) {
         ExecutorUtil.gracefulShutdown(executor ,timeout);
         close();
-    }
-
-    public InetSocketAddress getLocalAddress() {
-        return localAddress;
-    }
-    
-    public InetSocketAddress getBindAddress() {
-        return bindAddress;
-    }
-
-    public int getAccepts() {
-        return accepts;
-    }
-
-    public int getIdleTimeout() {
-        return idleTimeout;
     }
 
     @Override

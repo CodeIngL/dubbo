@@ -36,6 +36,12 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 
     private volatile boolean     closed;
 
+    /**
+     * 抽象类AbstractPeer构造函数
+     * 简单的对属性设置，url和handler
+     * @param url 元信息
+     * @param handler 处理器
+     */
     public AbstractPeer(URL url, ChannelHandler handler) {
         if (url == null) {
             throw new IllegalArgumentException("url == null");

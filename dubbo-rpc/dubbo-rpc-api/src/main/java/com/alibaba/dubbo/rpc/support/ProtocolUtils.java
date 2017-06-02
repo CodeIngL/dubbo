@@ -12,9 +12,10 @@ public class ProtocolUtils {
     }
 
     /**
-     *
+     * 返回服务标识
      * @param url 元信息
-     * @return key
+     * @return key 服务标识
+     * @see #serviceKey(int, String, String, String)
      */
     public static String serviceKey(URL url) {
         return serviceKey(url.getPort(), url.getPath(), url.getParameter(Constants.VERSION_KEY),
@@ -22,12 +23,12 @@ public class ProtocolUtils {
     }
 
     /**
-     *
+     * 返回服务标识
      * @param port 端口
      * @param serviceName 服务全类名
      * @param serviceVersion 版本
      * @param serviceGroup 分类
-     * @return
+     * @return serviceGroup+"/"+serviceName+":"serviceVersion+":"port
      */
     public static String serviceKey(int port, String serviceName, String serviceVersion, String serviceGroup) {
         StringBuilder buf = new StringBuilder();

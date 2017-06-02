@@ -20,10 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * InternalThreadFactory.
- * 
+ * 简单的线程factory，能打印相应的名字
  * @author qian.lei
  */
-
 public class NamedThreadFactory implements ThreadFactory
 {
 	private static final AtomicInteger POOL_SEQ = new AtomicInteger(1);

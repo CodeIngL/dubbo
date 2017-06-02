@@ -240,15 +240,22 @@ public class DubboProtocol extends AbstractProtocol {
         URL url = invoker.getUrl();
         
         // export service.
-        //从url中获得key
+        //从url中获得key服务标识
         String key = serviceKey(url);
+
+        //构建
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+
+        //放入缓存
         exporterMap.put(key, exporter);
         
         //export an stub service for dispaching event
+        //从url中获得dubbo.stub.event的值 默认是false
+        //从url中获得is_callback_service的值 默认是false
         Boolean isStubSupportEvent = url.getParameter(Constants.STUB_EVENT_KEY,Constants.DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(Constants.IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice){
+            //获得桩服务名字
             String stubServiceMethods = url.getParameter(Constants.STUB_EVENT_METHODS_KEY);
             if (stubServiceMethods == null || stubServiceMethods.length() == 0 ){
                 if (logger.isWarnEnabled()){
@@ -256,21 +263,30 @@ public class DubboProtocol extends AbstractProtocol {
                             "], has set stubproxy support event ,but no stub methods founded."));
                 }
             } else {
+                //存在放入缓存
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
         }
 
+        //open
         openServer(url);
         
         return exporter;
     }
-    
+
+    /**
+     * 启动服务
+     * @param url 元信息
+     */
     private void openServer(URL url) {
         // find server.
+        //获得地址
         String key = url.getAddress();
         //client 也可以暴露一个只有server可以调用的服务。
+        //获得url中键为isserver的值，默认是true
         boolean isServer = url.getParameter(Constants.IS_SERVER_KEY,true);
         if (isServer) {
+            //缓存
         	ExchangeServer server = serverMap.get(key);
         	if (server == null) {
         		serverMap.put(key, createServer(url));
@@ -280,24 +296,33 @@ public class DubboProtocol extends AbstractProtocol {
         	}
         }
     }
-    
+
+    /**
+     * 创建服务
+     * @param url
+     * @return
+     */
     private ExchangeServer createServer(URL url) {
         //默认开启server关闭时发送readonly事件
         url = url.addParameterIfAbsent(Constants.CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString());
         //默认开启heartbeat
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
-        String str = url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_SERVER);
 
+        //从url中获得服务类型，默认是netty
+        String str = url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_SERVER);
         if (str != null && str.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str))
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
-
         url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
+
         ExchangeServer server;
         try {
+            //开启服务
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
+        //获得url中key为client的值
+        //检测类型匹配
         str = url.getParameter(Constants.CLIENT_KEY);
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();

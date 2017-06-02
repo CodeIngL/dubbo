@@ -34,6 +34,10 @@ final class NettyHelper {
         }
     }
 
+    /**
+     * 继承Netty框架InternalLoggerFactory
+     * 简单的追加了日志
+     */
     static class DubboLoggerFactory extends InternalLoggerFactory {
 
         @Override
@@ -42,6 +46,10 @@ final class NettyHelper {
         }
     }
 
+    /**
+     * 继承Netty框架AbstractInternalLogger
+     * 简单的追加了日志
+     */
     static class DubboLogger extends AbstractInternalLogger {
 
         private Logger logger;

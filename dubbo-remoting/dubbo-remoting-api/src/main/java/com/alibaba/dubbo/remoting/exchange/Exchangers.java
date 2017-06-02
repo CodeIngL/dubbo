@@ -52,6 +52,13 @@ public class Exchangers {
         return bind(URL.valueOf(url), handler);
     }
 
+    /**
+     *
+     * @param url
+     * @param handler
+     * @return
+     * @throws RemotingException
+     */
     public static ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
@@ -60,6 +67,7 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        //使用HeaderExchanger绑定
         return getExchanger(url).bind(url, handler);
     }
 
@@ -102,6 +110,12 @@ public class Exchangers {
         return getExchanger(url).connect(url, handler);
     }
 
+    /**
+     * 使用url中的键为exchanger的值，默认是header
+     * 获取相应的扩展类，默认是HeaderExchanger
+     * @param url 元信息
+     * @return Exchanger
+     */
     public static Exchanger getExchanger(URL url) {
         String type = url.getParameter(Constants.EXCHANGER_KEY, Constants.DEFAULT_EXCHANGER);
         return getExchanger(type);
