@@ -36,6 +36,12 @@ public class HeartBeatExchangeHandler extends HeaderExchangeHandler {
         super( handler );
     }
 
+    /**
+     * 对心跳的处理
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     @Override
     public void received( Channel channel, Object message ) throws RemotingException {
         if ( message instanceof Request ) {

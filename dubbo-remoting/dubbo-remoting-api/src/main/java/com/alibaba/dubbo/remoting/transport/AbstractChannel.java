@@ -22,7 +22,7 @@ import com.alibaba.dubbo.remoting.RemotingException;
 
 /**
  * AbstractChannel
- * 
+ * 各类网络框架channel概念的抽象
  * @author william.liangf
  */
 public abstract class AbstractChannel extends AbstractPeer implements Channel {

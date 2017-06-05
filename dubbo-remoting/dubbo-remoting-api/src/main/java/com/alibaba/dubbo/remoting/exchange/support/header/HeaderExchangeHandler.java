@@ -156,10 +156,18 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
 
+    /**
+     * MultiMessageHandler处理后的下一个Handler处理
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
+    @Override
     public void received(Channel channel, Object message) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         try {
+            //对于请求的处理
             if (message instanceof Request) {
                 // handle request.
                 Request request = (Request) message;
@@ -174,8 +182,10 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     }
                 }
             } else if (message instanceof Response) {
+                //对于相应的处理
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) {
+                //对于telnet命令的支持
                 if (isClientSide(channel)) {
                     Exception e = new Exception("Dubbo client can not supported string message: " + message + " in channel: " + channel + ", url: " + channel.getUrl());
                     logger.error(e.getMessage(), e);
@@ -186,6 +196,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     }
                 }
             } else {
+                //其他，本handler不做处理
                 handler.received(exchangeChannel, message);
             }
         } finally {

@@ -46,6 +46,12 @@ final class NettyChannel extends AbstractChannel {
 
     private final Map<String, Object> attributes = new ConcurrentHashMap<String, Object>();
 
+    /**
+     * nettyChannel对netty框架的channel的封装
+     * @param channel
+     * @param url
+     * @param handler
+     */
     private NettyChannel(org.jboss.netty.channel.Channel channel, URL url, ChannelHandler handler){
         super(url, handler);
         if (channel == null) {
@@ -54,6 +60,14 @@ final class NettyChannel extends AbstractChannel {
         this.channel = channel;
     }
 
+    /**
+     * 缓存channel
+     * @param ch netty's channel
+     * @param url 元信息
+     * @param handler dubbo对网络处理的抽象
+     * @return 自定义NettyChannel
+     * @see NettyChannel
+     */
     static NettyChannel getOrAddChannel(org.jboss.netty.channel.Channel ch, URL url, ChannelHandler handler) {
         if (ch == null) {
             return null;

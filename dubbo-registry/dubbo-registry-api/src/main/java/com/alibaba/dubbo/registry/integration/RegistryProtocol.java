@@ -104,6 +104,7 @@ public class RegistryProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+
         //export invoker 导出invoker和export的代理封装
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider 获得注册中心

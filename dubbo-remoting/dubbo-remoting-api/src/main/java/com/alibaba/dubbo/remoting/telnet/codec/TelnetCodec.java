@@ -74,16 +74,31 @@ public class TelnetCodec extends TransportCodec {
         return decode(channel, buffer, readable, message);
     }
 
+    /**
+     * message代表自己数组成功的包含从当前位置（非协议头）开始到一个dubbo协议包末尾，或者dubbo协议包过长，还未包含到末尾，或者是telenet命令
+     * 对于前两者，最终会返回{@link com.alibaba.dubbo.remoting.Codec2.DecodeResult#NEED_MORE_INPUT}
+     * telnet的处理
+     * @param channel 网络抽象channel的包装
+     * @param buffer 网络抽象channelBuffer的包装
+     * @param readable buffer中可读的数据长度
+     * @param message  包含从当前位置（非协议头）开始到一个dubbo协议包末尾，或者dubbo协议包过长，还未包含到末尾的字节数组
+     * @return
+     * @throws IOException
+     */
     @SuppressWarnings("unchecked")
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] message) throws IOException {
+        //判断是服务提供者，还是消费者，通过side判断
         if (isClientSide(channel)) {
             return toString(message, getCharset(channel));
         }
         checkPayload(channel, readable);
+
+        //检查message
         if (message == null || message.length == 0) {
             return DecodeResult.NEED_MORE_INPUT;
         }
-        
+
+        //含有回显符号
         if (message[message.length - 1] == '\b') { // Windows backspace echo
             try {
                 boolean doublechar = message.length >= 3 && message[message.length - 3] < 0; // double byte char
@@ -91,9 +106,11 @@ public class TelnetCodec extends TransportCodec {
             } catch (RemotingException e) {
                 throw new IOException(StringUtils.toString(e));
             }
+            //还需要更多数据
             return DecodeResult.NEED_MORE_INPUT;
         }
-        
+
+        //含有结束命令
         for (Object command : EXIT) {
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
@@ -103,10 +120,11 @@ public class TelnetCodec extends TransportCodec {
                 return null;
             }
         }
-        
+        //向上键向下键
         boolean up = endsWith(message, UP);
         boolean down = endsWith(message, DOWN);
         if (up || down) {
+            //历史信息
             LinkedList<String> history = (LinkedList<String>) channel.getAttribute(HISTORY_LIST_KEY);
             if (history == null || history.size() == 0) {
                 return DecodeResult.NEED_MORE_INPUT;

@@ -40,8 +40,16 @@ public abstract class AbstractCodec implements Codec2 {
         return CodecSupport.getSerialization(channel.getUrl());
     }
 
+    /**
+     * 检查协议的数据部分
+     * @param channel
+     * @param size
+     * @throws IOException
+     */
     protected static void checkPayload(Channel channel, long size) throws IOException {
+        //默认长度8M
         int payload = Constants.DEFAULT_PAYLOAD;
+        //尝试获取url元信息中自定义长度，默认是8M
         if (channel != null && channel.getUrl() != null) {
             payload = channel.getUrl().getParameter(Constants.PAYLOAD_KEY, Constants.DEFAULT_PAYLOAD);
         }

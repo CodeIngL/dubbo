@@ -36,6 +36,7 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
         super(handler);
     }
 
+    @Override
     public void received(Channel channel, Object message) throws RemotingException {
         if (message instanceof Decodeable) {
             decode(message);

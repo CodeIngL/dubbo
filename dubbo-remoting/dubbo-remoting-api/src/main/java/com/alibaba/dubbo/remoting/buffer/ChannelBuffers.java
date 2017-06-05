@@ -50,6 +50,13 @@ public final class ChannelBuffers {
         return new HeapChannelBuffer(capacity);
     }
 
+    /**
+     *
+     * @param array 需要包装的字节原始数组
+     * @param offset 包装的起始位置
+     * @param length  长度
+     * @return channelBuffer
+     */
     public static ChannelBuffer wrappedBuffer(byte[] array, int offset, int length) {
         if (array == null) {
             throw new NullPointerException("array == null");
@@ -59,6 +66,12 @@ public final class ChannelBuffers {
         return wrappedBuffer(dest);
     }
 
+    /**
+     *
+     * @param array 需要包装的字节数组
+     * @return 包装的高层次buffer
+     * @see HeapChannelBuffer
+     */
     public static ChannelBuffer wrappedBuffer(byte[] array) {
         if (array == null) {
             throw new NullPointerException("array == null");
@@ -69,10 +82,18 @@ public final class ChannelBuffers {
         return new HeapChannelBuffer(array);
     }
 
+    /**
+     * 尝试包装字节缓冲区，转换为内部的结构，
+     * 用于屏蔽各类网络的框架的差异
+     * @param buffer 字节缓冲区
+     * @return  dubbo内部结构
+     */
     public static ChannelBuffer wrappedBuffer(ByteBuffer buffer) {
+        //buffer无效，返回EMPTY_BUFFER
         if (!buffer.hasRemaining()) {
             return EMPTY_BUFFER;
         }
+        //检查
         if (buffer.hasArray()) {
             return wrappedBuffer(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         } else {

@@ -39,29 +39,56 @@ public final class DubboCountCodec implements Codec2 {
         codec.encode(channel, buffer, msg);
     }
 
+    /**
+     * 解码
+     * @param channel 网络抽象channel的包装
+     * @param buffer  网络抽象channelBuffer的包装
+     * @return
+     * @throws IOException
+     */
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
+        //buffer读的起始位置
         int save = buffer.readerIndex();
+        //多个协议包 or 单个协议包 or x.x个协议包
+
+        //多个消息结构
         MultiMessage result = MultiMessage.create();
         do {
             Object obj = codec.decode(channel, buffer);
+            //返回是NEED_MORE_INPUT，说明要读取下个TCP包来获取完整协议
             if (Codec2.DecodeResult.NEED_MORE_INPUT == obj) {
+                //更新位置信息
                 buffer.readerIndex(save);
                 break;
             } else {
+                //添加进result
                 result.addMessage(obj);
                 logMessageLength(obj, buffer.readerIndex() - save);
+                //更新位置
                 save = buffer.readerIndex();
             }
         } while (true);
+        //对于消息对象为0的情况处理
         if (result.isEmpty()) {
             return Codec2.DecodeResult.NEED_MORE_INPUT;
         }
+        //对于消息对象为1的情况处理
         if (result.size() == 1) {
             return result.get(0);
         }
+        //对于消息对象为多个的情况处理
         return result;
     }
 
+    /**
+     * 设置信息，为消息信息添加额外的消息长度信息。
+     * <ul>
+     *     <li>对于是请求结构，为请求的内部数据{@link RpcInvocation}增加键值对{@link Constants#INPUT_KEY},bytes</li><br/>
+     *     <li>对于是响应结构，为响应的内部数据{@link RpcResult}增加键值对{@link Constants#OUTPUT_KEY},bytes</li><br/>
+     * </ul>
+     * @param result
+     * @param bytes
+     */
     private void logMessageLength(Object result, int bytes) {
         if (bytes <= 0) { return; }
         if (result instanceof Request) {

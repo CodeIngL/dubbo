@@ -94,6 +94,7 @@ public class NettyServer extends AbstractServer implements Server {
         //设定开启类
         bootstrap = new ServerBootstrap(channelFactory);
 
+        //nettyHandler
         final NettyHandler nettyHandler = new NettyHandler(getUrl(), this);
 
         channels = nettyHandler.getChannels();
@@ -120,7 +121,7 @@ public class NettyServer extends AbstractServer implements Server {
             }
         });
         // bind
-        //绑定
+        //绑定地址
         channel = bootstrap.bind(getBindAddress());
     }
 

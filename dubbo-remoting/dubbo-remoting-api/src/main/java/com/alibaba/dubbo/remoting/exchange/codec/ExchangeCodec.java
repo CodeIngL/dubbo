@@ -80,41 +80,80 @@ public class ExchangeCodec extends TelnetCodec {
         }
     }
 
+    /**
+     * 解码的关键处理
+     * <ul>
+     *     <li>获得buffer的可读数据长度</li><br/>
+     *     <li>尝试获取协议头,长度为readable何头长HEADER_LENGTH之间的较小值。即可读的数据可能比头小，对于比头大的尝试读取头</li><br/>
+     *     <li>只是尝试读取头，不一定真正对应头</li><br/>
+     *     <li>解码处理</li><br/>
+     * </ul>
+     * @param channel 网络抽象channel的包装
+     * @param buffer 网络抽象channelBuffer的包装
+     * @return 解码的对象
+     * @throws IOException
+     * @see #decode(Channel, ChannelBuffer, int, byte[])
+     */
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
+        //获取buffer可读的一部分
         int readable = buffer.readableBytes();
+        //尝试获取协议头部，协议头部是16个字节
+        //协议头部不一定是完整的（ex:TCP拆包）
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
         buffer.readBytes(header);
         return decode(channel, buffer, readable, header);
     }
-    
+
+    /**
+     * dubbo协议头部长度是16个字节
+     * @param channel 网络抽象channel的包装
+     * @param buffer 网络抽象channelBuffer的包装
+     * @param readable
+     * @param header
+     * @return
+     * @throws IOException
+     */
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] header) throws IOException {
-        // check magic number.
-        if (readable > 0 && header[0] != MAGIC_HIGH 
+        //检查魔数，2个字节,头部的前两个字节
+        if (readable > 0 && header[0] != MAGIC_HIGH
                 || readable > 1 && header[1] != MAGIC_LOW) {
+            //不包含魔数的处理，说明是TCP拆包造成的
             int length = header.length;
+            //尝试把readable全部读出来，该部分数据是属于上一个TCP包
             if (header.length < readable) {
+                //获得新的字节数组
                 header = Bytes.copyOf(header, readable);
+                //读入数据
                 buffer.readBytes(header, length, readable - length);
             }
+
+            //在新的字节数组中，寻找下一个魔数的位置（dubbo协议包的位置）
             for (int i = 1; i < header.length - 1; i ++) {
                 if (header[i] == MAGIC_HIGH && header[i + 1] == MAGIC_LOW) {
+                    //重置读标签的位置
                     buffer.readerIndex(buffer.readerIndex() - header.length + i);
+                    //header为当前数据到下一个协议包的位置的字节数组
                     header = Bytes.copyOf(header, i);
                     break;
                 }
             }
+            //header代表的包含协议，或者包长过长，还未包含的处理
             return super.decode(channel, buffer, readable, header);
         }
-        // check length.
+
+        //检查长度，长度小于协议头部，说明是拆包，还需要继续读取
         if (readable < HEADER_LENGTH) {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        // get data length.
+        //获得头部中代表数据包长度的字段
         int len = Bytes.bytes2int(header, 12);
         checkPayload(channel, len);
 
+        //整个协议包
         int tt = len + HEADER_LENGTH;
+        //buffer中的小于整个协议包长度，
+        //需要再读取
         if( readable < tt ) {
             return DecodeResult.NEED_MORE_INPUT;
         }
@@ -123,6 +162,7 @@ public class ExchangeCodec extends TelnetCodec {
         ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, len);
 
         try {
+            //解析协议数据部分
             return decodeBody(channel, is, header);
         } finally {
             if (is.available() > 0) {
@@ -138,21 +178,40 @@ public class ExchangeCodec extends TelnetCodec {
         }
     }
 
+    /**
+     *
+     * @param channel
+     * @param is
+     * @param header
+     * @return
+     * @throws IOException
+     */
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
-        byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);
+        //头部第三个字节
+        //包含序列化ID，event, two way，REQ/res
+        byte flag = header[2];
+        byte proto = (byte) (flag & SERIALIZATION_MASK);
         Serialization s = CodecSupport.getSerialization(channel.getUrl(), proto);
         ObjectInput in = s.deserialize(channel.getUrl(), is);
+        //协议额32位以后
         // get request id.
         long id = Bytes.bytes2long(header, 4);
         if ((flag & FLAG_REQUEST) == 0) {
+            //23位标志位是response的处理
             // decode response.
+            //解码回复的id
             Response res = new Response(id);
+            //event标志位被设置
+            //代表心跳
             if ((flag & FLAG_EVENT) != 0) {
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
+            //获得状态头
             // get status.
             byte status = header[3];
+            //设置状态头
             res.setStatus(status);
+            //状态是OK
             if (status == Response.OK) {
                 try {
                     Object data;
