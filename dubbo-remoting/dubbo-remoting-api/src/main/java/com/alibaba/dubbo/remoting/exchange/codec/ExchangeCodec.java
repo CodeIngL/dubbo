@@ -188,21 +188,25 @@ public class ExchangeCodec extends TelnetCodec {
      */
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
         //头部第三个字节
-        //包含序列化ID，event, two way，REQ/res
+        //包含序列化协议标识，event标识, two way标识，REQ/res标识
         byte flag = header[2];
+
+        //使用掩码00011111获得使用的序列化协议
         byte proto = (byte) (flag & SERIALIZATION_MASK);
+
+        //获得序列化协议对象，使用什么方式去序列化
         Serialization s = CodecSupport.getSerialization(channel.getUrl(), proto);
         ObjectInput in = s.deserialize(channel.getUrl(), is);
-        //协议额32位以后
-        // get request id.
+
+        //协议32位以后
+        //get request id.
         long id = Bytes.bytes2long(header, 4);
         if ((flag & FLAG_REQUEST) == 0) {
             //23位标志位是response的处理
-            // decode response.
+            //decode response.
             //解码回复的id
             Response res = new Response(id);
-            //event标志位被设置
-            //代表心跳
+            //代表心跳，event标志位为1
             if ((flag & FLAG_EVENT) != 0) {
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
@@ -233,19 +237,24 @@ public class ExchangeCodec extends TelnetCodec {
             return res;
         } else {
             // decode request.
+            //解码请求，23位标志位是1
             Request req = new Request(id);
+            //设定版本
             req.setVersion("2.0.0");
+            //设定twoWay
             req.setTwoWay((flag & FLAG_TWOWAY) != 0);
+            //设定事件
             if ((flag & FLAG_EVENT) != 0) {
                 req.setEvent(Request.HEARTBEAT_EVENT);
             }
             try {
                 Object data;
-                if (req.isHeartbeat()) {
+                if (req.isHeartbeat()) {//事件标志位是1
                     data = decodeHeartbeatData(channel, in);
-                } else if (req.isEvent()) {
+                } else if (req.isEvent()) {//是其他事件，不是心跳的处理
                     data = decodeEventData(channel, in);
                 } else {
+                    //其他
                     data = decodeRequestData(channel, in);
                 }
                 req.setData(data);

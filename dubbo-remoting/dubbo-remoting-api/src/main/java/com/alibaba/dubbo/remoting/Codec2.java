@@ -23,6 +23,7 @@ import com.alibaba.dubbo.common.extension.SPI;
 import com.alibaba.dubbo.remoting.buffer.ChannelBuffer;
 
 /**
+ * 编码解码器接口
  * @author <a href="mailto:gang.lvg@taobao.com">kimi</a>
  */
 @SPI

@@ -104,22 +104,17 @@ public class NettyServer extends AbstractServer implements Server {
         // final Timer timer = new HashedWheelTimer(new NamedThreadFactory("NettyIdleTimer", true));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
-
                 //netty编码适配器
                 NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
-
-                //获得pipeline
+                //设置pipeline
                 ChannelPipeline pipeline = Channels.pipeline();
-                /*int idleTimeout = getIdleTimeout();
-                if (idleTimeout > 10000) {
-                    pipeline.addLast("timer", new IdleStateHandler(timer, idleTimeout / 1000, 0, 0));
-                }*/
                 pipeline.addLast("decoder", adapter.getDecoder());
                 pipeline.addLast("encoder", adapter.getEncoder());
                 pipeline.addLast("handler", nettyHandler);
                 return pipeline;
             }
         });
+
         // bind
         //绑定地址
         channel = bootstrap.bind(getBindAddress());

@@ -92,7 +92,9 @@ final class NettyCodecAdapter {
 
     /**
      * tip:没有@Sharable注解，每当新的channel，都会产生一个实例
-     * netty解码，收到网络包进行解码，根据协议解析包,解决粘包拆包现象
+     * netty解码，netty上行handler，收到网络包进行解码。
+     * 根据协议解析包,解决粘包拆包现象。
+     * 支持telnet协议。
      */
     private class InternalDecoder extends SimpleChannelUpstreamHandler {
 
@@ -100,11 +102,11 @@ final class NettyCodecAdapter {
             com.alibaba.dubbo.remoting.buffer.ChannelBuffers.EMPTY_BUFFER;
 
         /**
-         * 处理消息接收包，主要涉及tcp的粘包和拆包
-         * 和协议的解析
+         * 解码上行消息数据包，包括对协议的解析
+         * 以及处理粘包拆包现象
          * @param ctx 上下文
          * @param event netty事件
-         * @throws Exception
+         * @throws Exception 异常事件
          */
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent event) throws Exception {
@@ -130,7 +132,7 @@ final class NettyCodecAdapter {
             //本地buffer中有数据
             if (buffer.readable()) {
                 //buffer是DynamicChannelBuffer类型
-                //直接写入追加,一个协议包需要至少跨越3三个TCP包承载后发生
+                //直接写入追加,一个协议包需要至少跨越3三个TCP包承载后发生，或者是telnet操作
                 if (buffer instanceof DynamicChannelBuffer) {
                     buffer.writeBytes(input.toByteBuffer());
                     message = buffer;

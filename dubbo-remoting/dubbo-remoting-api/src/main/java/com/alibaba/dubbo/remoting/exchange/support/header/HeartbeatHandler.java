@@ -58,6 +58,16 @@ public class HeartbeatHandler extends AbstractChannelHandlerDelegate {
         handler.sent(channel, message);
     }
 
+    /**
+     * 心跳处理
+     * <ul>
+     *     <li></li><br/>
+     *     <li></li><br/>
+     * </ul>
+     * @param channel
+     * @param message
+     * @throws RemotingException
+     */
     public void received(Channel channel, Object message) throws RemotingException {
         setReadTimestamp(channel);
         if (isHeartbeatRequest(message)) {

@@ -72,12 +72,15 @@ public class Response {
      */
     public static final byte CLIENT_ERROR      = 90;
 
+    //协议包中id项
     private long             mId               = 0;
 
     private String           mVersion;
 
+    //协议包状态项
     private byte             mStatus           = OK;
 
+    //true 代表心跳
     private boolean          mEvent         = false;
 
     private String           mErrorMsg;
