@@ -75,6 +75,9 @@ public abstract class AbstractConfig implements Serializable {
 
     private static final Map<String, String> legacyProperties = new HashMap<String, String>();
 
+    /*
+    * dubbo遗留属性（兼容低版本）
+     */
     static {
         legacyProperties.put("dubbo.protocol.name", "dubbo.service.protocol");
         legacyProperties.put("dubbo.protocol.host", "dubbo.service.server.host");

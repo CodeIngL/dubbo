@@ -59,27 +59,29 @@ import com.alibaba.dubbo.common.utils.StringUtils;
  */
 public class ExtensionLoader<T> {
 
+    // ============类属性==================
+
     private static final Logger logger = LoggerFactory.getLogger(ExtensionLoader.class);
 
-    //services目录
+    //services目录，用于寻找扩展的匹配类
     private static final String SERVICES_DIRECTORY = "META-INF/services/";
 
-    //dubbo目录
+    //dubbo目录，用于寻找扩展的匹配类
     private static final String DUBBO_DIRECTORY = "META-INF/dubbo/";
 
-    //dubbo内部目录
+    //dubbo内部目录，用于寻找扩展的匹配类
     private static final String DUBBO_INTERNAL_DIRECTORY = DUBBO_DIRECTORY + "internal/";
 
     //名字分割符
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
 
-    //全局，缓存了class（这个class特指interface），与ExtensionLoader（interface扩展的实现）的映射
+    //全局，缓存了class（这个class特指interface），与ExtensionLoader（interface扩展加载类的实现）的映射
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
 
     //实例结构：class来自普通实现类型，见cachedClasses
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
-    // ==============================
+    // ==============对象属性================
 
     //T的类型，interface类型
     private final Class<?> type;
@@ -135,9 +137,20 @@ public class ExtensionLoader<T> {
         return type.isAnnotationPresent(SPI.class);
     }
 
-    //对传递进啦的interfac类type进行扩展实现，
+    //对传递进来的interfac类type进行扩展实现，
     //这个实现可能是编码实现的存在文件中
     //亦可能是运行生成的
+    /**
+     * 根据type的接口，寻找tepe的实现，并返回实现类的扩展加载类。
+     *     ex:type equal to com.A,the type's impl is com.AImpl,the result will return ExtensionLoader<AImpl>.<br/>
+     *     tip: this will cache in EXTENSION_LOADERS with key:com.A  , value:ExtensionLoader<AImpl>.<br/>
+     * <ul>
+     *      <li>type非空，并必须为接口类型，同时带有SPI注解</li>
+     * </ul>
+     * @param type 接口类型
+     * @param <T> type实现类的扩展加载类型。
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         //参数非空检查
@@ -164,6 +177,17 @@ public class ExtensionLoader<T> {
 
     //内部构造
     //对于objectFactory，如果type是ExtensionFactory，那么objectFactory是空的，否则，都是适配,总是ExtensionLoader<ExtensionFactory>的适配，这个是单例的
+    /**
+     * 扩展加载类构造函数<br/>
+     * 对接口类型type，寻找其实现类，并完成实现类的扩展加载类初始化
+     * <ul>
+     *     <li>完成扩展加载类的type属性的赋值,该属性区分了不同的扩展加载类</li><br/>
+     *     <li>对type接口为ExtensionFactory，则该扩展加载器类的{@link #objectFactory}属性为null</li><br/>
+     *     <li>对type接口为其他类，则该扩展加载器类的{@link #objectFactory}属性为{@link com.alibaba.dubbo.common.extension.factory.AdaptiveExtensionFactory}</li><br/>
+     * </ul>
+     * @param type，接口类型
+     * @see #getAdaptiveExtension
+     */
     private ExtensionLoader(Class<?> type) {
         //赋值类型
         this.type = type;
@@ -489,13 +513,17 @@ public class ExtensionLoader<T> {
     }
 
     /**
-     * 获得一个T的适配扩张
-     * 参考来自spring，xmlBeanFactory
+     * 对于扩展加载器类的具体泛型T，进行获得适配扩展类
+     * 该部分代码，参考来自spring，xmlBeanFactory。
+     * <ul>
+     *     <li>从缓存属性{@link #cachedAdaptiveInstance}中获得</li><br/>
+     *     <li>无则使用{@link #createAdaptiveExtension}新建获得适配扩展类，并完成对缓存属性{@link #cachedAdaptiveInstance}的设置</li><br/>
+     * </ul>
      * 一般情况下不会有并发访问这个情况
      * cachedAdaptiveInstance这个属性只有在该函数调用后才会发生设置
      * 对应ExtensionLoader<T>实例这总是可选调用的，而这个实例总是被维护在EXTENSION_LOADERS中，是线程安全且单例存在的
      *
-     * @return
+     * @return T的适配扩展类
      */
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
@@ -656,10 +684,11 @@ public class ExtensionLoader<T> {
     }
 
     /**
-     * 获得扩张类
+     * 获得扩展类
      * 这些类会被设置到属性cachedClasses中
      *
      * @return
+     * @see #cachedClasses
      */
     private Map<String, Class<?>> getExtensionClasses() {
         //尝试从缓存中获取
@@ -682,16 +711,24 @@ public class ExtensionLoader<T> {
     /**
      * 加载扩展类
      * 从配置文件中加载
+     * <ul>
+     *     <li>获得泛型T（type属性）对应接口的@SPI注解</li><br/>
+     *     <li>或的注解的value字段</li><br/>
+     *     <li>对于value值不为空串，则不能带有分隔符','，完成缓存属性cachedDefaultName的设置为value</li><br/>
+     *     <li>从配置文件{@link #DUBBO_INTERNAL_DIRECTORY}中查找，完成配置加载</li><br/>
+     *     <li>从配置文件{@link #DUBBO_DIRECTORY}中查找，完成配置加载</li><br/>
+     *     <li>从配置文件{@link #SERVICES_DIRECTORY}中查找，完成配置加载</li><br/>
+     * </ul>
      *
      * @return
+     * @see #loadFile(Map, String)
      */
     // 此方法已经getExtensionClasses方法調用过。
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
         if (defaultAnnotation != null) {
             String value = defaultAnnotation.value();
-            if (value != null && (value = value.trim()).length() > 0) {
-                //有不合法，存在，爆出异常
+            if ((value = value.trim()).length() > 0) {
                 String[] names = NAME_SEPARATOR.split(value);
                 if (names.length > 1) {
                     throw new IllegalStateException("more than 1 default extension name on extension " + type.getName()
@@ -712,12 +749,12 @@ public class ExtensionLoader<T> {
     /**
      * 搜索jar包中内置文件
      * 完成适配类的设置cachedAdaptiveClass
-     * 设置cachedWrapperClasses：对于能被包装类
-     * 设置cachedActivates，key是name，value是类Activates
-     * 设置cachedNames，key是class，value是别名
+     * 设置cachedWrapperClasses：对于能被包装的类，即配置文件中的对应的类，该类是T的实现，并具备参数为T的构造函数
+     * 设置cachedActivates，key是name，value是类的Activates注解
+     * 设置cachedNames，key是class，value是别名，是符合名字中的第一个
      *
-     * @param extensionClasses
-     * @param dir
+     * @param extensionClasses，名字和普通扩展类的集合
+     * @param dir 配置文件存在的目录
      */
     private void loadFile(Map<String, Class<?>> extensionClasses, String dir) {
         String fileName = dir + type.getName();
@@ -864,10 +901,11 @@ public class ExtensionLoader<T> {
 
 
     /**
-     * 创建interface的适配，这个适配可能经过多次包装
-     * 这个适配会被注入到相关的实例里面
+     * 对于扩展加载器类的具体泛型T，进行获得适配扩展类，并完成依赖注入
      *
-     * @return
+     * @return 适配扩展类
+     * @see #getAdaptiveExtensionClass()
+     * @see #injectExtension(Object)
      */
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
@@ -881,12 +919,17 @@ public class ExtensionLoader<T> {
 
 
     /**
-     * 获得interface的适配实例
-     * 这个实例就是属性cachedAdaptiveClass,
+     * 获得泛型T的扩展适配类
+     * 这个类就是属性cachedAdaptiveClass,
+     * <ul>
+     *     <li>使用{@link #getExtensionClasses()}获得所用扩展，包括普通以及特殊的扩展类的加载</li><br/>
+     *     <li>从缓存属性cachedAdaptiveClass，之间获得，正常情况下，{@link #getExtensionClasses()}会完成对cachedAdaptiveClass的设置</li><br/>
+     *     <li>缓存属性不存在，使用{@link #createAdaptiveExtensionClass()}生成</li><br/>
+     * </ul>
      * 首先尝试获得扩展类，getExtensionClasses。里面包括对cachedAdaptiveClass的设置
      * 如果都没有。则直接通过运行编译器生成。
-     *
-     * @return
+     * @return 获得泛型T的扩展适配类。
+     * @see #createAdaptiveExtensionClass()
      */
     private Class<?> getAdaptiveExtensionClass() {
         getExtensionClasses();
@@ -902,7 +945,7 @@ public class ExtensionLoader<T> {
     /**
      * 没有@Adaptive的适配，使用编译器直接生成类
      *
-     * @return
+     * @return 适配扩展类
      */
     private Class<?> createAdaptiveExtensionClass() {
         String code = createAdaptiveExtensionClassCode();
@@ -912,7 +955,11 @@ public class ExtensionLoader<T> {
         return compiler.compile(code, classLoader);
     }
 
-    //生成代码，
+    /**
+     * 为对于在配置文件中找不到相应的扩展配置类（@Adpative注解）泛型T生成编译代码，
+     * 方便运行编译加入。
+     * @return
+     */
     private String createAdaptiveExtensionClassCode() {
         StringBuilder codeBuidler = new StringBuilder();
         Method[] methods = type.getMethods();
