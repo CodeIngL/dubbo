@@ -21,7 +21,7 @@ import com.alibaba.dubbo.common.URL;
 
 /**
  * Endpoint. (API/SPI, Prototype, ThreadSafe)
- * 
+ * 终端接口
  * @see com.alibaba.dubbo.remoting.Channel
  * @see com.alibaba.dubbo.remoting.Client
  * @see com.alibaba.dubbo.remoting.Server

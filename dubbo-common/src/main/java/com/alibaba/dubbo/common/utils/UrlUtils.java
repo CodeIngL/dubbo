@@ -181,7 +181,7 @@ public class UrlUtils {
         if (address == null || address.length() == 0) {
             return null;
         }
-        //"|;"拆分
+        //"|或者符合;"拆分
         String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
         if (addresses == null || addresses.length == 0) {
             return null; //here won't be empty

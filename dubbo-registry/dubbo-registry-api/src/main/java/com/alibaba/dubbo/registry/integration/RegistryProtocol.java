@@ -102,10 +102,18 @@ public class RegistryProtocol implements Protocol {
     
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
 
+    /**
+     *
+     * @param originInvoker 默认情况下是AbstractProxyInvoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
 
         //export invoker 导出invoker和export的代理封装
+        //这里会导出相应的东西
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider 获得注册中心
         final Registry registry = getRegistry(originInvoker);
@@ -160,7 +168,7 @@ public class RegistryProtocol implements Protocol {
      * 尝试从缓存中直接取出
      * 没有则新建
      * <ul>
-     *     <li>使用原始的originInvoker，和其中得到的配置URL构建Invoker的委托实现</li><br/>
+     *     <li>使用原始的originInvoker(AbstractProxyInvoker类对象)，和其中得到的配置URL构建Invoker的委托实现</li><br/>
      *     <li>使用Protocol$Adpative来导出委托Invoker，其中使用委托的URL（协议配置URL），来获得具体扩展类，使用具体扩展类导出委托的Invoker</li><br/>
      *     <li>构建ExporterChangeableWrapper使用（导出的export和原始的originInvoker）</li><br/>
      * </ul>
@@ -176,6 +184,7 @@ public class RegistryProtocol implements Protocol {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
+                    //从invoker中获得相应的配置服务提供url
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>)protocol.export(invokerDelegete), originInvoker);
                     bounds.put(key, exporter);
@@ -263,6 +272,9 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * 获取invoker在bounds中缓存的key
+     * 首先从invoker中获得协议配置的url
+     * 从中移除dynamic和enabled键值对，
+     * 剩下的FullString得到字符串
      * @param originInvoker
      * @return
      */

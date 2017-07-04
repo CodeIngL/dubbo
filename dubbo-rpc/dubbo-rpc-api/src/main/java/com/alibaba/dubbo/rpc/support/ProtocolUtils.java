@@ -12,7 +12,7 @@ public class ProtocolUtils {
     }
 
     /**
-     * 返回服务标识
+     * 返回服务标识（serviceGroup+"/"+serviceName+":"serviceVersion+":"port）
      * @param url 元信息
      * @return key 服务标识
      * @see #serviceKey(int, String, String, String)
@@ -23,7 +23,7 @@ public class ProtocolUtils {
     }
 
     /**
-     * 返回服务标识
+     * 返回服务标识（serviceGroup+"/"+serviceName+":"serviceVersion+":"port）
      * @param port 端口
      * @param serviceName 服务全类名
      * @param serviceVersion 版本

@@ -273,7 +273,7 @@ public abstract class AbstractConfig implements Serializable {
      * 获取config中的基本类型字段，通过其暴露的get or is 方法，其中去掉了某些特殊方法，形成键值对放入parameter中
      * <ul>
      *  <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
-     *  <li>排除返回值为Objectde方法</li><br/>
+     *  <li>排除返回值为Object的方法</li><br/>
      *  <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
      *  <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
      *  <li>放入键值对</li><br/>

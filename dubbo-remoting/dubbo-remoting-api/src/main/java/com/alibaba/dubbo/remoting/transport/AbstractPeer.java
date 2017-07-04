@@ -24,16 +24,22 @@ import com.alibaba.dubbo.remoting.RemotingException;
 
 /**
  * AbstractPeer
- * 
+ * 对等的终端，不仅仅指客户端，或者服务端，其他符合终端的特性都可以继承该类
+ * 终端提供了对网络的处理，因而持有处理器，
+ * 终端知其他相关的信息，因而持有URL元信息
+ * 终端维护了终端开启关闭的状态，因而持有closed属性
  * @author qian.lei
  * @author william.liangf
  */
 public abstract class AbstractPeer implements Endpoint, ChannelHandler {
 
+    //处理器
     private final ChannelHandler handler;
 
+    //元信息
     private volatile URL         url;
 
+    //是否关闭
     private volatile boolean     closed;
 
     /**

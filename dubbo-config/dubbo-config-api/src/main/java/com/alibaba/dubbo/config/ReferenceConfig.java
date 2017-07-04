@@ -157,15 +157,20 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         ref = null;
     }
 
+    /**
+     * 服务消费端入口
+     */
     private void init() {
+        //设定初始化标志
 	    if (initialized) {
 	        return;
 	    }
 	    initialized = true;
+        //检验接口名
     	if (interfaceName == null || interfaceName.length() == 0) {
     	    throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
     	}
-    	// 获取消费者全局配置
+    	//获取消费配置类全局配置
     	checkDefault();
         appendProperties(this);
         if (getGeneric() == null && getConsumer() != null) {

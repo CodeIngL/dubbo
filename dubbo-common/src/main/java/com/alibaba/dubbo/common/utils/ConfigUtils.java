@@ -37,41 +37,41 @@ import com.alibaba.dubbo.common.logger.LoggerFactory;
  * @author william.liangf
  */
 public class ConfigUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigUtils.class);
-    
+
     public static boolean isNotEmpty(String value) {
-        return ! isEmpty(value);
+        return !isEmpty(value);
     }
-	
-	public static boolean isEmpty(String value) {
-		return value == null || value.length() == 0 
-    			|| "false".equalsIgnoreCase(value) 
-    			|| "0".equalsIgnoreCase(value) 
-    			|| "null".equalsIgnoreCase(value) 
-    			|| "N/A".equalsIgnoreCase(value);
-	}
-	
-	public static boolean isDefault(String value) {
-		return "true".equalsIgnoreCase(value) 
-				|| "default".equalsIgnoreCase(value);
-	}
-	
-	/**
-	 * 扩展点列表中插入缺省扩展点。
-	 * <p>
-	 * 扩展点列表支持<ul>
-	 * <li>特殊值<code><strong>default</strong></code>，表示缺省扩展点插入的位置
-	 * <li>特殊符号<code><strong>-</strong></code>，表示剔除。 <code>-foo1</code>，剔除添加缺省扩展点foo1。<code>-default</code>，剔除添加所有缺省扩展点。
-	 * </ul>
-	 * 
-	 * @param type 扩展点类型
-	 * @param cfg 扩展点名列表
-	 * @param def 缺省的扩展点的列表
-	 * @return 完成缺省的扩展点列表插入后的列表
-	 */
-	public static List<String> mergeValues(Class<?> type, String cfg, List<String> def) {
-	    List<String> defaults = new ArrayList<String>();
+
+    public static boolean isEmpty(String value) {
+        return value == null || value.length() == 0
+                || "false".equalsIgnoreCase(value)
+                || "0".equalsIgnoreCase(value)
+                || "null".equalsIgnoreCase(value)
+                || "N/A".equalsIgnoreCase(value);
+    }
+
+    public static boolean isDefault(String value) {
+        return "true".equalsIgnoreCase(value)
+                || "default".equalsIgnoreCase(value);
+    }
+
+    /**
+     * 扩展点列表中插入缺省扩展点。
+     * <p>
+     * 扩展点列表支持<ul>
+     * <li>特殊值<code><strong>default</strong></code>，表示缺省扩展点插入的位置
+     * <li>特殊符号<code><strong>-</strong></code>，表示剔除。 <code>-foo1</code>，剔除添加缺省扩展点foo1。<code>-default</code>，剔除添加所有缺省扩展点。
+     * </ul>
+     *
+     * @param type 扩展点类型
+     * @param cfg  扩展点名列表
+     * @param def  缺省的扩展点的列表
+     * @return 完成缺省的扩展点列表插入后的列表
+     */
+    public static List<String> mergeValues(Class<?> type, String cfg, List<String> def) {
+        List<String> defaults = new ArrayList<String>();
         if (def != null) {
             for (String name : def) {
                 if (ExtensionLoader.getExtensionLoader(type).hasExtension(name)) {
@@ -79,19 +79,19 @@ public class ConfigUtils {
                 }
             }
         }
-        
-	    List<String> names = new ArrayList<String>();
-	    
-	    // 加入初始值
+
+        List<String> names = new ArrayList<String>();
+
+        // 加入初始值
         String[] configs = (cfg == null || cfg.trim().length() == 0) ? new String[0] : Constants.COMMA_SPLIT_PATTERN.split(cfg);
         for (String config : configs) {
-            if(config != null && config.trim().length() > 0) {
+            if (config != null && config.trim().length() > 0) {
                 names.add(config);
             }
         }
 
         // 不包含 -default
-        if (! names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {
+        if (!names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {
             // 加入 插入缺省扩展点
             int i = names.indexOf(Constants.DEFAULT_KEY);
             if (i > 0) {
@@ -100,11 +100,10 @@ public class ConfigUtils {
                 names.addAll(0, defaults);
             }
             names.remove(Constants.DEFAULT_KEY);
-        }
-        else {
+        } else {
             names.remove(Constants.DEFAULT_KEY);
         }
-        
+
         // 合并-的配置项
         for (String name : new ArrayList<String>(names)) {
             if (name.startsWith(Constants.REMOVE_VALUE_PREFIX)) {
@@ -113,16 +112,25 @@ public class ConfigUtils {
             }
         }
         return names;
-	}
+    }
 
     private static Pattern VARIABLE_PATTERN = Pattern.compile(
             "\\$\\s*\\{?\\s*([\\._0-9a-zA-Z]+)\\s*\\}?");
 
-    //替换表达式${}
-    //优先使用系统配置
-    //然后使用params中的属性
-    //都没有会被替换成空串""
-	public static String replaceProperty(String expression, Map<String, String> params) {
+    /**
+     * 使用params来替换expression表达式。
+     * <ul>
+     * <li>替换表达式${}</li><br/>
+     * <li>优先使用系统配置</li><br/>
+     * <li>然后使用params中的属性</li><br/>
+     * <li>都没有会被替换成空串""</li><br/>
+     * </ul>
+     *
+     * @param expression 表达式
+     * @param params     替换占位符号的map
+     * @return 替换后的表达式的值
+     */
+    public static String replaceProperty(String expression, Map<String, String> params) {
         if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {
             return expression;
         }
@@ -142,16 +150,20 @@ public class ConfigUtils {
         matcher.appendTail(sb);
         return sb.toString();
     }
-	
+
     private static volatile Properties PROPERTIES;
 
     /**
-     * 系统配置读取的顺序
-     * System.getProperty-->dubbo.properties.file
-     * System.getenv-->dubbo.properties.file
-     * dubbo.properties
-     * 从所有的jar中找到配置文件，一般不允许重复出现
-     * @return
+     * 读取配置文件,读取的顺序
+     * <ul>
+     * <li>System.getProperty-->使用dubbo.properties.file作为key在java环境中获得文件路径</li><br/>
+     * <li>System.getenv-->使用dubbo.properties.file作为key在系统环境中获得文件路径</li><br/>
+     * <li>使用dubbo.properties作为文件路径</li><br/>
+     * <li>调用{@link ConfigUtils#loadProperties(String, boolean, boolean)}来加载配置</li><br/>
+     * </ul>
+     *
+     * @return 配置键值对
+     * @see ConfigUtils#loadProperties(String, boolean, boolean)
      */
     public static Properties getProperties() {
         if (PROPERTIES == null) {
@@ -175,24 +187,37 @@ public class ConfigUtils {
         }
         return PROPERTIES;
     }
-    
+
     public static void addProperties(Properties properties) {
         if (properties != null) {
             getProperties().putAll(properties);
         }
     }
-    
+
     public static void setProperties(Properties properties) {
         if (properties != null) {
             PROPERTIES = properties;
         }
     }
-    
-	public static String getProperty(String key) {
-	    return getProperty(key, null);
-	}
-	
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+
+    public static String getProperty(String key) {
+        return getProperty(key, null);
+    }
+
+    /**
+     * 尝试获得键为key的值，默认值为defaulValue
+     * <p>
+     * <ul>
+     * <li>尝试从java系统环境中获得配置项</li><br/>
+     * <li>尝试从配置文件中获得配置项</li><br/>
+     * </ul>
+     * </p>
+     *
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static String getProperty(String key, String defaultValue) {
         //尝试先从系统配置中获得(配置项)
         String value = System.getProperty(key);
@@ -201,29 +226,29 @@ public class ConfigUtils {
         }
         //获取配置(配置文件获得)
         Properties properties = getProperties();
-        return replaceProperty(properties.getProperty(key, defaultValue), (Map)properties);
+        return replaceProperty(properties.getProperty(key, defaultValue), (Map) properties);
     }
-    
+
     public static Properties loadProperties(String fileName) {
         return loadProperties(fileName, false, false);
     }
-    
+
     public static Properties loadProperties(String fileName, boolean allowMultiFile) {
         return loadProperties(fileName, allowMultiFile, false);
     }
-    
-	/**
-	 * Load properties file to {@link Properties} from class path.
-	 * 
-	 * @param fileName properties file name. for example: <code>dubbo.properties</code>, <code>METE-INF/conf/foo.properties</code>
-	 * @param allowMultiFile if <code>false</code>, throw {@link IllegalStateException} when found multi file on the class path.
-     * @param optional is optional. if <code>false</code>, log warn when properties config file not found!s
-	 * @return loaded {@link Properties} content. <ul>
-	 * <li>return empty Properties if no file found.
-	 * <li>merge multi properties file if found multi file
-	 * </ul>
-	 * @throws IllegalStateException not allow multi-file, but multi-file exsit on class path.
-	 */
+
+    /**
+     * Load properties file to {@link Properties} from class path.
+     *
+     * @param fileName       properties file name. for example: <code>dubbo.properties</code>, <code>METE-INF/conf/foo.properties</code>
+     * @param allowMultiFile if <code>false</code>, throw {@link IllegalStateException} when found multi file on the class path.
+     * @param optional       is optional. if <code>false</code>, log warn when properties config file not found!s
+     * @return loaded {@link Properties} content. <ul>
+     * <li>return empty Properties if no file found.
+     * <li>merge multi properties file if found multi file
+     * </ul>
+     * @throws IllegalStateException not allow multi-file, but multi-file exsit on class path.
+     */
     public static Properties loadProperties(String fileName, boolean allowMultiFile, boolean optional) {
         Properties properties = new Properties();
         if (fileName.startsWith("/")) {
@@ -239,7 +264,7 @@ public class ConfigUtils {
             }
             return properties;
         }
-        
+
         List<java.net.URL> list = new ArrayList<java.net.URL>();
         try {
             Enumeration<java.net.URL> urls = ClassHelper.getClassLoader().getResources(fileName);
@@ -250,15 +275,15 @@ public class ConfigUtils {
         } catch (Throwable t) {
             logger.warn("Fail to load " + fileName + " file: " + t.getMessage(), t);
         }
-        
-        if(list.size() == 0) {
-            if (! optional) {
+
+        if (list.size() == 0) {
+            if (!optional) {
                 logger.warn("No " + fileName + " found on the class path.");
             }
             return properties;
         }
-        
-        if(! allowMultiFile) {
+
+        if (!allowMultiFile) {
             if (list.size() > 1) {
                 String errMsg = String.format("only 1 %s file is expected, but %d dubbo.properties files found on class path: %s",
                         fileName, list.size(), list.toString());
@@ -274,10 +299,10 @@ public class ConfigUtils {
             }
             return properties;
         }
-        
+
         logger.info("load " + fileName + " properties file from " + list);
-        
-        for(java.net.URL url : list) {
+
+        for (java.net.URL url : list) {
             try {
                 Properties p = new Properties();
                 InputStream input = url.openStream();
@@ -288,32 +313,38 @@ public class ConfigUtils {
                     } finally {
                         try {
                             input.close();
-                        } catch (Throwable t) {}
+                        } catch (Throwable t) {
+                        }
                     }
                 }
             } catch (Throwable e) {
                 logger.warn("Fail to load " + fileName + " file from " + url + "(ingore this file): " + e.getMessage(), e);
             }
         }
-        
+
         return properties;
     }
 
     private static int PID = -1;
-    
+
+    /**
+     * 尝试获得进程的pid
+     * @return
+     */
     public static int getPid() {
         if (PID < 0) {
             try {
-                RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();  
+                RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
                 String name = runtime.getName(); // format: "pid@hostname"  
                 PID = Integer.parseInt(name.substring(0, name.indexOf('@')));
             } catch (Throwable e) {
                 PID = 0;
             }
         }
-        return PID;  
+        return PID;
     }
 
-	private ConfigUtils() {}
-	
+    private ConfigUtils() {
+    }
+
 }

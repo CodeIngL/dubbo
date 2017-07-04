@@ -53,9 +53,10 @@ public class Exchangers {
     }
 
     /**
-     *
-     * @param url
-     * @param handler
+     * 绑定url和交换处理器，
+     * 默认使用HeaderExchanger进行绑定
+     * @param url 元信息
+     * @param handler 信息处理器
      * @return
      * @throws RemotingException
      */

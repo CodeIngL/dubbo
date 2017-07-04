@@ -32,6 +32,9 @@ public class NettyTransporter implements Transporter {
 
     /**
      * 获得server
+     * <ul>
+     *     <li>简单生成netty服务对象</li><br/>
+     * </ul>
      * @param url server url
      * @param listener
      * @return

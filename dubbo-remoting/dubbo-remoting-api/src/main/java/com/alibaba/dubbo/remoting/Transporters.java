@@ -33,7 +33,12 @@ public class Transporters {
     }
 
     /**
-     * 开启服务
+     * 传输对象，绑定url和处理器来获得网络服务对象
+     * <ul>
+     *     <li>对入参进行检查</li><br/>
+     *     <li>对多个处理器，使用ChannelHandlerDispatcher封装</li><br/>
+     *     <li>使用特定的传输对象来绑定，传输对象决定来自url元信息，默认是netty传输对象</li><br/>
+     * </ul>
      * @param url
      * @param handlers
      * @return

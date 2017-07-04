@@ -28,7 +28,8 @@ import com.alibaba.dubbo.remoting.transport.codec.CodecAdapter;
 
 /**
  * AbstractEndpoint
- * 
+ * 抽象的终端（针对的是服务提供终端，或者服务消费终端），衍生出来是具体的终端，server或者client
+ * 终端拥有编码解码器，超时时间，连接超时时间（无论对server和client都具备的属性）
  * @author william.liangf
  */
 public abstract class AbstractEndpoint extends AbstractPeer implements Resetable {

@@ -37,6 +37,17 @@ public class HeaderExchanger implements Exchanger {
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }
 
+    /**
+     * 直接返回HeaderExchangeServer的对象
+     * 但是处理器会被多吹包装，原始处理器也就是handler会被HeaderExchangeHandler包装
+     * 从而继续被DecodeHandler包装。
+     * 然后通过传输对象完成url和处理器的绑定
+     * handker默认
+     * @param url
+     * @param handler
+     * @return
+     * @throws RemotingException
+     */
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }

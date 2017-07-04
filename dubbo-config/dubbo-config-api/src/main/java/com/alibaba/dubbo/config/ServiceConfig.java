@@ -339,6 +339,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 导出
+     * <ul>
+     * <li>首先根据注册配置类获得URL</li>
+     * <li>根据协议配置类和URL进行处理</li>
+     * </ul>
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
@@ -349,6 +353,46 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 根据协议配置类和URL进行导出
+     * <ul>
+     * <li>协议默认配置名是dubbo</li>
+     * <li>尝试使用协议配置类中的host熟悉，否则尝试使用provider配置类中的host</li>
+     * <li>检验地址是否是本机地址，尝试ping通URL的地址</li>
+     * <li>尝试使用协议配置类中的port熟悉，否则尝试使用provider配置类中的port</li>
+     * <li>检验port的有效性，并在缓存中放置配置类(protocolConfig.name)名称和port的映射关系</li>
+     * <li>生成元信息map
+     * <ul>
+     * <li>添加key:anyhost;value:true。如果地址是本机地址的情况下</li><br/>
+     * <li>添加key:side;value:provider。说明这边是服务提供者</li><br/>
+     * <li>添加key:side;value:provider。</li><br/>
+     * <li>添加key:dubbo;value:2.0.0。</li><br/>
+     * <li>添加key:dubbo;value:2.0.0。</li><br/>
+     * <li>添加key:timestamp;value:${当前时间戳}</li><br/>
+     * <li>添加key:pid;value:${当前时间戳}</li><br/>
+     * <li>追加配置类application中的信息</li><br/>
+     * <li>追加配置类module中的信息</li><br/>
+     * <li>追加配置类provider中的信息这里会使用前缀default</li><br/>
+     * <li>追加配置类protocolConfig的信息</li><br/>
+     * <li>追加配置类本身的信息</li><br/>
+     * <li>追加配置类method，前置method.getName</li><br/>
+     * <li>尝试转换键值对，如果元信息map中含有method.getName（）+.retry如果该值是false，转换为method.getName.retries:0的存在存入map中</li><br/>
+     * <li>追加配置类argument的处理，并置入元信息中</li><br/>
+     * <li>对通用接口，放入（"generic",generic）,("methods",*)进行扩张</li><br/>
+     * <li>放入（"revision",上一个版本），(methods,包装处理的),进行扩张</li><br/>
+     * <li>添加key:token;value:${token}</li><br/>
+     * <li>对配置类配置的是injvm的处理，该选项将 会不暴露，如果选择该选项，配置类的注册 标志会设定为false，并在元信息中追加notify：false的键值对</li><br/>
+     * <li>尝试获得应用上下文，如果不存在的话尝试从配置类provider中获取相关上下文</li><br/>
+     * <li>生成新的url，关于协议配置类，不是注册配置类的URL</li><br/>
+     * <li>尝试获得ConfiguratorFactory上面关于url中协议名称的扩展，如果有的话，默认名称是dubbo.这里提供了扩展点外部人员用来处理url</li><br/>
+     * <li>根据URL中的scope属性，进行不同方式的暴露</li><br/>
+     * </ul>
+     * </li>
+     * </ul>
+     *
+     * @param protocolConfig
+     * @param registryURLs
+     */
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         //默认是dubbo
         String name = protocolConfig.getName();
@@ -419,7 +463,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             logger.warn("Use random available port(" + port + ") for protocol " + name);
         }
 
-        //放置详细的信息
+        //放置详细的信息，
         //map["side":"provider","dubbo":"2.0.0","":"timestamp","xxxxxxx"]
         Map<String, String> map = new HashMap<String, String>();
         if (anyhost) {
@@ -540,37 +584,44 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
-
+        //scope通常有三个可选项来选择，1是none不进行暴露，2是remote进行远程暴露，3是local进行本地暴露
         String scope = url.getParameter(Constants.SCOPE_KEY);
-        //配置为none不暴露
         if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
 
-            //配置不是remote的情况下做本地暴露 (配置为remote，则表示只暴露远程服务)
             if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
+                //本地暴露方式
                 exportLocal(url);
             }
-            //如果配置不是local则暴露为远程服务.(配置为local，则表示只暴露本地服务)
+
             if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
+                //远程暴露方式
                 if (logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
+                //如果配置了注册配置类，会得到相应的注册url，同时该配置还不能是injvm，对于injvm，register对应的值总是false，因此不会使用远程配置
                 if (registryURLs != null && registryURLs.size() > 0
                         && url.getParameter("register", true)) {
+                    //支持多个注册类对应的url上，也就是不同注册中心，都支持注册相应的信息
                     for (URL registryURL : registryURLs) {
+                        //尝试从注册中心url中copy键值对dynamic,用来说明是否是动态服务
                         url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
+                        //尝试从注册中心url中获得监控的地址url，用来启动监控
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
+                            //将监控url转移到url的配置中
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
                             logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
                         }
+                        //将协议配置url转移到注册中心的url配置中(key:export)。至此，注册中心url可以得到协议配置url已经监控url等等信息
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
-
+                        //获得导出的相应类
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }
                 } else {
+                    //不使用注册中心，典型的方式是配置了injvm。或者是N/A。
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
 
                     Exporter<?> exporter = protocol.export(invoker);

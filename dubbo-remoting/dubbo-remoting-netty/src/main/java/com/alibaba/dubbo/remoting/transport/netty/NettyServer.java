@@ -45,7 +45,9 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.ChannelHandlers;
 
 /**
  * NettyServer
- *
+ * 特定协议的网络服务终端，
+ * 因为其实现是netty，自然持有netty的特性，bootstrap和channel
+ * 因为做了封装，因而持有channels管理
  * @author qian.lei
  * @author chao.liuc
  */
@@ -61,7 +63,7 @@ public class NettyServer extends AbstractServer implements Server {
 
     /**
      * 新建netty服务，嵌套多个channelHandler
-     *
+     * 将参数处理包装，
      * @param url 元信息
      * @param handler dubbo的抽象封装，实现其他网络框架解耦
      * @throws RemotingException

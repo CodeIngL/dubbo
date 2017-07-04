@@ -34,7 +34,10 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.WrappedChannelHandler;
 
 /**
  * AbstractServer
- * 服务的抽象。比如实现类，netty，mina，比如grizzly
+ * 服务终端的抽象，衍生自抽象的终端概念。比如实现类，netty，mina，比如grizzly
+ * 作为服务终端，因而持有具体的地址，localAddress，绑定地址，bindAddress，服务持有通道，对其做了数量限制，因而有accpets属性
+ * 服务端服务存在空闲时间，因而有空闲超时时间，即持有idleTimeout。
+ *
  * @author qian.lei
  * @author ding.lid
  */
