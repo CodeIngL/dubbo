@@ -45,7 +45,7 @@ import com.alibaba.dubbo.common.utils.StringUtils;
 /**
  * Dubbo使用的扩展点获取。<p>
  * <ul>
- * <li>自动注入关联扩展点。</li>
+ * <li>自动注入关联扩展点。</li>hb
  * <li>自动Wrap上扩展点的Wrap类。</li>
  * <li>缺省获得的的扩展点是一个Adaptive Instance。
  * </ul>
@@ -140,15 +140,17 @@ public class ExtensionLoader<T> {
     //对传递进来的interfac类type进行扩展实现，
     //这个实现可能是编码实现的存在文件中
     //亦可能是运行生成的
+
     /**
      * 根据type的接口，寻找tepe的实现，并返回实现类的扩展加载类。
-     *     ex:type equal to com.A,the type's impl is com.AImpl,the result will return ExtensionLoader<AImpl>.<br/>
-     *     tip: this will cache in EXTENSION_LOADERS with key:com.A  , value:ExtensionLoader<AImpl>.<br/>
+     * ex:type equal to com.A,the type's impl is com.AImpl,the result will return ExtensionLoader<AImpl>.<br/>
+     * tip: this will cache in EXTENSION_LOADERS with key:com.A  , value:ExtensionLoader<AImpl>.<br/>
      * <ul>
-     *      <li>type非空，并必须为接口类型，同时带有SPI注解</li>
+     * <li>type非空，并必须为接口类型，同时带有SPI注解</li>
      * </ul>
+     *
      * @param type 接口类型
-     * @param <T> type实现类的扩展加载类型。
+     * @param <T>  type实现类的扩展加载类型。
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -177,14 +179,16 @@ public class ExtensionLoader<T> {
 
     //内部构造
     //对于objectFactory，如果type是ExtensionFactory，那么objectFactory是空的，否则，都是适配,总是ExtensionLoader<ExtensionFactory>的适配，这个是单例的
+
     /**
      * 扩展加载类构造函数<br/>
      * 对接口类型type，寻找其实现类，并完成实现类的扩展加载类初始化
      * <ul>
-     *     <li>完成扩展加载类的type属性的赋值,该属性区分了不同的扩展加载类</li><br/>
-     *     <li>对type接口为ExtensionFactory，则该扩展加载器类的{@link #objectFactory}属性为null</li><br/>
-     *     <li>对type接口为其他类，则该扩展加载器类的{@link #objectFactory}属性为{@link com.alibaba.dubbo.common.extension.factory.AdaptiveExtensionFactory}</li><br/>
+     * <li>完成扩展加载类的type属性的赋值,该属性区分了不同的扩展加载类</li><br/>
+     * <li>对type接口为ExtensionFactory，则该扩展加载器类的{@link #objectFactory}属性为null</li><br/>
+     * <li>对type接口为其他类，则该扩展加载器类的{@link #objectFactory}属性为{@link com.alibaba.dubbo.common.extension.factory.AdaptiveExtensionFactory}</li><br/>
      * </ul>
+     *
      * @param type，接口类型
      * @see #getAdaptiveExtension
      */
@@ -516,8 +520,8 @@ public class ExtensionLoader<T> {
      * 对于扩展加载器类的具体泛型T，进行获得适配扩展类
      * 该部分代码，参考来自spring，xmlBeanFactory。
      * <ul>
-     *     <li>从缓存属性{@link #cachedAdaptiveInstance}中获得</li><br/>
-     *     <li>无则使用{@link #createAdaptiveExtension}新建获得适配扩展类，并完成对缓存属性{@link #cachedAdaptiveInstance}的设置</li><br/>
+     * <li>从缓存属性{@link #cachedAdaptiveInstance}中获得</li><br/>
+     * <li>无则使用{@link #createAdaptiveExtension}新建获得适配扩展类，并完成对缓存属性{@link #cachedAdaptiveInstance}的设置</li><br/>
      * </ul>
      * 一般情况下不会有并发访问这个情况
      * cachedAdaptiveInstance这个属性只有在该函数调用后才会发生设置
@@ -712,12 +716,12 @@ public class ExtensionLoader<T> {
      * 加载扩展类
      * 从配置文件中加载
      * <ul>
-     *     <li>获得泛型T（type属性）对应接口的@SPI注解</li><br/>
-     *     <li>或的注解的value字段</li><br/>
-     *     <li>对于value值不为空串，则不能带有分隔符','，完成缓存属性cachedDefaultName的设置为value</li><br/>
-     *     <li>从配置文件{@link #DUBBO_INTERNAL_DIRECTORY}中查找，完成配置加载</li><br/>
-     *     <li>从配置文件{@link #DUBBO_DIRECTORY}中查找，完成配置加载</li><br/>
-     *     <li>从配置文件{@link #SERVICES_DIRECTORY}中查找，完成配置加载</li><br/>
+     * <li>获得泛型T（type属性）对应接口的@SPI注解</li><br/>
+     * <li>或的注解的value字段</li><br/>
+     * <li>对于value值不为空串，则不能带有分隔符','，完成缓存属性cachedDefaultName的设置为value</li><br/>
+     * <li>从配置文件{@link #DUBBO_INTERNAL_DIRECTORY}中查找，完成配置加载</li><br/>
+     * <li>从配置文件{@link #DUBBO_DIRECTORY}中查找，完成配置加载</li><br/>
+     * <li>从配置文件{@link #SERVICES_DIRECTORY}中查找，完成配置加载</li><br/>
      * </ul>
      *
      * @return
@@ -754,7 +758,7 @@ public class ExtensionLoader<T> {
      * 设置cachedNames，key是class，value是别名，是符合名字中的第一个
      *
      * @param extensionClasses，名字和普通扩展类的集合
-     * @param dir 配置文件存在的目录
+     * @param dir                          配置文件存在的目录
      */
     private void loadFile(Map<String, Class<?>> extensionClasses, String dir) {
         String fileName = dir + type.getName();
@@ -922,12 +926,13 @@ public class ExtensionLoader<T> {
      * 获得泛型T的扩展适配类
      * 这个类就是属性cachedAdaptiveClass,
      * <ul>
-     *     <li>使用{@link #getExtensionClasses()}获得所用扩展，包括普通以及特殊的扩展类的加载</li><br/>
-     *     <li>从缓存属性cachedAdaptiveClass，之间获得，正常情况下，{@link #getExtensionClasses()}会完成对cachedAdaptiveClass的设置</li><br/>
-     *     <li>缓存属性不存在，使用{@link #createAdaptiveExtensionClass()}生成</li><br/>
+     * <li>使用{@link #getExtensionClasses()}获得所用扩展，包括普通以及特殊的扩展类的加载</li><br/>
+     * <li>从缓存属性cachedAdaptiveClass，之间获得，正常情况下，{@link #getExtensionClasses()}会完成对cachedAdaptiveClass的设置</li><br/>
+     * <li>缓存属性不存在，使用{@link #createAdaptiveExtensionClass()}生成</li><br/>
      * </ul>
      * 首先尝试获得扩展类，getExtensionClasses。里面包括对cachedAdaptiveClass的设置
      * 如果都没有。则直接通过运行编译器生成。
+     *
      * @return 获得泛型T的扩展适配类。
      * @see #createAdaptiveExtensionClass()
      */
@@ -958,6 +963,7 @@ public class ExtensionLoader<T> {
     /**
      * 为对于在配置文件中找不到相应的扩展配置类（@Adpative注解）泛型T生成编译代码，
      * 方便运行编译加入。
+     *
      * @return
      */
     private String createAdaptiveExtensionClassCode() {
@@ -1094,61 +1100,24 @@ public class ExtensionLoader<T> {
                         break;
                     }
                 }
-
                 //@SPI的value值
+                //参数含有com.alibaba.dubbo.rpc.Invocation
+                //URL url.getMethodParameter(methodName,value[i],defaultExtName)
+                //先在URL上找key1的Value作为要Adapt成的Extension名；
+                //key1没有Value，则使用key2的Value作为要Adapt成的Extension名。
+                //key2没有Value，使用缺省的扩展。
+                //如果没有设定缺省扩展，则方法调用会抛出IllegalStateException。
                 String defaultExtName = cachedDefaultName;
-                String getNameCode = null;
-                //value @Adaptive注解
+                String getNameCode = defaultExtName;
                 for (int i = value.length - 1; i >= 0; --i) {
-                    if (i == value.length - 1) {
-                        //@SPI注解有值
-                        if (null != defaultExtName) {
-                            if (!"protocol".equals(value[i])) {
-                                //不是protocol的处理
-                                if (hasInvocation) {
-                                    //参数含有com.alibaba.dubbo.rpc.Invocation
-                                    //URL url.getMethodParameter(methodName,value[i],defaultExtName)
-                                    //先在URL上找key1的Value作为要Adapt成的Extension名；
-                                    //key1没有Value，则使用key2的Value作为要Adapt成的Extension名。
-                                    //key2没有Value，使用缺省的扩展。
-                                    //如果没有设定缺省扩展，则方法调用会抛出IllegalStateException。
-                                    getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                                } else {
-                                    getNameCode = String.format("url.getParameter(\"%s\", \"%s\")", value[i], defaultExtName);
-                                }
-                            } else {
-                                //是protocol
-                                getNameCode = String.format("( url.getProtocol() == null ? \"%s\" : url.getProtocol() )", defaultExtName);
-                            }
+                    if (!"protocol".equals(value[i])) {
+                        if (hasInvocation) {
+                            getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
                         } else {
-                            //@SPI注解没有值
-                            if (!"protocol".equals(value[i])) {
-                                //不是protocol的处理
-                                if (hasInvocation) {
-                                    //参数含有com.alibaba.dubbo.rpc.Invocation
-                                    getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                                } else {
-                                    getNameCode = String.format("url.getParameter(\"%s\")", value[i]);
-                                }
-                            } else {
-                                //是protocol
-                                getNameCode = "url.getProtocol()";
-                            }
+                            getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
                         }
                     } else {
-                        //@SPI注解没有值
-                        if (!"protocol".equals(value[i])) {
-                            //不是protocol的处理
-                            if (hasInvocation) {
-                                //参数含有com.alibaba.dubbo.rpc.Invocation
-                                getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
-                            } else {
-                                getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
-                            }
-                        } else {
-                            //是protocol
-                            getNameCode = String.format("url.getProtocol() == null ? (%s) : url.getProtocol()", getNameCode);
-                        }
+                        getNameCode = String.format("( url.getProtocol() == null ? (%s) : url.getProtocol() )", getNameCode);
                     }
                 }
                 code.append("\nString extName = ").append(getNameCode).append(";");
