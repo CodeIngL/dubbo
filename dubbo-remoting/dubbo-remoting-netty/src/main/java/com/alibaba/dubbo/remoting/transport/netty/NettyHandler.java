@@ -32,9 +32,12 @@ import com.alibaba.dubbo.remoting.Channel;
 import com.alibaba.dubbo.remoting.ChannelHandler;
 
 /**
- * NettyHandler 继承 SimpleChanelHandler
+ * NettyHandler
+ * 继承 SimpleChanelHandler
  * 可以处理上下行的Handler
- * 
+ * 由于引入dubbo内部对Channel的抽象，因此持有dubbo的handler，用于在编解码前后做出操作
+ * URL保存了相关的元信息，
+ * 注解@Sharable指明了该实例是在netty通信上是共享的。
  * @author william.liangf
  * @see org.jboss.netty.channel.SimpleChannelHandler
  */
@@ -62,6 +65,12 @@ public class NettyHandler extends SimpleChannelHandler {
         return channels;
     }
 
+    /**
+     * 成功连接执行的方法
+     * @param ctx netty's handler上下文环境
+     * @param e
+     * @throws Exception
+     */
     @Override
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.getChannel(), url, handler);
@@ -75,6 +84,12 @@ public class NettyHandler extends SimpleChannelHandler {
         }
     }
 
+    /**
+     * 断开连接执行的方法
+     * @param ctx netty's handler上下文环境
+     * @param e
+     * @throws Exception
+     */
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.getChannel(), url, handler);

@@ -66,39 +66,60 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
 
     public static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[0];
 
+    /**
+     * 重写了父类的方法
+     *
+     * @param channel
+     * @param is
+     * @param header
+     * @return
+     * @throws IOException
+     */
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
-        byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);
+        //头部第三个字节
+        //包含序列化协议标识，event标识, two way标识，REQ/res标识
+        byte flag = header[2];
+
+        //使用掩码00011111获得使用的序列化协议
+        byte proto = (byte) (flag & SERIALIZATION_MASK);
+
+        //获得序列化协议对象，使用什么方式去序列化
         Serialization s = CodecSupport.getSerialization(channel.getUrl(), proto);
+
+        //协议32位以后
         // get request id.
         long id = Bytes.bytes2long(header, 4);
+
         if ((flag & FLAG_REQUEST) == 0) {
-            // decode response.
+            //23位标志位是response的处理,即这数据包代表了响应
+            //解码回复的id
             Response res = new Response(id);
+            //event标志位为1，设置心跳事件
             if ((flag & FLAG_EVENT) != 0) {
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
-            // get status.
+            //获得状态头，头部第三个字节
             byte status = header[3];
+            //设置状态头
             res.setStatus(status);
+            //状态是OK
             if (status == Response.OK) {
                 try {
                     Object data;
                     if (res.isHeartbeat()) {
+                        //肯能要废弃，更下面的decodeEventData实现是一模一样的。
                         data = decodeHeartbeatData(channel, deserialize(s, channel.getUrl(), is));
                     } else if (res.isEvent()) {
+                        //优先推荐的使用方法
                         data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
                     } else {
+                        //不是事件
                         DecodeableRpcResult result;
-                        if (channel.getUrl().getParameter(
-                            Constants.DECODE_IN_IO_THREAD_KEY,
-                            Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
-                            result = new DecodeableRpcResult(channel, res, is,
-                                                             (Invocation)getRequestData(id), proto);
+                        if (channel.getUrl().getParameter(Constants.DECODE_IN_IO_THREAD_KEY, Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
+                            result = new DecodeableRpcResult(channel, res, is, (Invocation) getRequestData(id), proto);
                             result.decode();
                         } else {
-                            result = new DecodeableRpcResult(channel, res,
-                                                             new UnsafeByteArrayInputStream(readMessageData(is)),
-                                                             (Invocation) getRequestData(id), proto);
+                            result = new DecodeableRpcResult(channel, res, new UnsafeByteArrayInputStream(readMessageData(is)), (Invocation) getRequestData(id), proto);
                         }
                         data = result;
                     }
@@ -115,10 +136,13 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
             }
             return res;
         } else {
-            // decode request.
+            //解码请求，协议包23位标志位是1
             Request req = new Request(id);
+            //请求对象设定版本
             req.setVersion("2.0.0");
+            //设定twoWay
             req.setTwoWay((flag & FLAG_TWOWAY) != 0);
+            //设定事件
             if ((flag & FLAG_EVENT) != 0) {
                 req.setEvent(Request.HEARTBEAT_EVENT);
             }
@@ -130,14 +154,11 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                     data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
                 } else {
                     DecodeableRpcInvocation inv;
-                    if (channel.getUrl().getParameter(
-                        Constants.DECODE_IN_IO_THREAD_KEY,
-                        Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
+                    if (channel.getUrl().getParameter(Constants.DECODE_IN_IO_THREAD_KEY, Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
                         inv = new DecodeableRpcInvocation(channel, req, is, proto);
                         inv.decode();
                     } else {
-                        inv = new DecodeableRpcInvocation(channel, req,
-                                                          new UnsafeByteArrayInputStream(readMessageData(is)), proto);
+                        inv = new DecodeableRpcInvocation(channel, req, new UnsafeByteArrayInputStream(readMessageData(is)), proto);
                     }
                     data = inv;
                 }
@@ -155,7 +176,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
     }
 
     private ObjectInput deserialize(Serialization serialization, URL url, InputStream is)
-        throws IOException {
+            throws IOException {
         return serialization.deserialize(url, is);
     }
 
@@ -180,9 +201,9 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         out.writeUTF(ReflectUtils.getDesc(inv.getParameterTypes()));
         Object[] args = inv.getArguments();
         if (args != null)
-        for (int i = 0; i < args.length; i++){
-            out.writeObject(encodeInvocationArgument(channel, inv, i));
-        }
+            for (int i = 0; i < args.length; i++) {
+                out.writeObject(encodeInvocationArgument(channel, inv, i));
+            }
         out.writeObject(inv.getAttachments());
     }
 

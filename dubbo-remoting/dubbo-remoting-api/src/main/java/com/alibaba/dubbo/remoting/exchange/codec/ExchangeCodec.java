@@ -81,7 +81,7 @@ public class ExchangeCodec extends TelnetCodec {
     }
 
     /**
-     * 解码的关键处理
+     * 解码的关键处理，dubboCodec使用该方法，不做重写。
      * <ul>
      *     <li>获得buffer的可读数据长度</li><br/>
      *     <li>尝试获取协议头,长度为readable何头长HEADER_LENGTH之间的较小值。即可读的数据可能比头小，对于比头大的尝试读取头</li><br/>
@@ -95,7 +95,7 @@ public class ExchangeCodec extends TelnetCodec {
      * @see #decode(Channel, ChannelBuffer, int, byte[])
      */
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
-        //获取buffer可读的一部分
+        //获取buffer可读的数据长度
         int readable = buffer.readableBytes();
         //尝试获取协议头部，协议头部是16个字节
         //协议头部不一定是完整的（ex:TCP拆包）
@@ -106,6 +106,11 @@ public class ExchangeCodec extends TelnetCodec {
 
     /**
      * dubbo协议头部长度是16个字节
+     * <ul>
+     *     <li>尝试读取魔数，进行处理，如果没有魔数</li><br/>
+     *     <li>使用header进可能的读完所有数据，在header中寻找下一个魔数的位置</li><br/>
+     *     <li>使用header进可能的读完所有数据，在header中寻找下一个魔数的位置</li><br/>
+     * </ul>
      * @param channel 网络抽象channel的包装
      * @param buffer 网络抽象channelBuffer的包装
      * @param readable
@@ -267,6 +272,11 @@ public class ExchangeCodec extends TelnetCodec {
         }
     }
 
+    /**
+     * 根据协议包id获得请求数据对象
+     * @param id 协议包id
+     * @return
+     */
     protected Object getRequestData(long id) {
         DefaultFuture future = DefaultFuture.getFuture(id);
         if (future == null)

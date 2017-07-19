@@ -80,12 +80,13 @@ public class Response {
     //协议包状态项
     private byte             mStatus           = OK;
 
-    //true 代表心跳
+    //mEvent和mResult的组合表明这个是什么事件（比如心跳）
     private boolean          mEvent         = false;
+    private Object           mResult;
 
     private String           mErrorMsg;
 
-    private Object           mResult;
+
 
     public Response(){
     }

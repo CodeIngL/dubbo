@@ -91,6 +91,7 @@ public class TelnetCodec extends TransportCodec {
         if (isClientSide(channel)) {
             return toString(message, getCharset(channel));
         }
+        //检查payload部分
         checkPayload(channel, readable);
 
         //检查message
@@ -98,7 +99,7 @@ public class TelnetCodec extends TransportCodec {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        //含有回显符号
+        //含有回显符号，直接发回去，放回NEED_MORE_INPUT
         if (message[message.length - 1] == '\b') { // Windows backspace echo
             try {
                 boolean doublechar = message.length >= 3 && message[message.length - 3] < 0; // double byte char
@@ -110,7 +111,7 @@ public class TelnetCodec extends TransportCodec {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        //含有结束命令
+        //含有结束命令，关闭通道，返回null
         for (Object command : EXIT) {
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
@@ -120,32 +121,39 @@ public class TelnetCodec extends TransportCodec {
                 return null;
             }
         }
-        //向上键向下键
+
+        //messgae带有用户按动向上键或者向下键的处理
         boolean up = endsWith(message, UP);
         boolean down = endsWith(message, DOWN);
         if (up || down) {
-            //历史信息
+            //历史命令，从缓存中获得用户历史命令
             LinkedList<String> history = (LinkedList<String>) channel.getAttribute(HISTORY_LIST_KEY);
+            //没有历史命令，直接返回NEED_MORE_INPUT
             if (history == null || history.size() == 0) {
                 return DecodeResult.NEED_MORE_INPUT;
             }
+            //获得当前的命令位置
             Integer index = (Integer) channel.getAttribute(HISTORY_INDEX_KEY);
             Integer old = index;
             if (index == null) {
+                //如果当前命令位置没有，直接使用最后一个命令
                 index = history.size() - 1;
             } else {
                 if (up) {
+                    //向上键的处理
                     index = index - 1;
                     if (index < 0) {
                         index = history.size() - 1;
                     }
                 } else {
+                    //向下键的处理
                     index = index + 1;
                     if (index > history.size() - 1) {
                         index = 0;
                     }
                 }
             }
+            //命令发生改变，重写缓存隶属
             if (old == null || ! old.equals(index)) {
                 channel.setAttribute(HISTORY_INDEX_KEY, index);
                 String value = history.get(index);
@@ -171,6 +179,7 @@ public class TelnetCodec extends TransportCodec {
             }
             return DecodeResult.NEED_MORE_INPUT;
         }
+        //含有结束命令，关闭通道，返回null
         for (Object command : EXIT) {
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
@@ -223,6 +232,7 @@ public class TelnetCodec extends TransportCodec {
                 }
             }
         }
+        //成功最后返回的String字符串，这和其他是不同的。
         return result;
     }
     

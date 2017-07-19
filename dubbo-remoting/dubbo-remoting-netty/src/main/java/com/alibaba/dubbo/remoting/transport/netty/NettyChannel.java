@@ -32,7 +32,7 @@ import com.alibaba.dubbo.remoting.transport.AbstractChannel;
 
 /**
  * NettyChannel.
- * 
+ * 针对netty的通道的具体实现
  * @author qian.lei
  * @author william.liangf
  */
@@ -40,8 +40,10 @@ final class NettyChannel extends AbstractChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyChannel.class);
 
+    //全局缓存，缓存了netty框架中的channel和dubbo的对抽象上针对netty实现的Channel的映射关系
     private static final ConcurrentMap<org.jboss.netty.channel.Channel, NettyChannel> channelMap = new ConcurrentHashMap<org.jboss.netty.channel.Channel, NettyChannel>();
 
+    //netty框架的channel
     private final org.jboss.netty.channel.Channel channel;
 
     private final Map<String, Object> attributes = new ConcurrentHashMap<String, Object>();
@@ -61,7 +63,7 @@ final class NettyChannel extends AbstractChannel {
     }
 
     /**
-     * 缓存channel
+     * 缓存channel，规则无则新建，有则直接获取
      * @param ch netty's channel
      * @param url 元信息
      * @param handler dubbo对网络处理的抽象

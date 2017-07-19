@@ -85,15 +85,18 @@ public final class ChannelBuffers {
     /**
      * 尝试包装字节缓冲区，转换为内部的结构，
      * 用于屏蔽各类网络的框架的差异
+     * <ul>
+     *     <li>检验buffer的有效性，对于无效的buffer之间返回dubbo内部定义的空buffer实例</li><br/>
+     *     <li>对于有后备数组的使用HeapChannelBuffer来构建</li><br/>
+     *     <li>反之使用ByteBufferBackedChannelBuffer来构建</li><br/>
+     * </ul>
      * @param buffer 字节缓冲区
      * @return  dubbo内部结构
      */
     public static ChannelBuffer wrappedBuffer(ByteBuffer buffer) {
-        //buffer无效，返回EMPTY_BUFFER
         if (!buffer.hasRemaining()) {
             return EMPTY_BUFFER;
         }
-        //检查
         if (buffer.hasArray()) {
             return wrappedBuffer(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         } else {
