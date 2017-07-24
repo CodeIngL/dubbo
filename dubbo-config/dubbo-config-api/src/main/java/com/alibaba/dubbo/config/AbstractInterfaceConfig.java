@@ -204,67 +204,62 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         //检查注册配置
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
-        if (registries != null && registries.size() > 0) {
-            //遍历
-            for (RegistryConfig config : registries) {
-                //获得地址
-                String address = config.getAddress();
-                if (address == null || address.length() == 0) {
-                    //本机
-                    address = Constants.ANYHOST_VALUE;
+        for (RegistryConfig config : registries) {
+            //获得地址
+            String address = config.getAddress();
+            if (address == null || address.length() == 0) {
+                //本机
+                address = Constants.ANYHOST_VALUE;
+            }
+            //获得系统配置地址
+            String sysaddress = System.getProperty("dubbo.registry.address");
+            if (sysaddress != null && sysaddress.length() > 0) {
+                //系统配置的地址
+                address = sysaddress;
+            }
+            if (RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+                continue;
+            }
+            //有效的注册中心地址即不是N/A
+            Map<String, String> map = new HashMap<String, String>();
+            //从应用中获得键值对
+            appendParameters(map, application);
+            //从应用中获得注册配置获得键值对
+            appendParameters(map, config);
+            //继续放置
+            map.put("path", RegistryService.class.getName());
+            //继续放置
+            map.put("dubbo", Version.getVersion());
+            //继续放置
+            map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
+            //继续放置
+            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
+            //不含键protocol
+            if (!map.containsKey("protocol")) {
+                //检查是否有remote对应类
+                if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
+                    //放入remote
+                    map.put("protocol", "remote");
+                } else {
+                    //放入dubbo
+                    map.put("protocol", "dubbo");
                 }
-                //获得系统配置地址
-                String sysaddress = System.getProperty("dubbo.registry.address");
-                if (sysaddress != null && sysaddress.length() > 0) {
-                    //系统配置的地址
-                    address = sysaddress;
+            }
+            //使用键值对解析地址
+            List<URL> urls = UrlUtils.parseURLs(address, map);
+            for (URL url : urls) {
+                //url中的map加入registry，url.getProtocol()
+                url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
+                //url中对protocol重新设置，为registry
+                url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+                //上面两个设置后不影响之前的url.getProtocol()
+                if ((provider && url.getParameter(Constants.REGISTER_KEY, true))) {
+                    //for服务提供者
+                    registryList.add(url);
                 }
-                //有效的注册中心地址即不是N/A
-                if (address != null && address.length() > 0
-                        && !RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
-                    Map<String, String> map = new HashMap<String, String>();
-                    //从应用中获得键值对
-                    appendParameters(map, application);
-                    //从应用中获得注册配置获得键值对
-                    appendParameters(map, config);
-                    //继续放置
-                    map.put("path", RegistryService.class.getName());
-                    //继续放置
-                    map.put("dubbo", Version.getVersion());
-                    //继续放置
-                    map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-                    //继续放置
-                    if (ConfigUtils.getPid() > 0) {
-                        map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-                    }
-                    //不含键protocol
-                    if (!map.containsKey("protocol")) {
-                        //检查是否有remote对应类
-                        if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
-                            //放入remote
-                            map.put("protocol", "remote");
-                        } else {
-                            //放入dubbo
-                            map.put("protocol", "dubbo");
-                        }
-                    }
-                    //使用键值对解析地址
-                    List<URL> urls = UrlUtils.parseURLs(address, map);
-                    for (URL url : urls) {
-                        //url中的map加入registry，url.getProtocol()
-                        url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
-                        //url中对protocol重新设置，为registry
-                        url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
-                        //上面两个设置后不影响之前的url.getProtocol()
-                        if ((provider && url.getParameter(Constants.REGISTER_KEY, true))) {
-                            //for服务提供者
-                            registryList.add(url);
-                        }
-                        if (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true)) {
-                            //for服务消费者
-                            registryList.add(url);
-                        }
-                    }
+                if (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true)) {
+                    //for服务消费者
+                    registryList.add(url);
                 }
             }
         }

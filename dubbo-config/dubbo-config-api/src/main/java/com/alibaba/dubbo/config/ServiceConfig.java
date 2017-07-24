@@ -484,12 +484,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (methods != null && methods.size() > 0) {
             for (MethodConfig method : methods) {
                 appendParameters(map, method, method.getName());
-                String retryKey = method.getName() + ".retry";
-                if (map.containsKey(retryKey)) {
-                    String retryValue = map.remove(retryKey);
-                    if ("false".equals(retryValue)) {
-                        map.put(method.getName() + ".retries", "0");
-                    }
+                if ("false".equals(map.remove(method.getName() + ".retry"))) {
+                    map.put(method.getName() + ".retries", "0");
                 }
                 List<ArgumentConfig> arguments = method.getArguments();
                 if (arguments != null && arguments.size() > 0) {
@@ -498,31 +494,26 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         if (argument.getType() != null && argument.getType().length() > 0) {
                             Method[] methods = interfaceClass.getMethods();
                             //遍历所有方法
-                            if (methods != null && methods.length > 0) {
-                                for (int i = 0; i < methods.length; i++) {
-                                    String methodName = methods[i].getName();
-                                    //匹配方法名称，获取方法签名.
-                                    if (methodName.equals(method.getName())) {
-                                        //获取参数类型
-                                        Class<?>[] argtypes = methods[i].getParameterTypes();
-                                        //一个方法中单个callback
-                                        if (argument.getIndex() != -1) {
-                                            //index对应参数类型匹配
-                                            if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
-                                                appendParameters(map, argument, method.getName() + "." + argument.getIndex());
-                                            } else {
-                                                throw new IllegalArgumentException("argument config error : the index attribute and type attirbute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
-                                            }
+                            for (int i = 0; i < methods.length; i++) {
+                                String methodName = methods[i].getName();
+                                //匹配方法名称，获取方法签名.
+                                if (methodName.equals(method.getName())) {
+                                    //获取参数类型
+                                    Class<?>[] argtypes = methods[i].getParameterTypes();
+                                    //一个方法中单个callback
+                                    if (argument.getIndex() != -1) {
+                                        //index对应参数类型匹配
+                                        if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
+                                            appendParameters(map, argument, method.getName() + "." + argument.getIndex());
                                         } else {
-                                            //一个方法中多个callback
-                                            for (int j = 0; j < argtypes.length; j++) {
-                                                Class<?> argclazz = argtypes[j];
-                                                if (argclazz.getName().equals(argument.getType())) {
-                                                    appendParameters(map, argument, method.getName() + "." + j);
-                                                    if (argument.getIndex() != -1 && argument.getIndex() != j) {
-                                                        throw new IllegalArgumentException("argument config error : the index attribute and type attirbute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
-                                                    }
-                                                }
+                                            throw new IllegalArgumentException("argument config error : the index attribute and type attirbute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
+                                        }
+                                    } else {
+                                        //一个方法中多个callback
+                                        for (int j = 0; j < argtypes.length; j++) {
+                                            Class<?> argclazz = argtypes[j];
+                                            if (argclazz.getName().equals(argument.getType())) {
+                                                appendParameters(map, argument, method.getName() + "." + j);
                                             }
                                         }
                                     }
@@ -533,7 +524,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         } else {
                             throw new IllegalArgumentException("argument config must set index or type attribute.eg: <dubbo:argument index='0' .../> or <dubbo:argument type=xxx .../>");
                         }
-
                     }
                 }
             } // end of methods for
@@ -544,7 +534,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             map.put("generic", generic);
             map.put("methods", Constants.ANY_VALUE);
         } else {
-            //放置上一个版本
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put("revision", revision);
