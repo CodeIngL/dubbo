@@ -60,11 +60,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     public static final String NAME = "dubbo";
 
-    public static final String COMPATIBLE_CODEC_NAME = "dubbo1compatible";
-
     public static final int DEFAULT_PORT = 20880;
-
-    public final ReentrantLock lock = new ReentrantLock();
 
     private final Map<String, ExchangeServer> serverMap = new ConcurrentHashMap<String, ExchangeServer>(); // <host:port,Exchanger>
 
@@ -78,8 +74,12 @@ public class DubboProtocol extends AbstractProtocol {
 
     private static final String IS_CALLBACK_SERVICE_INVOKE = "_isCallBackServiceInvoke";
 
+    /**
+     * 最核心的处理器，众多处理器，最后应用的处理器
+     */
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
+        @Override
         public Object reply(ExchangeChannel channel, Object message) throws RemotingException {
             if (message instanceof Invocation) {
                 Invocation inv = (Invocation) message;
@@ -100,14 +100,16 @@ public class DubboProtocol extends AbstractProtocol {
                         }
                     }
                     if (!hasMethod) {
-                        logger.warn(new IllegalStateException("The methodName " + inv.getMethodName() + " not found in callback service interface ,invoke will be ignored. please update the api interface. url is:" + invoker.getUrl()) + " ,invocation is :" + inv);
+                        logger.warn(new IllegalStateException("The methodName " + inv.getMethodName()
+                                + " not found in callback service interface ,invoke will be ignored. please update the api interface. url is:" + invoker.getUrl()) + " ,invocation is :" + inv);
                         return null;
                     }
                 }
                 RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
                 return invoker.invoke(inv);
             }
-            throw new RemotingException(channel, "Unsupported request: " + message == null ? null : (message.getClass().getName() + ": " + message) + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
+            throw new RemotingException(channel, "Unsupported request: " + message == null ? null : (message.getClass().getName()
+                    + ": " + message) + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
         }
 
         @Override
@@ -227,6 +229,8 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+    //======= 服务端相关 =======
+
     /**
      * <p>
      * dubbo默认的导出方式
@@ -320,6 +324,7 @@ public class DubboProtocol extends AbstractProtocol {
      * <li>获得网络框架类型通过键("server"),默认是netty</li>
      * <li>绑定url和交换源处理器得到服务对象</li>
      * </ul>
+     *
      * @param url 元信息
      * @return
      */
@@ -334,7 +339,6 @@ public class DubboProtocol extends AbstractProtocol {
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str))
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
 
-        //url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
         url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
 
         ExchangeServer server;
@@ -356,13 +360,30 @@ public class DubboProtocol extends AbstractProtocol {
         return server;
     }
 
+
+    //======= 消费端connect相关 =======
+
+    /**
+     * 消费端引用获得相应的invoker
+     *
+     * @param serviceType
+     * @param url         远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
-        // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
         return invoker;
     }
 
+    /**
+     * 获得客户端
+     *
+     * @param url 元信息
+     * @return 客户端实例
+     */
     private ExchangeClient[] getClients(URL url) {
         //是否共享连接
         boolean service_share_connect = false;
@@ -386,6 +407,9 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * 获取共享连接
+     *
+     * @param url 元信息
+     * @return 客户端
      */
     private ExchangeClient getSharedClient(URL url) {
         String key = url.getAddress();
@@ -409,16 +433,17 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * 创建新连接.
+     * <ul>
+     * <li></li>
+     * </ul>
+     *
+     * @param url 元信息
+     * @return 客户端实例
      */
     private ExchangeClient initClient(URL url) {
 
-        // client type setting.
         String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
-
-        String version = url.getParameter(Constants.DUBBO_VERSION_KEY);
-        boolean compatible = (version != null && version.startsWith("1.0."));
-        url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() && compatible ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
-        //默认开启heartbeat
+        url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
 
         // BIO存在严重性能问题，暂时不允许使用
@@ -436,8 +461,7 @@ public class DubboProtocol extends AbstractProtocol {
                 client = Exchangers.connect(url, requestHandler);
             }
         } catch (RemotingException e) {
-            throw new RpcException("Fail to create remoting client for service(" + url
-                    + "): " + e.getMessage(), e);
+            throw new RpcException("Fail to create remoting client for service(" + url + "): " + e.getMessage(), e);
         }
         return client;
     }

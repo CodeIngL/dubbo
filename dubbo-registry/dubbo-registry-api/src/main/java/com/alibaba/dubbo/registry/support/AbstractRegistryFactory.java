@@ -91,7 +91,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
     			.removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
         //获得地址
     	String key = url.toServiceString();
-        // 锁定注册中心获取过程，保证注册中心单一实例
+        //锁定注册中心获取过程，保证注册中心单一实例
         //尝试从缓存中取，没有则新建
         LOCK.lock();
         try {

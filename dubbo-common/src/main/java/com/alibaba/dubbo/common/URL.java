@@ -1205,6 +1205,17 @@ public final class URL implements Serializable {
         return new InetSocketAddress(host, port);
     }
 
+    /**
+     *  根据元信息，获得服务的标志
+     *  <ul>获得服务的接口，元信息参数映射中键为interface的值，默认是属性path的值
+     *      <li>尝试添加group的配置信息--->${group}/</li>
+     *      <li>添加接口信息--->${inf}</li>
+     *      <li>添加版本信息--->:${version}</li>
+     *  </ul>
+     *
+     *
+     * @return 服务的标志
+     */
     public String getServiceKey() {
         String inf = getServiceInterface();
         if (inf == null) return null;

@@ -28,6 +28,7 @@ import com.alibaba.dubbo.remoting.RemotingException;
  * 终端提供了对网络的处理，因而持有处理器，
  * 终端知其他相关的信息，因而持有URL元信息
  * 终端维护了终端开启关闭的状态，因而持有closed属性
+ *
  * @author qian.lei
  * @author william.liangf
  */
@@ -37,15 +38,16 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
     private final ChannelHandler handler;
 
     //元信息
-    private volatile URL         url;
+    private volatile URL url;
 
     //是否关闭
-    private volatile boolean     closed;
+    private volatile boolean closed;
 
     /**
      * 抽象类AbstractPeer构造函数
      * 简单的对属性设置，url和handler
-     * @param url 元信息
+     *
+     * @param url     元信息
      * @param handler 处理器
      */
     public AbstractPeer(URL url, ChannelHandler handler) {
@@ -89,7 +91,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
             return handler;
         }
     }
-    
+
     /**
      * @return ChannelHandler
      */
@@ -97,15 +99,16 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
     public ChannelHandler getHandler() {
         return getDelegateHandler();
     }
-    
+
     /**
      * 返回最终的handler，可能已被wrap,需要区别于getChannelHandler
+     *
      * @return ChannelHandler
      */
     public ChannelHandler getDelegateHandler() {
         return handler;
     }
-    
+
     public boolean isClosed() {
         return closed;
     }

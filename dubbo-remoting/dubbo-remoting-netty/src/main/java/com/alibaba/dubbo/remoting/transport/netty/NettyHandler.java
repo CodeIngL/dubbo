@@ -38,19 +38,20 @@ import com.alibaba.dubbo.remoting.ChannelHandler;
  * 由于引入dubbo内部对Channel的抽象，因此持有dubbo的handler，用于在编解码前后做出操作
  * URL保存了相关的元信息，
  * 注解@Sharable指明了该实例是在netty通信上是共享的。
+ *
  * @author william.liangf
  * @see org.jboss.netty.channel.SimpleChannelHandler
  */
 @Sharable
-public class NettyHandler extends SimpleChannelHandler {
+class NettyHandler extends SimpleChannelHandler {
 
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>(); // <ip:port, channel>
-    
+
     private final URL url;
-    
+
     private final ChannelHandler handler;
-    
-    public NettyHandler(URL url, ChannelHandler handler){
+
+    public NettyHandler(URL url, ChannelHandler handler) {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
         }
@@ -67,6 +68,7 @@ public class NettyHandler extends SimpleChannelHandler {
 
     /**
      * 成功连接执行的方法
+     *
      * @param ctx netty's handler上下文环境
      * @param e
      * @throws Exception
@@ -86,6 +88,7 @@ public class NettyHandler extends SimpleChannelHandler {
 
     /**
      * 断开连接执行的方法
+     *
      * @param ctx netty's handler上下文环境
      * @param e
      * @throws Exception
@@ -105,8 +108,9 @@ public class NettyHandler extends SimpleChannelHandler {
      * 消息处理，
      * <ul>构造针对netty对netty的channel封装的NettyChannel实现</ul><br/>
      * <ul>使用dubbo的子实现channelHandler处理通道以及事件</ul><br/>
+     *
      * @param ctx 上下文
-     * @param e netty事件
+     * @param e   netty事件
      * @throws Exception
      */
     @Override

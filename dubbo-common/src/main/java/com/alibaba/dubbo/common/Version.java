@@ -39,9 +39,6 @@ public final class Version {
 
     private static final String VERSION = getVersion(Version.class, "2.0.0");
 
-    private static final boolean INTERNAL = hasResource("com/alibaba/dubbo/registry/internal/RemoteRegistry.class");
-
-    private static final boolean COMPATIBLE = hasResource("com/taobao/remoting/impl/ConnectionRequest.class");
 
     static {
         // 检查是否存在重复的jar包
@@ -51,23 +48,8 @@ public final class Version {
     public static String getVersion(){
     	return VERSION;
     }
-    
-    public static boolean isInternalVersion() {
-        return INTERNAL;
-    }
 
-    public static boolean isCompatibleVersion() {
-        return COMPATIBLE;
-    }
-    
-    private static boolean hasResource(String path) {
-        try {
-            return Version.class.getClassLoader().getResource(path) != null;
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-    
+
     public static String getVersion(Class<?> cls, String defaultVersion) {
         try {
             // 首先查找MANIFEST.MF规范中的版本号

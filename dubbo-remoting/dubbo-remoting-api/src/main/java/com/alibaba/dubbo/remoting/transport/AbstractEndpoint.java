@@ -30,28 +30,30 @@ import com.alibaba.dubbo.remoting.transport.codec.CodecAdapter;
  * AbstractEndpoint
  * 抽象的终端（针对的是服务提供终端，或者服务消费终端），衍生出来是具体的终端，server或者client
  * 终端拥有编码解码器，超时时间，连接超时时间（无论对server和client都具备的属性）
+ *
  * @author william.liangf
  */
 public abstract class AbstractEndpoint extends AbstractPeer implements Resetable {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AbstractEndpoint.class);
 
-    private Codec2                codec;
+    private Codec2 codec;
 
-    private int                   timeout;
+    private int timeout;
 
-    private int                   connectTimeout;
+    private int connectTimeout;
 
     /**
      * 抽象类AbstractEndpoint的构造函数
      * 简单的完成属性的设置。包括
      * 编码器，超时时间，连接超时时间
      * <ul>
-     *     <li>从url中获得编码器</li><br/>
-     *     <li>从url中获得键为timeout的值，默认为1s</li><br/>
-     *     <li>从url中获得键为connect.timeout的值，默认为3s</li><br/>
+     * <li>从url中获得编码器</li><br/>
+     * <li>从url中获得键为timeout的值，默认为1s</li><br/>
+     * <li>从url中获得键为connect.timeout的值，默认为3s</li><br/>
      * </ul>
-     * @param url 元信息
+     *
+     * @param url     元信息
      * @param handler 处理器
      * @see #getChannelCodec(URL)
      */
@@ -65,7 +67,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
     public void reset(URL url) {
         if (isClosed()) {
             throw new IllegalStateException("Failed to reset parameters "
-                                        + url + ", cause: Channel closed. channel: " + getLocalAddress());
+                    + url + ", cause: Channel closed. channel: " + getLocalAddress());
         }
         try {
             if (url.hasParameter(Constants.TIMEOUT_KEY)) {
@@ -95,9 +97,9 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
             logger.error(t.getMessage(), t);
         }
     }
-    
+
     @Deprecated
-    public void reset(com.alibaba.dubbo.common.Parameters parameters){
+    public void reset(com.alibaba.dubbo.common.Parameters parameters) {
         reset(getUrl().addParameters(parameters.getParameters()));
     }
 
@@ -116,10 +118,11 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
     /**
      * 获得编码器
      * <ul>
-     *     <li>从url中获得键为codec的值，默认为telnet</li><br/>
-     *     <li>尝试获得值对应的Codec2扩展类</li><br/>
-     *     <li>尝试获得值对应的Codec扩展类（废弃）</li><br/>
+     * <li>从url中获得键为codec的值，默认为telnet</li><br/>
+     * <li>尝试获得值对应的Codec2扩展类</li><br/>
+     * <li>尝试获得值对应的Codec扩展类（废弃）</li><br/>
      * </ul>
+     *
      * @param url 元信息
      * @return 编码器实现
      */
@@ -129,7 +132,7 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
             return ExtensionLoader.getExtensionLoader(Codec2.class).getExtension(codecName);
         } else {
             return new CodecAdapter(ExtensionLoader.getExtensionLoader(Codec.class)
-                                               .getExtension(codecName));
+                    .getExtension(codecName));
         }
     }
 

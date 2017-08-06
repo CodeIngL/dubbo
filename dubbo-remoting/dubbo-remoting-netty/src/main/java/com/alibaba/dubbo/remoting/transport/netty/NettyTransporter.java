@@ -33,12 +33,12 @@ public class NettyTransporter implements Transporter {
     /**
      * 获得server
      * <ul>
-     *     <li>简单生成netty服务对象</li><br/>
+     *     <li>简单生成netty服务服务端对象</li><br/>
      * </ul>
-     * @param url server url
-     * @param listener
-     * @return
-     * @throws RemotingException
+     * @param url 元信息
+     * @param listener 处理器
+     * @return 服务端实例
+     * @throws RemotingException 异常信息
      */
     public Server bind(URL url, ChannelHandler listener) throws RemotingException {
         return new NettyServer(url, listener);
@@ -46,10 +46,13 @@ public class NettyTransporter implements Transporter {
 
     /**
      * 获得client
-     * @param url server url
-     * @param listener
-     * @return
-     * @throws RemotingException
+     * <ul>
+     *     <li>简单生成netty客户端对象</li>
+     * </ul>
+     * @param url 元信息
+     * @param listener 处理器
+     * @return 客户端实例
+     * @throws RemotingException 异常信息
      */
     public Client connect(URL url, ChannelHandler listener) throws RemotingException {
         return new NettyClient(url, listener);

@@ -36,11 +36,11 @@ import com.alibaba.dubbo.rpc.cluster.Cluster;
 
 /**
  * DubboRegistryFactory
- * 
+ *
  * @author william.liangf
  */
 public class DubboRegistryFactory extends AbstractRegistryFactory {
-    
+
     private Protocol protocol;
 
     public void setProtocol(Protocol protocol) {
@@ -58,11 +58,23 @@ public class DubboRegistryFactory extends AbstractRegistryFactory {
     public void setCluster(Cluster cluster) {
         this.cluster = cluster;
     }
-    
+
+    /**
+     * 注册中心配置为dubbo的实现，这里涉及到多个地址，比如url中有备份地址
+     * <ul>
+     * <li>获得稳定的注册地址{@link #getRegistryURL(URL)}</li>
+     * </ul></>
+     *
+     * @param url
+     * @return
+     */
     public Registry createRegistry(URL url) {
+        //获得注册中心的url
         url = getRegistryURL(url);
         List<URL> urls = new ArrayList<URL>();
+        //添加主url
         urls.add(url.removeParameter(Constants.BACKUP_KEY));
+        //添加备份url
         String backup = url.getParameter(Constants.BACKUP_KEY);
         if (backup != null && backup.length() > 0) {
             String[] addresses = Constants.COMMA_SPLIT_PATTERN.split(backup);
@@ -70,6 +82,7 @@ public class DubboRegistryFactory extends AbstractRegistryFactory {
                 urls.add(url.setAddress(address));
             }
         }
+        //为主url添加新洗构建直接连接的行为
         RegistryDirectory<RegistryService> directory = new RegistryDirectory<RegistryService>(RegistryService.class, url.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName()).addParameterAndEncoded(Constants.REFER_KEY, url.toParameterString()));
         Invoker<RegistryService> registryInvoker = cluster.join(directory);
         RegistryService registryService = proxyFactory.getProxy(registryInvoker);
@@ -80,7 +93,27 @@ public class DubboRegistryFactory extends AbstractRegistryFactory {
         directory.subscribe(new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, RegistryService.class.getName(), url.getParameters()));
         return registry;
     }
-    
+
+    /**
+     * 获得稳定的地址信息(元信息中不变的部分)
+     * <ul>
+     * <li>设置path:com.alibaba.dubbo.registry。RegistryService</li>
+     * <li>移除相关的注册信息，对于服务端是export属性，对于消费端是refer属性</li>
+     * <li>添加（interfece:com.alibaba.dubbo.registry。RegistryService）</li>
+     * <li>添加（sticky:true）</li>
+     * <li>添加（lazy:true）</li>
+     * <li>添加（reconnect:false）</li>
+     * <li>添加（timeout:10000）</li>
+     * <li>添加（callbacks:10000）</li>
+     * <li>添加（connect.timeout:10000）</li>
+     * <li>添加（methods:RegistryService中的相关方法）</li>
+     * <li>添加（subscribe.1.callback:true）</li>
+     * <li>添加（unsubscribe.1.callback:false）</li>
+     * </ul>
+     *
+     * @param url 元信息
+     * @return 新元信息
+     */
     private static URL getRegistryURL(URL url) {
         return url.setPath(RegistryService.class.getName())
                 .removeParameter(Constants.EXPORT_KEY).removeParameter(Constants.REFER_KEY)

@@ -76,7 +76,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
      * @throws IOException
      */
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
-        //头部第三个字节
+        //头部第3个字节
         //包含序列化协议标识，event标识, two way标识，REQ/res标识
         byte flag = header[2];
 
@@ -98,7 +98,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
             if ((flag & FLAG_EVENT) != 0) {
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
-            //获得状态头，头部第三个字节
+            //获得状态头，头部第4个字节
             byte status = header[3];
             //设置状态头
             res.setStatus(status);

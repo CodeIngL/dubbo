@@ -126,16 +126,21 @@ public class Exchangers {
     }
 
     /**
-     * @param url
+     * 获得客户端
+     *
+     * @param url     元信息
      * @param replier
      * @return
      * @throws RemotingException
+     * @see #connect(URL, ChannelHandler, Replier)
      */
     public static ExchangeClient connect(URL url, Replier<?> replier) throws RemotingException {
         return connect(url, new ChannelHandlerAdapter(), replier);
     }
 
     /**
+     * 获得客户端
+     *
      * @param url
      * @param handler
      * @param replier
@@ -147,6 +152,8 @@ public class Exchangers {
     }
 
     /**
+     * 获得客户端
+     *
      * @param url
      * @param handler
      * @return
@@ -157,9 +164,16 @@ public class Exchangers {
     }
 
     /**
-     * @param url
+     * 获得客户端
+     * <ul>
+     * <li>入参检查，参数不得为空</li>
+     * <li>添加解码编码器信息，默认对于dubbo协议来说，这一步忽略</li>
+     * <li>获得相应的exchanger扩展类(HeaderExchanger)进行连接</li>
+     * </ul>
+     *
+     * @param url     元信息
      * @param handler
-     * @return
+     * @return 客户端实例
      * @throws RemotingException
      */
     public static ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {

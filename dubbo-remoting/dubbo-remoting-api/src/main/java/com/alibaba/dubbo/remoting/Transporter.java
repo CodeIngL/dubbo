@@ -24,37 +24,37 @@ import com.alibaba.dubbo.common.extension.SPI;
 
 /**
  * Transporter. (SPI, Singleton, ThreadSafe)
- * 
+ * <p>
  * <a href="http://en.wikipedia.org/wiki/Transport_Layer">Transport Layer</a>
  * <a href="http://en.wikipedia.org/wiki/Client%E2%80%93server_model">Client/Server</a>
- * 
- * @see com.alibaba.dubbo.remoting.Transporters
+ *
  * @author ding.lid
  * @author william.liangf
+ * @see com.alibaba.dubbo.remoting.Transporters
  */
 @SPI("netty")
 public interface Transporter {
 
     /**
      * Bind a server.
-     * 
-     * @see com.alibaba.dubbo.remoting.Transporters#bind(URL, Receiver, ChannelHandler)
-     * @param url server url
-     * @param handler
-     * @return server
-     * @throws RemotingException 
+     *
+     * @param url     元信息
+     * @param handler 通道处理器
+     * @return server 服务端实例
+     * @throws RemotingException 异常信息
+     * @see com.alibaba.dubbo.remoting.Transporters#bind(URL, ChannelHandler...)
      */
     @Adaptive({Constants.SERVER_KEY, Constants.TRANSPORTER_KEY})
     Server bind(URL url, ChannelHandler handler) throws RemotingException;
 
     /**
      * Connect to a server.
-     * 
-     * @see com.alibaba.dubbo.remoting.Transporters#connect(URL, Receiver, ChannelListener)
-     * @param url server url
-     * @param handler
-     * @return client
-     * @throws RemotingException 
+     *
+     * @param url     元信息
+     * @param handler 通道处理器
+     * @return client 客户端实例
+     * @throws RemotingException 异常信息
+     * @see com.alibaba.dubbo.remoting.Transporters#connect(URL, ChannelHandler...)
      */
     @Adaptive({Constants.CLIENT_KEY, Constants.TRANSPORTER_KEY})
     Client connect(URL url, ChannelHandler handler) throws RemotingException;

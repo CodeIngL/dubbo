@@ -27,7 +27,7 @@ import com.alibaba.dubbo.common.logger.LoggerFactory;
  */
 final class NettyHelper {
 
-    public static void setNettyLoggerFactory() {
+    static void setNettyLoggerFactory() {
         InternalLoggerFactory factory = InternalLoggerFactory.getDefaultFactory();
         if (factory == null || !(factory instanceof DubboLoggerFactory)) {
             InternalLoggerFactory.setDefaultFactory(new DubboLoggerFactory());
@@ -44,6 +44,7 @@ final class NettyHelper {
         public InternalLogger newInstance(String name) {
             return new DubboLogger(LoggerFactory.getLogger(name));
         }
+
     }
 
     /**

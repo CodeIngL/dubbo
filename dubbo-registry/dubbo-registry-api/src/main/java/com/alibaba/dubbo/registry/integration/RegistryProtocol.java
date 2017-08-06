@@ -283,9 +283,18 @@ public class RegistryProtocol implements Protocol {
         String key = providerUrl.removeParameters("dynamic", "enabled").toFullString();
         return key;
     }
-    
+
+    /**
+     * 消费方引用实现
+     * @param type 服务的类型
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @SuppressWarnings("unchecked")
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        //协议转换回来，当protcol为registry只是临时代表这个需要注册到注册中心上，但是真正的协议类型还是元信息中的registry的值
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
@@ -293,6 +302,7 @@ public class RegistryProtocol implements Protocol {
         }
 
         // group="a,b" or group="*"
+        //处理group配置项
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
         if (group != null && group.length() > 0 ) {
@@ -307,7 +317,17 @@ public class RegistryProtocol implements Protocol {
     private Cluster getMergeableCluster() {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
-    
+
+    /**
+     * 对于配置项中group配置项，且属于多个组的，cluster为MergeableCluster
+     * 其他则为配置的cluster
+     * @param cluster 合并形式
+     * @param registry 注册中心
+     * @param type 接口类
+     * @param url 元信息
+     * @param <T> 返回的Invoker
+     * @return 返回的Invoker
+     */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);

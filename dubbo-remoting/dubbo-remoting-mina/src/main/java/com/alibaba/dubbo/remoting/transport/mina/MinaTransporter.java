@@ -29,6 +29,7 @@ public class MinaTransporter implements Transporter {
     
     public static final String NAME = "mina";
 
+
     public Server bind(URL url, ChannelHandler handler) throws RemotingException {
         return new MinaServer(url, handler);
     }
