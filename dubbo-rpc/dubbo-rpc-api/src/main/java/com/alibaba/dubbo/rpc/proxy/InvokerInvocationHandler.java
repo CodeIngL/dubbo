@@ -23,17 +23,33 @@ import com.alibaba.dubbo.rpc.RpcInvocation;
 
 /**
  * InvokerHandler
- * 
+ *
  * @author william.liangf
+ * @see InvocationHandler
  */
 public class InvokerInvocationHandler implements InvocationHandler {
 
+    //暴露的invoker
     private final Invoker<?> invoker;
-    
-    public InvokerInvocationHandler(Invoker<?> handler){
+
+    /**
+     * 构造函数 包装invoker
+     * 服务引用中的invoker的最外面一层
+     *
+     * @param handler invoker
+     */
+    public InvokerInvocationHandler(Invoker<?> handler) {
         this.invoker = handler;
     }
 
+    /**
+     * 分发方法调用
+     * @param proxy 代理对象
+     * @param method 调用方法
+     * @param args 参数
+     * @return 代理对象的方法执行返回
+     * @throws Throwable 异常
+     */
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();

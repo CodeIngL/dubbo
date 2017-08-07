@@ -79,6 +79,7 @@ public abstract class Proxy {
 
     /**
      * 获得代理
+     * 该代理会实现传递进来的所有接口
      * <p>
      * <ul>
      * <li>检查接口数组，java规范规定</li>
@@ -163,6 +164,7 @@ public abstract class Proxy {
             //检验接口的可访问性
             for (int i = 0; i < ics.length; i++) {
                 if (!Modifier.isPublic(ics[i].getModifiers())) {
+                    //多个接口时，需要接口在同一个包中
                     String npkg = ics[i].getPackage().getName();
                     if (pkg == null) {
                         pkg = npkg;
@@ -171,6 +173,7 @@ public abstract class Proxy {
                             throw new IllegalArgumentException("non-public interfaces from different packages");
                     }
                 }
+                //添加接口信息
                 ccp.addInterface(ics[i]);
 
                 //添加方法描述到worked中
@@ -197,6 +200,7 @@ public abstract class Proxy {
                         code.append(" return ").append(asArgument(rt, "ret")).append(";");
                     }
                     methods.add(method);
+                    //添加方法
                     ccp.addMethod(method.getName(), method.getModifiers(), rt, pts, method.getExceptionTypes(), code.toString());
                 }
             }
