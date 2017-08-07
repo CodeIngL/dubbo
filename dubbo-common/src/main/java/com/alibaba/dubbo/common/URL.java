@@ -1159,6 +1159,15 @@ public final class URL implements Serializable {
         return buildString(appendUser, appendParameter, false, false, parameters);
     }
 
+    /**
+     *
+     * @param appendUser 是否追加用户
+     * @param appendParameter 是否追加参数
+     * @param useIP  是否使用ip
+     * @param useService 是否使用服务标识
+     * @param parameters 参数信息
+     * @return 字符串
+     */
     private String buildString(boolean appendUser, boolean appendParameter, boolean useIP, boolean useService, String... parameters) {
         StringBuilder buf = new StringBuilder();
         if (protocol != null && protocol.length() > 0) {
@@ -1240,6 +1249,11 @@ public final class URL implements Serializable {
         return buf.toString();
     }
 
+    /**
+     * protocol://username:password@ip:port/group/interface:version?参数xxxx=xxxx
+     * @return 服务标识
+     * @see #buildString(boolean, boolean, boolean, boolean, String...)
+     */
     public String toServiceString() {
         return buildString(true, false, true, true);
     }

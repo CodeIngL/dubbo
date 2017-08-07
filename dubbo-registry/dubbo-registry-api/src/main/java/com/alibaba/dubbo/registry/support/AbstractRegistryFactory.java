@@ -86,7 +86,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
      */
     public Registry getRegistry(URL url) {
         //写入path，增加键值对，移除会变化的部分，主要是export键和refer键
-    	url = url.setPath(RegistryService.class.getName())
+            url = url.setPath(RegistryService.class.getName())
     			.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
     			.removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
         //获得地址

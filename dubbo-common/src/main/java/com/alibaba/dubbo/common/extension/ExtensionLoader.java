@@ -43,11 +43,11 @@ import com.alibaba.dubbo.common.utils.Holder;
 import com.alibaba.dubbo.common.utils.StringUtils;
 
 /**
- * Dubbo使用的扩展点获取。<p>
+ * Dubbo使用的扩展点获取<p>
  * <ul>
- * <li>自动注入关联扩展点。</li>hb
+ * <li>自动注入关联扩展点。</li>
  * <li>自动Wrap上扩展点的Wrap类。</li>
- * <li>缺省获得的的扩展点是一个Adaptive Instance。
+ * <li>缺省获得的的扩展点是一个Adaptive Instance。</li>
  * </ul>
  *
  * @author william.liangf
@@ -129,7 +129,7 @@ public class ExtensionLoader<T> {
     //T被装饰后的实例缓存，等价于静态代理，代理必须还有类型的构造函数。
     private Set<Class<?>> cachedWrapperClasses;
 
-    //错误
+    //错误映射
     private Map<String, IllegalStateException> exceptions = new ConcurrentHashMap<String, IllegalStateException>();
 
 
@@ -143,15 +143,17 @@ public class ExtensionLoader<T> {
 
     /**
      * 根据type的接口，寻找tepe的实现，并返回实现类的扩展加载类。
-     * ex:type equal to com.A,the type's impl is com.AImpl,the result will return ExtensionLoader<AImpl>.<br/>
-     * tip: this will cache in EXTENSION_LOADERS with key:com.A  , value:ExtensionLoader<AImpl>.<br/>
+     * <p>
+     * <b>ex</b>: type equal to com.A, the type's impl is com.AImpl, the result will return ExtensionLoader<AImpl>.<br/>
+     * <b>tip</b>: this will cache in EXTENSION_LOADERS with key:com.A  , value:ExtensionLoader<AImpl>.<br/>
+     * </p>
      * <ul>
      * <li>type非空，并必须为接口类型，同时带有SPI注解</li>
      * </ul>
      *
      * @param type 接口类型
      * @param <T>  type实现类的扩展加载类型。
-     * @return
+     * @return 特定的扩展加载类
      */
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
@@ -189,7 +191,7 @@ public class ExtensionLoader<T> {
      * <li>对type接口为其他类，则该扩展加载器类的{@link #objectFactory}属性为{@link com.alibaba.dubbo.common.extension.factory.AdaptiveExtensionFactory}</li><br/>
      * </ul>
      *
-     * @param type，接口类型
+     * @param type 接口类型
      * @see #getAdaptiveExtension
      */
     private ExtensionLoader(Class<?> type) {
