@@ -366,11 +366,11 @@ public class DubboProtocol extends AbstractProtocol {
     /**
      * 消费端引用获得相应的invoker
      *
-     * @param serviceType
-     * @param url         远程服务的URL地址
-     * @param <T>
-     * @return
-     * @throws RpcException
+     * @param serviceType 接口类型
+     * @param url         元信息
+     * @param <T>         接口类型
+     * @return DubboInvoker
+     * @throws RpcException 异常信息
      */
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
@@ -407,6 +407,11 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * 获取共享连接
+     * <ul>尝试操作缓存结构{@link #referenceClientMap}获得客户端实例
+     * <li>构建键:url的地址信息{@link URL#getAddress()}</li><br/>
+     * <li>尝试在缓存映射中获得客户端</li><br/>
+     * <li>检验客户端连接的有效性</li><br/>
+     * </ul>
      *
      * @param url 元信息
      * @return 客户端
@@ -419,13 +424,10 @@ public class DubboProtocol extends AbstractProtocol {
                 client.incrementAndGetCount();
                 return client;
             } else {
-//                logger.warn(new IllegalStateException("client is closed,but stay in clientmap .client :"+ client));
                 referenceClientMap.remove(key);
             }
         }
-        ExchangeClient exchagneclient = initClient(url);
-
-        client = new ReferenceCountExchangeClient(exchagneclient, ghostClientMap);
+        client = new ReferenceCountExchangeClient(initClient(url), ghostClientMap);
         referenceClientMap.put(key, client);
         ghostClientMap.remove(key);
         return client;
@@ -441,13 +443,12 @@ public class DubboProtocol extends AbstractProtocol {
      * @return 客户端实例
      */
     private ExchangeClient initClient(URL url) {
-
-        String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
         url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
 
         // BIO存在严重性能问题，暂时不允许使用
-        if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
+        String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
+        if (!ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported client type: " + str + "," +
                     " supported client type is " + StringUtils.join(ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
         }
