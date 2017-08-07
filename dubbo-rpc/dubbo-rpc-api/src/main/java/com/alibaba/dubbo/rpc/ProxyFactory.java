@@ -29,21 +29,21 @@ import com.alibaba.dubbo.common.extension.SPI;
 public interface ProxyFactory {
 
     /**
-     * create proxy.
-     * 
-     * @param invoker
-     * @return proxy
+     * 创建代理
+     * @param invoker rpc Invoker
+     * @param <T> 类型
+     * @return 代理
+     * @throws RpcException rpc异常
      */
     @Adaptive({Constants.PROXY_KEY})
     <T> T getProxy(Invoker<T> invoker) throws RpcException;
 
     /**
-     * create invoker.
-     * 
-     * @param <T>
-     * @param proxy
-     * @param type
-     * @param url
+     * 创建 Invoker.
+     * @param <T> Invoker的类型
+     * @param proxy 类型实例
+     * @param type 类型类
+     * @param url 元信息
      * @return invoker
      */
     @Adaptive({Constants.PROXY_KEY})

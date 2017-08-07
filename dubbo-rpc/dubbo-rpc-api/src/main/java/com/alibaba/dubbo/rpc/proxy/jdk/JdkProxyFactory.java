@@ -31,11 +31,26 @@ import com.alibaba.dubbo.rpc.proxy.InvokerInvocationHandler;
  */
 public class JdkProxyFactory extends AbstractProxyFactory {
 
+    /**
+     *
+     * @param invoker invoker
+     * @param interfaces
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
         return (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, new InvokerInvocationHandler(invoker));
     }
 
+    /**
+     *
+     * @param proxy 类型实例
+     * @param type 类型类
+     * @param url 元信息
+     * @param <T>
+     * @return
+     */
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
         return new AbstractProxyInvoker<T>(proxy, type, url) {
             @Override

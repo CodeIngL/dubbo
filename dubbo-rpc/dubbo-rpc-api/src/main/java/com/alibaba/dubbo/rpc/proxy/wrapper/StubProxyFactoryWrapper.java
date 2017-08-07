@@ -42,9 +42,11 @@ import com.alibaba.dubbo.rpc.service.GenericService;
 public class StubProxyFactoryWrapper implements ProxyFactory {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(StubProxyFactoryWrapper.class);
-    
+
+    //被包装对象，默认为JavassistProxyFactory
     private final ProxyFactory proxyFactory;
-    
+
+    //协议配置类
     private Protocol protocol;
     
     public StubProxyFactoryWrapper(ProxyFactory proxyFactory) {
@@ -55,6 +57,13 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         this.protocol = protocol;
     }
 
+    /**
+     * 获得代理
+     * @param invoker rpc Invoker
+     * @param <T> 类型
+     * @return 代理
+     * @throws RpcException rpc异常
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
         T proxy = proxyFactory.getProxy(invoker);

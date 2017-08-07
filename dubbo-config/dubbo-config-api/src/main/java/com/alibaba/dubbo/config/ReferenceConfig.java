@@ -390,21 +390,19 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             //对外引用
             if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
-                if (us != null && us.length > 0) {
-                    for (String u : us) {
-                        URL url = URL.valueOf(u);
-                        if (url.getPath() == null || url.getPath().length() == 0) {
-                            url = url.setPath(interfaceName);
+                for (String u : us) {
+                    URL url = URL.valueOf(u);
+                    if (url.getPath() == null || url.getPath().length() == 0) {
+                        url = url.setPath(interfaceName);
+                    }
+                    if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+                        URL monitorUrl = loadMonitor(url);
+                        if (monitorUrl != null) {
+                            map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                         }
-                        if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                            URL monitorUrl = loadMonitor(url);
-                            if (monitorUrl != null) {
-                                map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                            }
-                            urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
-                        } else {
-                            urls.add(ClusterUtils.mergeUrl(url, map));
-                        }
+                        urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                    } else {
+                        urls.add(ClusterUtils.mergeUrl(url, map));
                     }
                 }
             } else { // 通过注册中心配置拼装URL

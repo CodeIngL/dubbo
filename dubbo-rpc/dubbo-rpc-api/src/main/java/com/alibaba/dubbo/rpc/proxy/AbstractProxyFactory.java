@@ -29,9 +29,17 @@ import com.alibaba.dubbo.rpc.service.EchoService;
  */
 public abstract class AbstractProxyFactory implements ProxyFactory {
 
+    /**
+     * JavassistProxyFactory 和 JdkProxyFactory的共有实现
+     * @param invoker rpc Invoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
         Class<?>[] interfaces = null;
         String config = invoker.getUrl().getParameter("interfaces");
+        //there exist bug ,null point
         if (config != null && config.length() > 0) {
             String[] types = Constants.COMMA_SPLIT_PATTERN.split(config);
             interfaces = new Class<?>[types.length + 2];
@@ -47,6 +55,15 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
         return getProxy(invoker, interfaces);
     }
 
+    /**
+     * 获得代理(子类实现)
+     * @param invoker invoker
+     * @param types 接口数组
+     * @param <T> 代理类型
+     * @return 代理实例
+     * @see com.alibaba.dubbo.rpc.proxy.javassist.JavassistProxyFactory#getProxy(Invoker, Class[])
+     * @see com.alibaba.dubbo.rpc.proxy.jdk.JdkProxyFactory#getProxy(Invoker, Class[])
+     */
     public abstract <T> T getProxy(Invoker<T> invoker, Class<?>[] types);
 
 }
