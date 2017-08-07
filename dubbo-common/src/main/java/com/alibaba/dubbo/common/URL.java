@@ -73,19 +73,27 @@ public final class URL implements Serializable {
 
     private static final long serialVersionUID = -1985165475234910535L;
 
+    //协议(schemal)
     private final String protocol;
 
+    //用户名
     private final String username;
 
+    //密码
     private final String password;
 
+    //主机
     private final String host;
 
+    //端口
     private final int port;
 
+    //上下文
     private final String path;
 
+    //参数映射
     private final Map<String, String> parameters;
+
 
     // ==== cache ====
 
@@ -170,27 +178,28 @@ public final class URL implements Serializable {
 
     /**
      * <p>
-     *     解析字符串为URL对象<br/>
-     *     ex: <br/>
-     *     <ul>
-     *     <li>zookeeper://codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
-     *     <li>file:/codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
-     *     <li>codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
-     *     </ul>
-     *
+     * 解析字符串为URL对象<br/>
+     * ex: <br/>
+     * <ul>
+     * <li>zookeeper://codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
+     * <li>file:/codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
+     * <li>codeL:123456@127.0.0.1:2189/context/path?version=1.0.0&application=morgan</li><br/>
+     * </ul>
+     * <p>
      * 逻辑处理
-     *     <ul>
-     *         <li>url的参数形成map:ex:aa=bb&cc=dd&ee=ff and result map["aa":"bb","cc":"dd","ee":"ff"]</li><br/>
-     *         <li>获取url的协议，ex:zookeeper://xxx equal to zookeeper and file:/xxx equal to file</li><br/>
-     *         <li>获取用户名</li><br/>
-     *         <li>获取密码</li><br/>
-     *         <li>获取端口</li><br/>
-     *         <li>获取主机</li><br/>
-     *     </ul>
+     * <ul>
+     * <li>url的参数形成map:ex:aa=bb&cc=dd&ee=ff and result map["aa":"bb","cc":"dd","ee":"ff"]</li><br/>
+     * <li>获取url的协议，ex:zookeeper://xxx equal to zookeeper and file:/xxx equal to file</li><br/>
+     * <li>获取用户名</li><br/>
+     * <li>获取密码</li><br/>
+     * <li>获取端口</li><br/>
+     * <li>获取主机</li><br/>
+     * </ul>
      * </p>
-     * @see URL
+     *
      * @param url 字符串
      * @return URL对象
+     * @see URL
      */
     public static URL valueOf(String url) {
         if (url == null || (url = url.trim()).length() == 0) {
@@ -1206,13 +1215,12 @@ public final class URL implements Serializable {
     }
 
     /**
-     *  根据元信息，获得服务的标志
-     *  <ul>获得服务的接口，元信息参数映射中键为interface的值，默认是属性path的值
-     *      <li>尝试添加group的配置信息--->${group}/</li>
-     *      <li>添加接口信息--->${inf}</li>
-     *      <li>添加版本信息--->:${version}</li>
-     *  </ul>
-     *
+     * 根据元信息，获得服务的标志
+     * <ul>获得服务的接口，元信息参数映射中键为interface的值，默认是属性path的值
+     * <li>尝试添加group的配置信息--->${group}/</li>
+     * <li>添加接口信息--->${inf}</li>
+     * <li>添加版本信息--->:${version}</li>
+     * </ul>
      *
      * @return 服务的标志
      */
@@ -1244,6 +1252,7 @@ public final class URL implements Serializable {
     /**
      * 获得服务类名称
      * 使用{@link Constants#INTERFACE_KEY}作为键从URL中获取，默认值是{@link #path}，即全类名
+     *
      * @return
      */
     public String getServiceInterface() {

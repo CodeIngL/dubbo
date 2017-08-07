@@ -69,12 +69,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // 接口类型
     private String interfaceName;
 
+    // 接口类名
     private Class<?> interfaceClass;
 
     // 客户端类型
     private String client;
 
-    // 点对点直连服务提供地址
+    // 点对点直连服务提供地址(not only 点对点)
     private String url;
 
     // 方法配置
@@ -83,6 +84,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // 缺省配置
     private ConsumerConfig consumer;
 
+    // 协议
     private String protocol;
 
     // 接口代理类引用
@@ -94,6 +96,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private transient volatile boolean destroyed;
 
+    //远程or本地地址集合(元信息集合)
     private final List<URL> urls = new ArrayList<URL>();
 
     @SuppressWarnings("unused")
@@ -104,14 +107,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
             if (!ReferenceConfig.this.destroyed) {
                 logger.warn("ReferenceConfig(" + url + ") is not DESTROYED when FINALIZE");
-
-                /* 先不做Destroy操作
-                try {
-                    ReferenceConfig.this.destroy();
-                } catch (Throwable t) {
-                        logger.warn("Unexpected err when destroy invoker of ReferenceConfig(" + url + ") in finalize method!", t);
-                }
-                */
             }
         }
     };
@@ -167,7 +162,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     /**
      * 服务消费端入口,主要是构造元信息
      * <ul>
-     * <li>对配置属性进行校验，对元信息进行信息生成</li>
+     * <li>对配置属性进行校验，对元信息{@link URL}进行信息生成</li>
      * </ul>
      *
      * @see #createProxy
