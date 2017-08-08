@@ -160,7 +160,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     /**
      * 服务引用入口
-     *
+     * <p>
      * <ul>
      * <li>对配置属性进行校验，对元信息{@link URL}进行信息生成</li><br/>
      * <li>实现服务引用获得{@link Invoker}</li><br/>
@@ -422,10 +422,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
                 }
             }
-
+            //urls.length = 1 的情况下无论是注册中心，还是其他url，总是能暴露出来，也不需要统一的cluster取分发
             if (urls.size() == 1) {
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             } else {
+                //urls.length = 2 的情况下存在多种url，需要使用统一的门户完成对外要求
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {

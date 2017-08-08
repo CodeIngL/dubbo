@@ -63,14 +63,14 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * 生成zookeeper的注册中心实例
      * <ul>
-     *     <li>校验url中地址的合理性</li><br/>
-     *     <li>获得group:来自url中key为{@link Constants#GROUP_KEY}的值，默认是{@link #DEFAULT_ROOT}</li><br/>
-     *     <li>使用group，设定root属性，即zk应用路径</li><br/>
-     *     <li>从zk客户端转换器中获得zk客户端(封装ZkClient or Curator)</li><br/>
-     *     <li>为zk客户端添加状态监听器，失败的时候进行复原</li><br/>
+     * <li>校验url中地址的合理性</li><br/>
+     * <li>获得group:来自url中key为{@link Constants#GROUP_KEY}的值，默认是{@link #DEFAULT_ROOT}</li><br/>
+     * <li>使用group，设定root属性，即zk应用路径</li><br/>
+     * <li>从zk客户端转换器中获得zk客户端(封装ZkClient or Curator)</li><br/>
+     * <li>为zk客户端添加状态监听器，失败的时候进行复原</li><br/>
      * </ul>
      *
-     * @param url 注册的URL
+     * @param url                  注册的URL
      * @param zookeeperTransporter zk客户端转换器
      * @see FailbackRegistry#FailbackRegistry(URL)
      */
@@ -103,6 +103,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 检测zk可用性
+     *
      * @return
      */
     @Override
@@ -126,15 +127,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * zk注册中心处理注册URL的逻辑<br/>
      * <ul>
-     *     <li>使用zk客户端在zk上创建相应的路径</li><br/>
-     *     <li>存储节点的形式，有url中键{@link Constants#DYNAMIC_KEY}觉得默认是false，临时节点</li><br/>
+     * <li>使用zk客户端在zk上创建相应的路径</li><br/>
+     * <li>存储节点的形式，有url中键{@link Constants#DYNAMIC_KEY}觉得默认是false，临时节点</li><br/>
      * </ul>
      *
      * @param url 注册的url
+     * @apiNote 当URL设置了dynamic=false参数，则需持久存储，否则，当注册者出现断电等情况异常退出时，需自动删除。
      * @see FailbackRegistry#register(URL)
      * @see #toUrlPath(URL)
      * @see com.alibaba.dubbo.registry.Registry#register(URL)
-     * @apiNote 当URL设置了dynamic=false参数，则需持久存储，否则，当注册者出现断电等情况异常退出时，需自动删除。
      */
     @Override
     protected void doRegister(URL url) {
@@ -252,6 +253,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 生成应用在zk上的生成的路径（目录）
+     *
      * @return 应用路径的目录形式
      */
     private String toRootDir() {
@@ -263,6 +265,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 返回zk上的应用路径，默认是/dubbo
+     *
      * @return 应用路径
      */
     private String toRootPath() {
@@ -273,6 +276,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
      * 生成暴露服务类在zk上对应的注册路径
      * 对于暴露服务类的名字为{@link Constants#ANY_VALUE}。直接返回项目应用路径{@link #root}，默认是/dubbo
      * 对于暴露服务类的有确定的名字，项目应用路径{@link #root}+/+name
+     *
      * @param url 注册url
      * @return 服务的路径
      * @see URL#getServiceInterface()
@@ -290,9 +294,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * 根据url中的键{@link Constants#CATEGORY_KEY}，生成相关zk上子目录的名字
      * <ul>
-     *     <li>对于对应的值为{@link Constants#ANY_VALUE},使用[providers，consumers，routers，configurators]</li><br/>
-     *     <li>否则尝试通过其值解析，ex：v equal to aa,bb and the result is [aa,bb]. 没有值的情况下使用[providers]</li><br/>
+     * <li>对于对应的值为{@link Constants#ANY_VALUE},使用[providers，consumers，routers，configurators]</li><br/>
+     * <li>否则尝试通过其值解析，ex：v equal to aa,bb and the result is [aa,bb]. 没有值的情况下使用[providers]</li><br/>
      * </ul>
+     *
      * @param url 注册的url
      * @return 为暴露的服务添加子目录，返回到子目录的完整路径。多个
      * @see #toServicePath(URL)
@@ -315,6 +320,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * 根据url中的键{@link Constants#CATEGORY_KEY}，生成相关zk上子目录的名字
      * 默认使用providers做为值
+     *
      * @param url 注册的url
      * @return 为暴露的服务添加子目录，返回到子目录的完整路径。单个
      */
@@ -324,6 +330,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 生成完整的在zk上注册的暴露服务的路径
+     *
      * @param url 注册的url
      * @return 为暴露的服务添加子目录，返回到子目录的完整路径：应用目录/暴露服务全类名/子目录/url的string值
      */
@@ -363,7 +370,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * 为zk地址添加默认的端口号
      * ex
-     *   address like 127.0.0.1 and the result is 127.0.0.1:2181
+     * address like 127.0.0.1 and the result is 127.0.0.1:2181
+     *
      * @param address zk地址
      * @return
      */
