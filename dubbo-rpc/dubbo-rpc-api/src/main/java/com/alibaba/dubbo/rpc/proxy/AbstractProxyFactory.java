@@ -42,7 +42,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
         //there exist bug ,null point
         if (config != null && config.length() > 0) {
             String[] types = Constants.COMMA_SPLIT_PATTERN.split(config);
-            interfaces = new Class<?>[types.length + 2];
+            interfaces = new Class<?>[types.length + 1];
             interfaces[0] = invoker.getInterface();
             interfaces[1] = EchoService.class;
             for (int i = 0; i < types.length; i++) {
