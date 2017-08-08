@@ -51,10 +51,9 @@ import com.alibaba.dubbo.rpc.service.GenericService;
 import com.alibaba.dubbo.rpc.support.ProtocolUtils;
 
 /**
- * ReferenceConfig
+ * ReferenceConfig 服务引用类（消费方）
  *
  * @author william.liangf
- * @export
  */
 public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
@@ -127,7 +126,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
-     * 获得服务引用的接口实现
+     * 服务引用的入口
      *
      * @return rpc接口的代理, 包装了网络细节
      * @see #init()
@@ -160,26 +159,29 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
-     * 服务消费端入口,主要是构造元信息
+     * 服务引用入口
+     *
      * <ul>
-     * <li>对配置属性进行校验，对元信息{@link URL}进行信息生成</li>
+     * <li>对配置属性进行校验，对元信息{@link URL}进行信息生成</li><br/>
+     * <li>实现服务引用获得{@link Invoker}</li><br/>
+     * <li>包装{@link Invoker}获得相应代理</li><br/>
      * </ul>
      *
      * @see #createProxy
      */
     private void init() {
-        //校验初始化标志(对于已经初始化过的，不再继续逻辑)
+        //校验初始化标志(对于已经初始化过的，不再继续逻辑处理)
         if (initialized) {
             return;
         }
         initialized = true;
 
-        //检验接口名(接口名是必填的选项)
+        //检验接口名(接口名是必填的配置项)
         if (interfaceName == null || interfaceName.length() == 0) {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
 
-        //获取消费配置类全局配置(consumer代表的配置类是可选的，无则生成)
+        //获取消费配置类全局配置(consumer代表的配置类是可选的)
         checkConsumer();
 
         //尝试对引用(本身)配置类完成基本属性的填充
@@ -458,7 +460,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
 
         //4.创建服务代理
-        // 创建服务代理
         return (T) proxyFactory.getProxy(invoker);
     }
 

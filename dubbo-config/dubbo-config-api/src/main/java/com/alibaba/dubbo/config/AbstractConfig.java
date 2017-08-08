@@ -141,7 +141,8 @@ public abstract class AbstractConfig implements Serializable {
 
     /**
      * <p>
-     * 完成对配置类基本属性的设置,基本思路调用基本属性（基本类型对应类）暴露出来的set方法完成对基本属性的设置<br/>
+     * 完成对配置类基本属性的设置<br/>
+     * 基本思路调用基本属性（基本类型对应类）暴露出来的set方法完成对基本属性的设置<br/>
      * 对于某个基本属性的设置，无论该属性是否已经被设置过，都会重新被设置（系统中存在的话）</br>
      * 上述情况不发生的话，对于某个基本属性的设置，如果已经被设置，就不会触发配置，也就是说配置文件也无效了</br>
      * ConfigUtils.getProperty(name)该方法也会先从系统先获取。再尝试从配置文件中获取<br/>
@@ -252,6 +253,15 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
+    /**
+     * 获得配置类的标识
+     * <p>
+     * if cls equal to DemoConfig or DemoBean ，it will return demo<br/>
+     * if cls equal to DemoSimple ，it will return demosimple
+     * </p>
+     * @param cls 配置类
+     * @return 标识
+     */
     private static String getTagName(Class<?> cls) {
         String tag = cls.getSimpleName();
         for (String suffix : SUFFIXS) {
