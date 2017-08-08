@@ -161,18 +161,23 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     *
+     * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
+     */
     public synchronized void notify(List<URL> urls) {
+        //invoker的urls
         List<URL> invokerUrls = new ArrayList<URL>();
+        //路由的urls
         List<URL> routerUrls = new ArrayList<URL>();
+        //配置的urls
         List<URL> configuratorUrls = new ArrayList<URL>();
         for (URL url : urls) {
             String protocol = url.getProtocol();
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
-            if (Constants.ROUTERS_CATEGORY.equals(category)
-                    || Constants.ROUTE_PROTOCOL.equals(protocol)) {
+            if (Constants.ROUTERS_CATEGORY.equals(category) || Constants.ROUTE_PROTOCOL.equals(protocol)) {
                 routerUrls.add(url);
-            } else if (Constants.CONFIGURATORS_CATEGORY.equals(category)
-                    || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
+            } else if (Constants.CONFIGURATORS_CATEGORY.equals(category) || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
                 invokerUrls.add(url);

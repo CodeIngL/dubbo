@@ -24,22 +24,23 @@ import com.alibaba.dubbo.rpc.RpcException;
 import com.alibaba.dubbo.rpc.cluster.Router;
 
 /**
- * StaticDirectory
- * 
+ * StaticDirectory(静态目录服务)
+ *
  * @author william.liangf
  */
 public class StaticDirectory<T> extends AbstractDirectory<T> {
-    
+
+    //持有的invoker列表
     private final List<Invoker<T>> invokers;
-    
-    public StaticDirectory(List<Invoker<T>> invokers){
+
+    public StaticDirectory(List<Invoker<T>> invokers) {
         this(null, invokers, null);
     }
-    
-    public StaticDirectory(List<Invoker<T>> invokers, List<Router> routers){
+
+    public StaticDirectory(List<Invoker<T>> invokers, List<Router> routers) {
         this(null, invokers, routers);
     }
-    
+
     public StaticDirectory(URL url, List<Invoker<T>> invokers) {
         this(url, invokers, null);
     }
@@ -55,6 +56,10 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
         return invokers.get(0).getInterface();
     }
 
+    /**
+     * invoker中第一个可用就放回true
+     * @return 是否可用
+     */
     public boolean isAvailable() {
         if (isDestroyed()) {
             return false;
@@ -68,7 +73,7 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
     }
 
     public void destroy() {
-        if(isDestroyed()) {
+        if (isDestroyed()) {
             return;
         }
         super.destroy();
@@ -77,10 +82,9 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
         }
         invokers.clear();
     }
-    
+
     @Override
     protected List<Invoker<T>> doList(Invocation invocation) throws RpcException {
-
         return invokers;
     }
 

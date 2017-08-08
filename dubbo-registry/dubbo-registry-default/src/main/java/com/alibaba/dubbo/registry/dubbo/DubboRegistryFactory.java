@@ -82,7 +82,7 @@ public class DubboRegistryFactory extends AbstractRegistryFactory {
                 urls.add(url.setAddress(address));
             }
         }
-        //为主url构建注册中心目录服务
+        //为url构建注册中心目录服务
         RegistryDirectory<RegistryService> directory = new RegistryDirectory<RegistryService>(RegistryService.class,
                 url.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName()).addParameterAndEncoded(Constants.REFER_KEY, url.toParameterString()));
         Invoker<RegistryService> registryInvoker = cluster.join(directory);
