@@ -36,7 +36,7 @@ import com.alibaba.dubbo.remoting.zookeeper.ZookeeperTransporter;
 import com.alibaba.dubbo.rpc.RpcException;
 
 /**
- * ZookeeperRegistry
+ * ZookeeperRegistry(zk注册中心)
  *
  * @author william.liangf
  */
