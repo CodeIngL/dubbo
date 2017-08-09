@@ -26,29 +26,49 @@ import com.alibaba.dubbo.common.URL;
 
 /**
  * RPC Invocation.
- * 
- * @serial Don't change the class name and properties.
+ *
  * @author qian.lei
+ * @serial Don't change the class name and properties.
  */
 public class RpcInvocation implements Invocation, Serializable {
 
     private static final long serialVersionUID = -4355285085441097045L;
 
-    private String               methodName;
+    //方法名
+    private String methodName;
 
-    private Class<?>[]           parameterTypes;
+    //方法参数类型数组
+    private Class<?>[] parameterTypes;
 
-    private Object[]             arguments;
+    //方法实际入参数组
+    private Object[] arguments;
 
-    private Map<String, String>  attachments;
+    //附加信息
+    private Map<String, String> attachments;
 
+    //rpc调用者
     private transient Invoker<?> invoker;
 
     public RpcInvocation() {
     }
 
+    /**
+     *
+     * @param invocation
+     * @see #RpcInvocation(Invocation, Invoker)
+     */
+    public RpcInvocation(Invocation invocation) {
+        this(invocation.getMethodName(), invocation.getParameterTypes(),
+                invocation.getArguments(), invocation.getAttachments(), invocation.getInvoker());
+    }
+
+    /**
+     *
+     * @param invocation
+     * @param invoker
+     */
     public RpcInvocation(Invocation invocation, Invoker<?> invoker) {
-        this(invocation.getMethodName(), invocation.getParameterTypes(), 
+        this(invocation.getMethodName(), invocation.getParameterTypes(),
                 invocation.getArguments(), new HashMap<String, String>(invocation.getAttachments()),
                 invocation.getInvoker());
         if (invoker != null) {
@@ -75,27 +95,62 @@ public class RpcInvocation implements Invocation, Serializable {
         }
     }
 
-    public RpcInvocation(Invocation invocation) {
-        this(invocation.getMethodName(), invocation.getParameterTypes(), 
-                invocation.getArguments(), invocation.getAttachments(), invocation.getInvoker());
-    }
-
+    /**
+     * RPC的调用封装形式
+     *
+     * @param method    方法
+     * @param arguments 方法参数
+     * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
+     */
     public RpcInvocation(Method method, Object[] arguments) {
         this(method.getName(), method.getParameterTypes(), arguments, null, null);
     }
 
+    /**
+     * RPC的调用封装形式
+     *
+     * @param method    方法
+     * @param arguments 方法参数
+     * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
+     */
     public RpcInvocation(Method method, Object[] arguments, Map<String, String> attachment) {
         this(method.getName(), method.getParameterTypes(), arguments, attachment, null);
     }
 
+    /**
+     * RPC的调用封装形式
+     *
+     * @param methodName 方法名
+     * @param parameterTypes 参数类型数组
+     * @param arguments 参数值数组
+     * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
+     */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments) {
         this(methodName, parameterTypes, arguments, null, null);
     }
 
+    /**
+     * RPC的调用封装形式
+     *
+     * @param methodName 方法名
+     * @param parameterTypes 参数类型数组
+     * @param arguments 参数值数组
+     * @param attachments 附加信息
+     * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
+     */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments) {
         this(methodName, parameterTypes, arguments, attachments, null);
     }
 
+    /**
+     * RPC的调用封装形式
+     *
+     * @param methodName 方法名
+     * @param parameterTypes 参数类型数组
+     * @param arguments 参数值数组
+     * @param attachments 附加信息
+     * @param invoker rpc执行者
+     */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments, Invoker<?> invoker) {
         this.methodName = methodName;
         this.parameterTypes = parameterTypes == null ? new Class<?>[0] : parameterTypes;
@@ -103,7 +158,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.attachments = attachments == null ? new HashMap<String, String>() : attachments;
         this.invoker = invoker;
     }
-    
+
     public Invoker<?> getInvoker() {
         return invoker;
     }
@@ -143,7 +198,7 @@ public class RpcInvocation implements Invocation, Serializable {
     public void setAttachments(Map<String, String> attachments) {
         this.attachments = attachments == null ? new HashMap<String, String>() : attachments;
     }
-    
+
     public void setAttachment(String key, String value) {
         if (attachments == null) {
             attachments = new HashMap<String, String>();
@@ -155,28 +210,28 @@ public class RpcInvocation implements Invocation, Serializable {
         if (attachments == null) {
             attachments = new HashMap<String, String>();
         }
-        if (! attachments.containsKey(key)) {
-        	attachments.put(key, value);
+        if (!attachments.containsKey(key)) {
+            attachments.put(key, value);
         }
     }
 
     public void addAttachments(Map<String, String> attachments) {
-    	if (attachments == null) {
-    		return;
-    	}
-    	if (this.attachments == null) {
-    		this.attachments = new HashMap<String, String>();
+        if (attachments == null) {
+            return;
         }
-    	this.attachments.putAll(attachments);
+        if (this.attachments == null) {
+            this.attachments = new HashMap<String, String>();
+        }
+        this.attachments.putAll(attachments);
     }
 
     public void addAttachmentsIfAbsent(Map<String, String> attachments) {
-    	if (attachments == null) {
-    		return;
-    	}
-    	for (Map.Entry<String, String> entry : attachments.entrySet()) {
-    		setAttachmentIfAbsent(entry.getKey(), entry.getValue());
-    	}
+        if (attachments == null) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : attachments.entrySet()) {
+            setAttachmentIfAbsent(entry.getKey(), entry.getValue());
+        }
     }
 
     public String getAttachment(String key) {
@@ -185,7 +240,7 @@ public class RpcInvocation implements Invocation, Serializable {
         }
         return attachments.get(key);
     }
-    
+
     public String getAttachment(String key, String defaultValue) {
         if (attachments == null) {
             return defaultValue;
