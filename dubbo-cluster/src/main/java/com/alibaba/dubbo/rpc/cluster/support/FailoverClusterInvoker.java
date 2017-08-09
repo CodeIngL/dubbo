@@ -50,7 +50,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     }
 
     /**
-     * 默认的合并策略
+     * 默认的合并策略重试操作
      * @param invocation 调用对象
      * @param invokers 调用者列表
      * @param loadbalance 负载均衡策略

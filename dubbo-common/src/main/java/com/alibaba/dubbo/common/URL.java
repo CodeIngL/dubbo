@@ -423,14 +423,40 @@ public final class URL implements Serializable {
         return parameters;
     }
 
+    /**
+     * <p>
+     * 尝试直接使用key从参数结构中获取，并对对应值进行编码
+     * </p>
+     * @param key 关键键信息
+     * @return 对应值的编码结果
+     * @see #getParameterAndDecoded(String, String)
+     * @see #decode(String)
+     */
     public String getParameterAndDecoded(String key) {
         return getParameterAndDecoded(key, null);
     }
 
+    /**
+     * <p>
+     * 尝试直接使用key从参数结构中获取，并对对应值进行编码,带默认值
+     * </p>
+     * @param key 关键键信息
+     * @return 对应值的编码结果
+     * @see #decode(String)
+     */
     public String getParameterAndDecoded(String key, String defaultValue) {
         return decode(getParameter(key, defaultValue));
     }
 
+    /**
+     * <p>
+     * 尝试直接使用key从参数结构中获取
+     * 尝试使用“default.key”从参数结构中获取
+     * </p>
+     *
+     * @param key 关键键信息
+     * @return 对应值
+     */
     public String getParameter(String key) {
         String value = parameters.get(key);
         if (value == null || value.length() == 0) {
@@ -439,6 +465,14 @@ public final class URL implements Serializable {
         return value;
     }
 
+    /**
+     * 带默认值从参数结构获得对应信息
+     *
+     * @param key          关键键信息
+     * @param defaultValue 默认值
+     * @return 对应值
+     * @see #getParameter(String)
+     */
     public String getParameter(String key, String defaultValue) {
         String value = getParameter(key);
         if (value == null || value.length() == 0) {
@@ -447,6 +481,14 @@ public final class URL implements Serializable {
         return value;
     }
 
+    /**
+     * 带默认值从参数结构获得对应信息，并尝试拆分为数组
+     *
+     * @param key          关键键信息
+     * @param defaultValue 默认值
+     * @return 对应值拆分后的数组
+     * @see #getParameter(String)
+     */
     public String[] getParameter(String key, String[] defaultValue) {
         String value = getParameter(key);
         if (value == null || value.length() == 0) {
@@ -455,6 +497,9 @@ public final class URL implements Serializable {
         return Constants.COMMA_SPLIT_PATTERN.split(value);
     }
 
+    /**
+     * @return 缓存
+     */
     private Map<String, Number> getNumbers() {
         if (numbers == null) { // 允许并发重复创建
             numbers = new ConcurrentHashMap<String, Number>();
@@ -662,6 +707,18 @@ public final class URL implements Serializable {
         return URL.decode(getMethodParameter(method, key, defaultValue));
     }
 
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值,
+     * 不存在使用"关键值"去获得
+     * 不存在使用“default.关键值”去获得
+     * </p>
+     *
+     * @param method 方法名
+     * @param key    关键键
+     * @return 缓存对应值
+     * @see #getParameter(String)
+     */
     public String getMethodParameter(String method, String key) {
         String value = parameters.get(method + "." + key);
         if (value == null || value.length() == 0) {
@@ -673,162 +730,6 @@ public final class URL implements Serializable {
     public String getMethodParameter(String method, String key, String defaultValue) {
         String value = getMethodParameter(method, key);
         if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public double getMethodParameter(String method, String key, double defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.intValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        double d = Double.parseDouble(value);
-        getNumbers().put(methodKey, d);
-        return d;
-    }
-
-    public float getMethodParameter(String method, String key, float defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.intValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        float f = Float.parseFloat(value);
-        getNumbers().put(methodKey, f);
-        return f;
-    }
-
-    public long getMethodParameter(String method, String key, long defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.intValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        long l = Long.parseLong(value);
-        getNumbers().put(methodKey, l);
-        return l;
-    }
-
-    public int getMethodParameter(String method, String key, int defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.intValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        int i = Integer.parseInt(value);
-        getNumbers().put(methodKey, i);
-        return i;
-    }
-
-    public short getMethodParameter(String method, String key, short defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.shortValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        short s = Short.parseShort(value);
-        getNumbers().put(methodKey, s);
-        return s;
-    }
-
-    public byte getMethodParameter(String method, String key, byte defaultValue) {
-        String methodKey = method + "." + key;
-        Number n = getNumbers().get(methodKey);
-        if (n != null) {
-            return n.byteValue();
-        }
-        String value = getMethodParameter(method, key);
-        if (value == null || value.length() == 0) {
-            return defaultValue;
-        }
-        byte b = Byte.parseByte(value);
-        getNumbers().put(methodKey, b);
-        return b;
-    }
-
-    public double getMethodPositiveParameter(String method, String key, double defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        double value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public float getMethodPositiveParameter(String method, String key, float defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        float value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public long getMethodPositiveParameter(String method, String key, long defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        long value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public int getMethodPositiveParameter(String method, String key, int defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        int value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public short getMethodPositiveParameter(String method, String key, short defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        short value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
-            return defaultValue;
-        }
-        return value;
-    }
-
-    public byte getMethodPositiveParameter(String method, String key, byte defaultValue) {
-        if (defaultValue <= 0) {
-            throw new IllegalArgumentException("defaultValue <= 0");
-        }
-        byte value = getMethodParameter(method, key, defaultValue);
-        if (value <= 0) {
             return defaultValue;
         }
         return value;
@@ -848,6 +749,276 @@ public final class URL implements Serializable {
             return defaultValue;
         }
         return Boolean.parseBoolean(value);
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public double getMethodParameter(String method, String key, double defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.intValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        double d = Double.parseDouble(value);
+        getNumbers().put(methodKey, d);
+        return d;
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public float getMethodParameter(String method, String key, float defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.intValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        float f = Float.parseFloat(value);
+        getNumbers().put(methodKey, f);
+        return f;
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public long getMethodParameter(String method, String key, long defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.intValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        long l = Long.parseLong(value);
+        getNumbers().put(methodKey, l);
+        return l;
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public int getMethodParameter(String method, String key, int defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.intValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        int i = Integer.parseInt(value);
+        getNumbers().put(methodKey, i);
+        return i;
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public short getMethodParameter(String method, String key, short defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.shortValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        short s = Short.parseShort(value);
+        getNumbers().put(methodKey, s);
+        return s;
+    }
+
+    /**
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public byte getMethodParameter(String method, String key, byte defaultValue) {
+        String methodKey = method + "." + key;
+        Number n = getNumbers().get(methodKey);
+        if (n != null) {
+            return n.byteValue();
+        }
+        String value = getMethodParameter(method, key);
+        if (value == null || value.length() == 0) {
+            return defaultValue;
+        }
+        byte b = Byte.parseByte(value);
+        getNumbers().put(methodKey, b);
+        return b;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public double getMethodPositiveParameter(String method, String key, double defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        double value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public float getMethodPositiveParameter(String method, String key, float defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        float value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public long getMethodPositiveParameter(String method, String key, long defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        long value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public int getMethodPositiveParameter(String method, String key, int defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        int value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public short getMethodPositiveParameter(String method, String key, short defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        short value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    /**
+     * <p>
+     * 从缓存结构中获得由“方法名.关键值”对应的值，默认是defaultValue
+     * 对于缓存对应值为非正数，则返回默认值
+     * </p>
+     *
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 缓存对应值
+     */
+    public byte getMethodPositiveParameter(String method, String key, byte defaultValue) {
+        if (defaultValue <= 0) {
+            throw new IllegalArgumentException("defaultValue <= 0");
+        }
+        byte value = getMethodParameter(method, key, defaultValue);
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return value;
     }
 
     public boolean hasMethodParameter(String method, String key) {
@@ -1160,12 +1331,11 @@ public final class URL implements Serializable {
     }
 
     /**
-     *
-     * @param appendUser 是否追加用户
+     * @param appendUser      是否追加用户
      * @param appendParameter 是否追加参数
-     * @param useIP  是否使用ip
-     * @param useService 是否使用服务标识
-     * @param parameters 参数信息
+     * @param useIP           是否使用ip
+     * @param useService      是否使用服务标识
+     * @param parameters      参数信息
      * @return 字符串
      */
     private String buildString(boolean appendUser, boolean appendParameter, boolean useIP, boolean useService, String... parameters) {
@@ -1251,6 +1421,7 @@ public final class URL implements Serializable {
 
     /**
      * protocol://username:password@ip:port/group/interface:version?参数xxxx=xxxx
+     *
      * @return 服务标识
      * @see #buildString(boolean, boolean, boolean, boolean, String...)
      */
