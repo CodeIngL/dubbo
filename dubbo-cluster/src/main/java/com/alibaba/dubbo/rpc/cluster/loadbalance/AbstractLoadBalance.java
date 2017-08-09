@@ -30,6 +30,15 @@ import com.alibaba.dubbo.rpc.cluster.LoadBalance;
  */
 public abstract class AbstractLoadBalance implements LoadBalance {
 
+    /**
+     * 根据策略选择合适的调用者,具体的选择策略由子类实现
+     * @param invokers invokers.
+     * @param url refer url
+     * @param invocation invocation.
+     * @param <T>
+     * @return 选中的调用者
+     * @see #doSelect(List, URL, Invocation)
+     */
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) {
         if (invokers == null || invokers.size() == 0)
             return null;

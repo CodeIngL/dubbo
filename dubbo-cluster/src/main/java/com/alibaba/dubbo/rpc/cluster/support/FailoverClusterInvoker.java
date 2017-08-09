@@ -49,10 +49,21 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
         super(directory);
     }
 
+    /**
+     * 默认的合并策略
+     * @param invocation 调用对象
+     * @param invokers 调用者列表
+     * @param loadbalance 负载均衡策略
+     * @return rpc 结果
+     * @throws RpcException rpc异常
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
-    	List<Invoker<T>> copyinvokers = invokers;
+
+        List<Invoker<T>> copyinvokers = invokers;
+        //简单进行校验
     	checkInvokers(copyinvokers, invocation);
+        //获得重试次数
         int len = getUrl().getMethodParameter(invocation.getMethodName(), Constants.RETRIES_KEY, Constants.DEFAULT_RETRIES) + 1;
         if (len <= 0) {
             len = 1;

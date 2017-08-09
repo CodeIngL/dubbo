@@ -35,6 +35,15 @@ public class LeastActiveLoadBalance extends AbstractLoadBalance {
     
     private final Random random = new Random();
 
+    /**
+     * LRU策略
+     * @param invokers
+     * @param url
+     * @param invocation
+     * @param <T>
+     * @return
+     * @see AbstractLoadBalance#select(List, URL, Invocation)
+     */
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
         int length = invokers.size(); // 总个数
         int leastActive = -1; // 最小的活跃数

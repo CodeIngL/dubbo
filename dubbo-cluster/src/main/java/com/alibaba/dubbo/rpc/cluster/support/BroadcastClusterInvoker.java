@@ -40,6 +40,14 @@ public class BroadcastClusterInvoker<T> extends AbstractClusterInvoker<T> {
         super(directory);
     }
 
+    /**
+     * 合并真正调用
+     * @param invocation 调用对象
+     * @param invokers 调用者列表
+     * @param loadbalance 负载均衡策略
+     * @return rpc结果
+     * @throws RpcException
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Result doInvoke(final Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         checkInvokers(invokers, invocation);

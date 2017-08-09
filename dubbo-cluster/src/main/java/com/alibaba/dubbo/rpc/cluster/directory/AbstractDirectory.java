@@ -73,9 +73,9 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     /**
      * 目录服务抽象类
      *
-     * @param url 元信息
+     * @param url         元信息
      * @param consumerUrl 元信息
-     * @param routers 路由组件
+     * @param routers     路由组件
      */
     public AbstractDirectory(URL url, URL consumerUrl, List<Router> routers) {
         if (url == null)
@@ -85,11 +85,22 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         setRouters(routers);
     }
 
+    /**
+     * 根据调用对象寻找对应的调用者列表
+     *
+     * @param invocation 调用对象
+     * @return 调用者列表
+     * @throws RpcException rpc异常
+     */
     public List<Invoker<T>> list(Invocation invocation) throws RpcException {
+        //检查合法性
         if (destroyed) {
             throw new RpcException("Directory already destroyed .url: " + getUrl());
         }
+        //回调子类实现
         List<Invoker<T>> invokers = doList(invocation);
+
+        //目录服务存相应的路由，则使用路由完成
         List<Router> localRouters = this.routers; // local reference
         if (localRouters != null && localRouters.size() > 0) {
             for (Router router : localRouters) {

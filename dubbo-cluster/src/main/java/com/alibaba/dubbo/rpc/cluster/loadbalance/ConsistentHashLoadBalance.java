@@ -38,6 +38,15 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
 
     private final ConcurrentMap<String, ConsistentHashSelector<?>> selectors = new ConcurrentHashMap<String, ConsistentHashSelector<?>>();
 
+    /**
+     * 一致性hash策略
+     * @param invokers
+     * @param url
+     * @param invocation
+     * @param <T>
+     * @return
+     * @see AbstractLoadBalance#select(List, URL, Invocation)
+     */
     @SuppressWarnings("unchecked")
     @Override
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {

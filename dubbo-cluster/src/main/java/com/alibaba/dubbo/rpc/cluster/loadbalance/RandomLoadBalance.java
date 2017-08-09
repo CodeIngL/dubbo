@@ -34,6 +34,15 @@ public class RandomLoadBalance extends AbstractLoadBalance {
 
     private final Random random = new Random();
 
+    /**
+     * 随机策略
+     * @param invokers
+     * @param url
+     * @param invocation
+     * @param <T>
+     * @return
+     * @see AbstractLoadBalance#select(List, URL, Invocation)
+     */
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
         int length = invokers.size(); // 总个数
         int totalWeight = 0; // 总权重
