@@ -337,15 +337,21 @@ public class RegistryProtocol implements Protocol {
      * @return 返回的Invoker
      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        //新建注册目录服务
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        //为目录服务设置注册中心
         directory.setRegistry(registry);
+        //为目录服务设置协议配置类（默认Protocol$Adaptive)
         directory.setProtocol(protocol);
+        //构建订阅的url
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
+            //像注册中心注册地址
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+        //目录服务进行订阅(category:providers,configurators,routers)
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY
                 + "," + Constants.CONFIGURATORS_CATEGORY
                 + "," + Constants.ROUTERS_CATEGORY));

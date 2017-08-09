@@ -155,6 +155,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * 构建监听对url的订阅
+     * @param url 元信息
+     * @param listener 监听者
+     * @see FailbackRegistry#subscribe(URL, NotifyListener)
+     */
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {

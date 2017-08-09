@@ -20,6 +20,7 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
 	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
 
+	<dubbo:registry protocol="zookeeper" address="127.0.0.1:2181" />
 	<dubbo:reference id="demoService" interface="com.alibaba.dubbo.demo.DemoService" />
 
 </beans>

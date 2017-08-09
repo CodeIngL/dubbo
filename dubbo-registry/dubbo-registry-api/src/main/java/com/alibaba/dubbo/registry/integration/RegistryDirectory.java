@@ -112,6 +112,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     public RegistryDirectory(Class<T> serviceType, URL url) {
         super(url);
+        //检验入参
         if (serviceType == null) {
             throw new IllegalArgumentException("service type is null.");
         }
@@ -136,6 +137,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         this.registry = registry;
     }
 
+    /**
+     * 订阅即是设置消费url
+     * 同时注册中心注册相应的url
+     * @param url 元信息
+     */
     public void subscribe(URL url) {
         setConsumerUrl(url);
         registry.subscribe(url, this);
@@ -584,6 +590,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     * 根据调用对象在目录服务中寻找对应调用者
+     * @param invocation 调用对象
+     * @return 对应的调用者
+     */
     public List<Invoker<T>> doList(Invocation invocation) {
         if (forbidden) {
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "Forbid consumer " + NetUtils.getLocalHost() + " access service " + getInterface().getName() + " from registry " + getUrl().getAddress() + " use dubbo version " + Version.getVersion() + ", Please check registry access list (whitelist/blacklist).");

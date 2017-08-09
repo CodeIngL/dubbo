@@ -36,7 +36,7 @@ import com.alibaba.dubbo.registry.NotifyListener;
 
 /**
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
- * 
+ *
  * @author william.liangf
  */
 public abstract class FailbackRegistry extends AbstractRegistry {
@@ -65,9 +65,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     /**
      * 抽象类FailbackRegistry构造函数，服务于具体实现类
      * <ul>
-     *     <li>从url中获得key为{@link Constants#REGISTRY_RETRY_PERIOD_KEY}的值。默认是5s</li><br/>
-     *     <li>启动5s一次的定时任务（检测并连接注册中心），进行重试{@link #retry()}</li><br/>
+     * <li>从url中获得key为{@link Constants#REGISTRY_RETRY_PERIOD_KEY}的值。默认是5s</li><br/>
+     * <li>启动5s一次的定时任务（检测并连接注册中心），进行重试{@link #retry()}</li><br/>
      * </ul>
+     *
      * @param url 注册的url
      * @see AbstractRegistry#AbstractRegistry(URL)
      */
@@ -115,10 +116,11 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     /**
      * 添加监听器到对应得结构中
      * <ul>
-     *     <li>尝试从已经订阅的发生了失败的URL映射中获得url对应的监听器集合</li><br/>
-     *     <li>尝试向集合中放入监听器</li><br/>
+     * <li>尝试从已经订阅的发生了失败的URL映射中获得url对应的监听器集合</li><br/>
+     * <li>尝试向集合中放入监听器</li><br/>
      * </ul>
-     * @param url 订阅信息
+     *
+     * @param url      订阅信息
      * @param listener 监听器
      */
     private void addFailedSubscribed(URL url, NotifyListener listener) {
@@ -133,11 +135,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     /**
      * 异常失败信息
      * <ul>
-     *     <li>尝试从已经订阅的发生了失败的URL映射中删除监听器</li><br/>
-     *     <li>尝试从未订阅的发生了失败的URL映射中删除监听器</li><br/>
-     *     <li>尝试特殊的结构映射中删除监听器</li><br/>
+     * <li>尝试从已经订阅的发生了失败的URL映射中删除监听器</li><br/>
+     * <li>尝试从未订阅的发生了失败的URL映射中删除监听器</li><br/>
+     * <li>尝试特殊的结构映射中删除监听器</li><br/>
      * </ul>
-     * @param url 订阅信息
+     *
+     * @param url      订阅信息
      * @param listener 监听器
      */
     private void removeFailedSubscribed(URL url, NotifyListener listener) {
@@ -158,12 +161,13 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     /**
      * 注册URL
      * <ul>
-     *     <li>简单将url从失败已经注册列表和失败的未注册列表中移走</li><br/>
-     *     <li>回调子类的业务逻辑{@link #doRegister(URL)}实现注册</li><br/>
-     *     <li>对配置URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常</li><br/>
-     *     <li>对抛出异常为SkipFailbackWrapperException，注册失败后不报错，在后台定时重试。</li><br/>
-     *     <li>将注册失败的url加入失败已经注册的列表</li><br/>
+     * <li>简单将url从失败已经注册列表和失败的未注册列表中移走</li><br/>
+     * <li>回调子类的业务逻辑{@link #doRegister(URL)}实现注册</li><br/>
+     * <li>对配置URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常</li><br/>
+     * <li>对抛出异常为SkipFailbackWrapperException，注册失败后不报错，在后台定时重试。</li><br/>
+     * <li>将注册失败的url加入失败已经注册的列表</li><br/>
      * </ul>
+     *
      * @param url 需要注册的URL
      * @see AbstractRegistry#register(URL)
      * @see com.alibaba.dubbo.registry.Registry#register(URL)
@@ -181,10 +185,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             // 如果开启了启动时检测，则直接抛出异常
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
-                    && ! Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
+                    && !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
-                if(skipFailback) {
+                if (skipFailback) {
                     t = t.getCause();
                 }
                 throw new IllegalStateException("Failed to register " + url + " to registry " + getUrl().getAddress() + ", cause: " + t.getMessage(), t);
@@ -210,10 +214,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             // 如果开启了启动时检测，则直接抛出异常
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
-                    && ! Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
+                    && !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
-                if(skipFailback) {
+                if (skipFailback) {
                     t = t.getCause();
                 }
                 throw new IllegalStateException("Failed to unregister " + url + " to registry " + getUrl().getAddress() + ", cause: " + t.getMessage(), t);
@@ -229,14 +233,15 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     /**
      * 增加订阅信息
      * <ul>
-     *     <li>简单将url和监听器从相关缓存中移走</li><br/>
-     *     <li>回调子类的业务逻辑{@link #doSubscribe(URL, NotifyListener)}实现订阅</li><br/>
-     *     <li>抛出异常后，尝试使用缓存解决，同时记录错误日记</li><br/>
-     *     <li>对配置URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常</li><br/>
-     *     <li>对抛出异常为SkipFailbackWrapperException，注册失败后不报错，在后台定时重试。</li><br/>
-     *     <li>将注册失败的url加入失败已经订阅的列表</li><br/>
+     * <li>简单将url和监听器从相关缓存中移走</li><br/>
+     * <li>回调子类的业务逻辑{@link #doSubscribe(URL, NotifyListener)}实现订阅</li><br/>
+     * <li>抛出异常后，尝试使用缓存解决，同时记录错误日记</li><br/>
+     * <li>对配置URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常</li><br/>
+     * <li>对抛出异常为SkipFailbackWrapperException，注册失败后不报错，在后台定时重试。</li><br/>
+     * <li>将注册失败的url加入失败已经订阅的列表</li><br/>
      * </ul>
-     * @param url 订阅URL
+     *
+     * @param url      订阅URL
      * @param listener 变更事件监听器，不允许为空
      */
     @Override
@@ -244,7 +249,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         super.subscribe(url, listener);
         removeFailedSubscribed(url, listener);
         try {
-            // 向服务器端发送订阅请求
+            // 向服务器端发送订阅请求(回调不同的子类实现)
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;
@@ -259,7 +264,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                         && url.getParameter(Constants.CHECK_KEY, true);
                 boolean skipFailback = t instanceof SkipFailbackWrapperException;
                 if (check || skipFailback) {
-                    if(skipFailback) {
+                    if (skipFailback) {
                         t = t.getCause();
                     }
                     throw new IllegalStateException("Failed to subscribe " + url + ", cause: " + t.getMessage(), t);
@@ -288,7 +293,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                     && url.getParameter(Constants.CHECK_KEY, true);
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
-                if(skipFailback) {
+                if (skipFailback) {
                     t = t.getCause();
                 }
                 throw new IllegalStateException("Failed to unsubscribe " + url + " to registry " + getUrl().getAddress() + ", cause: " + t.getMessage(), t);
@@ -306,8 +311,15 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         }
     }
 
+    /**
+     * 进行通知
+     * @param url   主url
+     * @param listener url的订阅者
+     * @param urls  备用的urls
+     */
     @Override
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
+        //入参检查
         if (url == null) {
             throw new IllegalArgumentException("notify url == null");
         }
@@ -315,7 +327,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             throw new IllegalArgumentException("notify listener == null");
         }
         try {
-        	doNotify(url, listener, urls);
+            doNotify(url, listener, urls);
         } catch (Exception t) {
             // 将失败的通知请求记录到失败列表，定时重试
             Map<NotifyListener, List<URL>> listeners = failedNotified.get(url);
@@ -327,20 +339,29 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             logger.error("Failed to notify for subscribe " + url + ", waiting for retry, cause: " + t.getMessage(), t);
         }
     }
-    
+
+    /**
+     * 实际通知
+     * @param url
+     * @param listener
+     * @param urls
+     *
+     * @see AbstractRegistry#notify(URL, NotifyListener, List)
+     */
     protected void doNotify(URL url, NotifyListener listener, List<URL> urls) {
-    	super.notify(url, listener, urls);
+        super.notify(url, listener, urls);
     }
 
     /**
      * 尝试恢复
+     *
      * @throws Exception
      */
     @Override
     protected void recover() throws Exception {
         // register
         Set<URL> recoverRegistered = new HashSet<URL>(getRegistered());
-        if (! recoverRegistered.isEmpty()) {
+        if (!recoverRegistered.isEmpty()) {
             if (logger.isInfoEnabled()) {
                 logger.info("Recover register url " + recoverRegistered);
             }
@@ -350,7 +371,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         }
         // subscribe
         Map<URL, Set<NotifyListener>> recoverSubscribed = new HashMap<URL, Set<NotifyListener>>(getSubscribed());
-        if (! recoverSubscribed.isEmpty()) {
+        if (!recoverSubscribed.isEmpty()) {
             if (logger.isInfoEnabled()) {
                 logger.info("Recover subscribe url " + recoverSubscribed.keySet());
             }
@@ -368,7 +389,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
      */
     protected void retry() {
         //对已经注册但是发生了失败的集合处理
-        if (! failedRegistered.isEmpty()) {
+        if (!failedRegistered.isEmpty()) {
             Set<URL> failed = new HashSet<URL>(failedRegistered);
             if (failed.size() > 0) {
                 if (logger.isInfoEnabled()) {
@@ -390,7 +411,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             }
         }
 
-        if(! failedUnregistered.isEmpty()) {
+        if (!failedUnregistered.isEmpty()) {
             Set<URL> failed = new HashSet<URL>(failedUnregistered);
             if (failed.size() > 0) {
                 if (logger.isInfoEnabled()) {
@@ -412,7 +433,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             }
         }
         //已经订阅的发生了失败的URL映射的处理
-        if (! failedSubscribed.isEmpty()) {
+        if (!failedSubscribed.isEmpty()) {
             Map<URL, Set<NotifyListener>> failed = new HashMap<URL, Set<NotifyListener>>(failedSubscribed);
             for (Map.Entry<URL, Set<NotifyListener>> entry : new HashMap<URL, Set<NotifyListener>>(failed).entrySet()) {
                 if (entry.getValue() == null || entry.getValue().size() == 0) {
@@ -443,7 +464,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             }
         }
         //未订阅的发生了失败的URL映射的处理
-        if (! failedUnsubscribed.isEmpty()) {
+        if (!failedUnsubscribed.isEmpty()) {
             Map<URL, Set<NotifyListener>> failed = new HashMap<URL, Set<NotifyListener>>(failedUnsubscribed);
             for (Map.Entry<URL, Set<NotifyListener>> entry : new HashMap<URL, Set<NotifyListener>>(failed).entrySet()) {
                 if (entry.getValue() == null || entry.getValue().size() == 0) {
@@ -473,7 +494,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                 }
             }
         }
-        if (! failedNotified.isEmpty()) {
+        if (!failedNotified.isEmpty()) {
             Map<URL, Map<NotifyListener, List<URL>>> failed = new HashMap<URL, Map<NotifyListener, List<URL>>>(failedNotified);
             for (Map.Entry<URL, Map<NotifyListener, List<URL>>> entry : new HashMap<URL, Map<NotifyListener, List<URL>>>(failed).entrySet()) {
                 if (entry.getValue() == null || entry.getValue().size() == 0) {
