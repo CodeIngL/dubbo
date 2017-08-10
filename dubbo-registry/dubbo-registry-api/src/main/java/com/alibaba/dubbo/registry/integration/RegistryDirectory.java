@@ -179,11 +179,15 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         //配置的urls
         List<URL> configuratorUrls = new ArrayList<URL>();
         for (URL url : urls) {
+            //获得url中协议
             String protocol = url.getProtocol();
+            //获得url中目录默认为（providers）
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
             if (Constants.ROUTERS_CATEGORY.equals(category) || Constants.ROUTE_PROTOCOL.equals(protocol)) {
+                //目录分类是router或routers加入路由列表中
                 routerUrls.add(url);
             } else if (Constants.CONFIGURATORS_CATEGORY.equals(category) || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
+                //目录分类是configurators或override加入配置列表中
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
                 invokerUrls.add(url);
