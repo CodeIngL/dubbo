@@ -77,6 +77,7 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 
 	/**
 	 * 创建实际意义上的监听器
+	 * <p>childListenner是一种结构，独立与zkclient和curator，对他们操作的一种独立</p>
 	 * @param path 受监听的路径
 	 * @param listener 监听路径的封装监听器
 	 * @return 实际的监听器
