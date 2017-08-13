@@ -29,26 +29,27 @@ public class UrlUtils {
 
     /**
      * <p>
-     *     解析字符串到URL的列表<br/>
-     *      ex: <br/>
-     *     <ul>
-     *     <li>zookeeper://127.0.0.1:2181</li><br/>
-     *     <li>127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183</li><br/>
-     *     </ul>
-     *   处理逻辑
-     *     <ul>
-     *         <li>根据是否有://符号来，有url直接为地址</li>
-     *         <li>没有://符号,处理分割符“，”对于多个地址，第一个地址为url，其他追加到为backup上</li>
-     *         <li>从defaults中获得protocol，username，password，port，path</li>
-     *         <li>根据url字符串解析为URL对象</li>
-     *         <li>对于URL对象没有配置的属性，使用defaults中的配置进行配置，主要是protocol，username，password，port，path</li>
-     *         <li>URL对象拥有的参数集合，与defaults进行合并，合并规则，遍历defaults中键值对，参数集合不存在相应键，就放入</li>
-     *     </ul>
+     * 解析字符串到URL的列表<br/>
+     * ex: <br/>
+     * <ul>
+     * <li>zookeeper://127.0.0.1:2181</li><br/>
+     * <li>127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183</li><br/>
+     * </ul>
+     * 处理逻辑
+     * <ul>
+     * <li>根据是否有://符号来，有url直接为地址</li>
+     * <li>没有://符号,处理分割符“，”对于多个地址，第一个地址为url，其他追加到为backup上</li>
+     * <li>从defaults中获得protocol，username，password，port，path</li>
+     * <li>根据url字符串解析为URL对象</li>
+     * <li>对于URL对象没有配置的属性，使用defaults中的配置进行配置，主要是protocol，username，password，port，path</li>
+     * <li>URL对象拥有的参数集合，与defaults进行合并，合并规则，遍历defaults中键值对，参数集合不存在相应键，就放入</li>
+     * </ul>
      * </p>
-     * @see  URL#valueOf(String)
-     * @param address 地址字符串
+     *
+     * @param address  地址字符串
      * @param defaults
      * @return
+     * @see URL#valueOf(String)
      */
     public static URL parseURL(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
@@ -167,15 +168,15 @@ public class UrlUtils {
 
     /**
      * <p>
-     *     解析字符串到URL的列表<br/>
-     *     ex:address like zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183|redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381<br/>
-     *     result: address["zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183","redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381"]
+     * 解析字符串到URL的列表<br/>
+     * ex:address like zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183|redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381<br/>
+     * result: address["zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183","redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381"]
      * </p>
-     * @see UrlUtils#parseURL(String, Map)
-     * @param address 地址字符串
+     *
+     * @param address  地址字符串
      * @param defaults url参数map默认值
      * @return URL对象列表
-     *
+     * @see UrlUtils#parseURL(String, Map)
      */
     public static List<URL> parseURLs(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
@@ -407,21 +408,30 @@ public class UrlUtils {
         }
     }
 
+    /**
+     * @param consumerUrl 受订阅url
+     * @param providerUrl 提供方url
+     * @return 是否匹配
+     */
     public static boolean isMatch(URL consumerUrl, URL providerUrl) {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();
-        if (!(Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface)))
+        //检测接口匹配
+        if (!(Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface))) {
             return false;
-
+        }
+        //检测目录匹配
         if (!isMatchCategory(providerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY),
                 consumerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY))) {
             return false;
         }
+        //providerUrl 无效 且 订阅url的enable不为*
         if (!providerUrl.getParameter(Constants.ENABLED_KEY, true)
                 && !Constants.ANY_VALUE.equals(consumerUrl.getParameter(Constants.ENABLED_KEY))) {
             return false;
         }
 
+        //版本信息完全一致
         String consumerGroup = consumerUrl.getParameter(Constants.GROUP_KEY);
         String consumerVersion = consumerUrl.getParameter(Constants.VERSION_KEY);
         String consumerClassifier = consumerUrl.getParameter(Constants.CLASSIFIER_KEY, Constants.ANY_VALUE);

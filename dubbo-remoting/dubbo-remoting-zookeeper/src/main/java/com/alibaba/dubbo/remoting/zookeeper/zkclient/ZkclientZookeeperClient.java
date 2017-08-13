@@ -75,6 +75,12 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 		client.close();
 	}
 
+	/**
+	 * 创建实际意义上的监听器
+	 * @param path 受监听的路径
+	 * @param listener 监听路径的封装监听器
+	 * @return 实际的监听器
+	 */
 	public IZkChildListener createTargetChildListener(String path, final ChildListener listener) {
 		return new IZkChildListener() {
 			public void handleChildChange(String parentPath, List<String> currentChilds)

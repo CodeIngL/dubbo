@@ -57,7 +57,18 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
 		return stateListeners;
 	}
 
+	/**
+	 * 为路径添加相应的子监听器
+	 * 构建了listener和tagetListner的对应关系
+	 * @param path 受监听路径
+	 * @param listener 路径监听器
+	 * @return
+	 * @see  #createTargetChildListener(String, ChildListener)
+	 * @see #addTargetChildListener(String, Object)
+	 */
 	public List<String> addChildListener(String path, final ChildListener listener) {
+
+		//从缓存结构中获取对应受监听路径的监听器映射集合实际的监听器为TargetChildListener
 		ConcurrentMap<ChildListener, TargetChildListener> listeners = childListeners.get(path);
 		if (listeners == null) {
 			childListeners.putIfAbsent(path, new ConcurrentHashMap<ChildListener, TargetChildListener>());

@@ -437,7 +437,7 @@ public class Constants {
     public static final String  REGISTRY_FILESAVE_SYNC_KEY         = "save.file";
 
     /**
-     * 注册中心失败事件重试事件
+     * 注册中心失败事件重试时间
      */
     public static final String  REGISTRY_RETRY_PERIOD_KEY          = "retry.period";
 

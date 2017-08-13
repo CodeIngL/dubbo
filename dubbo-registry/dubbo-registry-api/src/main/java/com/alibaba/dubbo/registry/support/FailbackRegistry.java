@@ -178,7 +178,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         failedRegistered.remove(url);
         failedUnregistered.remove(url);
         try {
-            // 向服务器端发送注册请求
+            // 子类实现，在注册中心上注册url
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
@@ -313,7 +313,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     /**
      * 进行通知
-     * @param url   主url
+     * @param url   订阅url
      * @param listener url的订阅者
      * @param urls  备用的urls
      */
