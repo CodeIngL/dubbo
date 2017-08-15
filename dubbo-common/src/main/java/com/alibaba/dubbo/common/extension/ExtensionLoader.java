@@ -841,15 +841,15 @@ public class ExtensionLoader<T> {
                                                         //获取类上的激活注解
                                                         Activate activate = clazz.getAnnotation(Activate.class);
                                                         if (activate != null) {
-                                                            //放入激活缓存
+                                                            //放入激活缓存,第一个名字和Activate的关系
                                                             cachedActivates.put(names[0], activate);
+                                                        }
+                                                        //放入名字缓存，第一个名字和class的关系
+                                                        if (!cachedNames.containsKey(clazz)) {
+                                                            cachedNames.put(clazz, names[0]);
                                                         }
                                                         //遍历名字，
                                                         for (String n : names) {
-                                                            //放置第一个名字，和class的关系
-                                                            if (!cachedNames.containsKey(clazz)) {
-                                                                cachedNames.put(clazz, n);
-                                                            }
                                                             //反向放置名字和类的关系，这个要返回出去的，map是带进来的e
                                                             Class<?> c = extensionClasses.get(n);
                                                             if (c == null) {
