@@ -234,16 +234,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
             //继续放置
             map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-            //不含键protocol
+            //没有配置protocol则默认使用dubbo注册中心
             if (!map.containsKey("protocol")) {
-                //检查是否有remote对应类
-                if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
-                    //放入remote
-                    map.put("protocol", "remote");
-                } else {
-                    //放入dubbo
-                    map.put("protocol", "dubbo");
-                }
+                map.put("protocol", "dubbo");
             }
             //使用键值对解析地址
             List<URL> urls = UrlUtils.parseURLs(address, map);
@@ -252,7 +245,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
                 //url中对protocol重新设置，为registry
                 url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
-                //上面两个设置后不影响之前的url.getProtocol()
+                //上面这样设置的目的是为了用protocol为registry代表这个url代表了一个注册中心
+                //同时url的参数信息（registry:原先的的protocol代表注册中心的特别类型，比如zookeeper，redis
                 if ((provider && url.getParameter(Constants.REGISTER_KEY, true))) {
                     //for服务提供者
                     registryList.add(url);
