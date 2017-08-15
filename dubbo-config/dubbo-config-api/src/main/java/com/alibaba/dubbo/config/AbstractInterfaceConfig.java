@@ -234,10 +234,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
             //继续放置
             map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-            //没有配置protocol则默认使用dubbo注册中心
-            if (!map.containsKey("protocol")) {
-                map.put("protocol", "dubbo");
-            }
             //使用键值对解析地址
             List<URL> urls = UrlUtils.parseURLs(address, map);
             for (URL url : urls) {
