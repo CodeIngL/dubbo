@@ -44,18 +44,18 @@ public class UrlUtils {
      * <li>对于URL对象没有配置的属性，使用defaults中的配置进行配置，主要是protocol，username，password，port，path</li>
      * <li>URL对象拥有的参数集合，与defaults进行合并，合并规则，遍历defaults中键值对，参数集合不存在相应键，就放入</li>
      * </ul>
+     * tip:直接配在url中的参数有优先权
      * </p>
      *
      * @param address  地址字符串
-     * @param defaults
-     * @return
+     * @param defaults 默认参数集合，当前address不存在相关信息是生效， 回进行浅copy
+     * @return 新URL
      * @see URL#valueOf(String)
      */
     public static URL parseURL(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
         }
-
         String url;
         if (address.indexOf("://") >= 0) {
             //address like zookeeper://127.0.0.1:2181
@@ -78,30 +78,6 @@ public class UrlUtils {
             }
         }
 
-        //获得protocol
-        String defaultProtocol = defaults == null ? null : defaults.get("protocol");
-        if (defaultProtocol == null || defaultProtocol.length() == 0) {
-            defaultProtocol = "dubbo";
-        }
-        //获得username
-        String defaultUsername = defaults == null ? null : defaults.get("username");
-        //获得password
-        String defaultPassword = defaults == null ? null : defaults.get("password");
-        //获得port
-        int defaultPort = StringUtils.parseInteger(defaults == null ? null : defaults.get("port"));
-        //获得path
-        String defaultPath = defaults == null ? null : defaults.get("path");
-
-        Map<String, String> defaultParameters = defaults == null ? null : new HashMap<String, String>(defaults);
-        //移除这些，因为后面进行合并
-        if (defaultParameters != null) {
-            defaultParameters.remove("protocol");
-            defaultParameters.remove("username");
-            defaultParameters.remove("password");
-            defaultParameters.remove("host");
-            defaultParameters.remove("port");
-            defaultParameters.remove("path");
-        }
         //从url字符串解析为URL对象中解析
         boolean changed = false;
         URL u = URL.valueOf(url);
@@ -120,15 +96,37 @@ public class UrlUtils {
         //获得url中的参数集合
         Map<String, String> parameters = new HashMap<String, String>(u.getParameters());
 
-        if ((protocol == null || protocol.length() == 0) && defaultProtocol != null && defaultProtocol.length() > 0) {
+        Map<String, String> defaultParameters = defaults == null ? null : new HashMap<String, String>(defaults);
+        String defaultProtocol = null, defaultUsername = null, defaultPassword = null, defaultPath = null;
+        int defaultPort = 0;
+        if (defaultParameters != null) {
+            defaultParameters.remove("host");
+            defaultProtocol = defaultParameters.remove("protocol");
+            defaultUsername = defaultParameters.remove("username");
+            defaultPassword = defaultParameters.remove("password");
+            defaultPort = StringUtils.parseInteger(defaultParameters.remove("port"));
+            defaultPath = defaultParameters.remove("path");
+            for (Map.Entry<String, String> entry : defaultParameters.entrySet()) {
+                String key = entry.getKey();
+                String defaultValue = entry.getValue();
+                if (StringUtils.isNotEmpty(defaultValue) && StringUtils.isEmpty(parameters.get(key))) {
+                    changed = true;
+                    parameters.put(key, defaultValue);
+                }
+            }
+        }
+        if ((StringUtils.isEmpty(protocol))) {
             changed = true;
+            if (StringUtils.isEmpty(defaultProtocol)) {
+                defaultProtocol = "dubbo";
+            }
             protocol = defaultProtocol;
         }
-        if ((username == null || username.length() == 0) && defaultUsername != null && defaultUsername.length() > 0) {
+        if ((StringUtils.isEmpty(username)) && StringUtils.isNotEmpty(defaultUsername)) {
             changed = true;
             username = defaultUsername;
         }
-        if ((password == null || password.length() == 0) && defaultPassword != null && defaultPassword.length() > 0) {
+        if ((StringUtils.isEmpty(password)) && StringUtils.isNotEmpty(defaultPassword)) {
             changed = true;
             password = defaultPassword;
         }
@@ -141,24 +139,9 @@ public class UrlUtils {
                 port = 9090;
             }
         }
-        if ((path == null || path.length() == 0) && defaultPath != null && defaultPath.length() > 0) {
+        if ((StringUtils.isEmpty(path)) && StringUtils.isNotEmpty(defaultPath)) {
             changed = true;
             path = defaultPath;
-        }
-        //defaultParameters中的参数合并到parameters
-        //合并策略，defaultParameters中parameters不存在的参数
-        if (defaultParameters != null && defaultParameters.size() > 0) {
-            for (Map.Entry<String, String> entry : defaultParameters.entrySet()) {
-                String key = entry.getKey();
-                String defaultValue = entry.getValue();
-                if (defaultValue != null && defaultValue.length() > 0) {
-                    String value = parameters.get(key);
-                    if (value == null || value.length() == 0) {
-                        changed = true;
-                        parameters.put(key, defaultValue);
-                    }
-                }
-            }
         }
         if (changed) {
             u = new URL(protocol, username, password, host, port, path, parameters);
@@ -173,6 +156,7 @@ public class UrlUtils {
      * result: address["zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183","redis://127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381"]
      * </p>
      * <p>值得说明的是分割符为”|;“，通常中间件的集群url直接使用逗号分开，因而没有冲突</p>
+     *
      * @param address  地址字符串
      * @param defaults url参数map默认值
      * @return URL对象列表
