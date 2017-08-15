@@ -417,7 +417,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             }
             if (NetUtils.isInvalidLocalHost(host)) {
                 if (registryURLs != null && registryURLs.size() > 0) {
-                    //ping一下联通性
+                    //本地访问下注册中心，确定本机使用的ip地址，同时确定下与注册中心的网络连通性
                     for (URL registryURL : registryURLs) {
                         try {
                             Socket socket = new Socket();
@@ -484,14 +484,17 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (methods != null && methods.size() > 0) {
             for (MethodConfig method : methods) {
                 appendParameters(map, method, method.getName());
+                //参数的装换，对于某个配置xxx.retry:false转换为xxx.retries:0
                 if ("false".equals(map.remove(method.getName() + ".retry"))) {
                     map.put(method.getName() + ".retries", "0");
                 }
+                //处理method的配置类Argument配置类
                 List<ArgumentConfig> arguments = method.getArguments();
                 if (arguments != null && arguments.size() > 0) {
                     for (ArgumentConfig argument : arguments) {
                         //类型自动转换.
                         if (argument.getType() != null && argument.getType().length() > 0) {
+                            //设置了type的处理方式，type方式优先，同时会对index进行处理
                             Method[] methods = interfaceClass.getMethods();
                             //遍历所有方法
                             for (int i = 0; i < methods.length; i++) {
@@ -500,8 +503,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                 if (methodName.equals(method.getName())) {
                                     //获取参数类型
                                     Class<?>[] argtypes = methods[i].getParameterTypes();
-                                    //一个方法中单个callback
                                     if (argument.getIndex() != -1) {
+                                        //一个方法中单个callback
                                         //index对应参数类型匹配
                                         if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
                                             appendParameters(map, argument, method.getName() + "." + argument.getIndex());
@@ -510,18 +513,25 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                         }
                                     } else {
                                         //一个方法中多个callback
+                                        //index ==-1 ，遍历所有参数，找出对应的值
+                                        boolean findMark = false;
                                         for (int j = 0; j < argtypes.length; j++) {
-                                            Class<?> argclazz = argtypes[j];
-                                            if (argclazz.getName().equals(argument.getType())) {
+                                            if (argtypes[j].getName().equals(argument.getType())) {
+                                                findMark = true;
                                                 appendParameters(map, argument, method.getName() + "." + j);
                                             }
+                                        }
+                                        if (!findMark){
+                                            throw new IllegalArgumentException("argument config error : type attirbute not match : type:" + argument.getType());
                                         }
                                     }
                                 }
                             }
                         } else if (argument.getIndex() != -1) {
+                            //只设置了index的处理方式
                             appendParameters(map, argument, method.getName() + "." + argument.getIndex());
                         } else {
+                            //配置argument配置类但是没有配置属性type或者index则抛出异常。
                             throw new IllegalArgumentException("argument config must set index or type attribute.eg: <dubbo:argument index='0' .../> or <dubbo:argument type=xxx .../>");
                         }
                     }
