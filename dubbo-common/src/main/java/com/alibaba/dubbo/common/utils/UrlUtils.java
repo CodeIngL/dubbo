@@ -184,9 +184,6 @@ public class UrlUtils {
         }
         //"|或者符合;"拆分
         String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
-        if (addresses == null || addresses.length == 0) {
-            return null; //here won't be empty
-        }
         List<URL> registries = new ArrayList<URL>();
         for (String addr : addresses) {
             registries.add(parseURL(addr, defaults));
