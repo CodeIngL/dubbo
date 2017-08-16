@@ -521,7 +521,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                                 appendParameters(map, argument, method.getName() + "." + j);
                                             }
                                         }
-                                        if (!findMark){
+                                        if (!findMark) {
                                             throw new IllegalArgumentException("argument config error : type attirbute not match : type:" + argument.getType());
                                         }
                                     }
@@ -544,11 +544,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             map.put("generic", generic);
             map.put("methods", Constants.ANY_VALUE);
         } else {
+            //调整的版本信息
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put("revision", revision);
             }
-
+            //methods
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("NO method found in service interface " + interfaceClass.getName());
@@ -585,21 +586,18 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         //scope通常有三个可选项来选择，1是none不进行暴露，2是remote进行远程暴露，3是local进行本地暴露
         String scope = url.getParameter(Constants.SCOPE_KEY);
-        if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
-
-            if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
+        if (!Constants.SCOPE_NONE.equalsIgnoreCase(scope)) {
+            if (!Constants.SCOPE_REMOTE.equalsIgnoreCase(scope)) {
                 //本地暴露方式
                 exportLocal(url);
             }
-
-            if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
+            if (!Constants.SCOPE_LOCAL.equalsIgnoreCase(scope)) {
                 //远程暴露方式
                 if (logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
                 //如果配置了注册配置类，会得到相应的注册url，同时该配置还不能是injvm，对于injvm，register对应的值总是false，因此不会使用远程配置
-                if (registryURLs != null && registryURLs.size() > 0
-                        && url.getParameter("register", true)) {
+                if (registryURLs != null && registryURLs.size() > 0 && url.getParameter("register", true)) {
                     //支持多个注册类对应的url上，也就是不同注册中心，都支持注册相应的信息
                     for (URL registryURL : registryURLs) {
                         //尝试从注册中心url中copy键值对dynamic,用来说明是否是动态服务
@@ -615,14 +613,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         }
                         //将协议配置url转移到注册中心的url配置中(key:export)。至此，注册中心url可以得到协议配置url已经监控url等等信息
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
-                        //获得导出的相应类
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }
                 } else {
                     //不使用注册中心，典型的方式是配置了injvm。或者是N/A。
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
-
                     Exporter<?> exporter = protocol.export(invoker);
                     exporters.add(exporter);
                 }
@@ -632,6 +628,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
 
+    /**
+     * 本地暴露
+     *
+     * @param url 元信息
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void exportLocal(URL url) {
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
@@ -639,8 +640,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
-            Exporter<?> exporter = protocol.export(
-                    proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
+            Exporter<?> exporter = protocol.export(proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
             exporters.add(exporter);
             logger.info("Export dubbo service " + interfaceClass.getName() + " to local registry");
         }

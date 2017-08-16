@@ -103,22 +103,27 @@ public class RegistryProtocol implements Protocol {
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
 
     /**
+     * <p>
+     * 本地暴露
+     * 注册中心注册
+     * </p>
+     *
      * @param originInvoker 默认情况下是AbstractProxyInvoker
      * @param <T>
      * @return
-     * @throws RpcException
+     * @throws RpcException rpc异常
+     * @see #doLocalExport(Invoker)
      */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
 
-        //export invoker 导出invoker和export的代理封装
         //这里会导出相应的东西
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider 获得注册中心
         final Registry registry = getRegistry(originInvoker);
         //获得协议配置的URL，该URL经过过滤，某些键值对不需要暴露
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
-        //使用注册中心注册协议配置URL
+        //使用注册中心注册注册协议配置URL已经做过操作
         registry.register(registedProviderUrl);
 
         // 订阅override数据
@@ -178,7 +183,9 @@ public class RegistryProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
+        //key为需要导出的服务的url去掉dynamic键
         String key = getCacheKey(originInvoker);
+        //尝试从缓存中获得，防止重复暴露
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
         if (exporter == null) {
             synchronized (bounds) {
@@ -222,7 +229,7 @@ public class RegistryProtocol implements Protocol {
     private Registry getRegistry(final Invoker<?> originInvoker) {
         //获得注册中心URL
         URL registryUrl = originInvoker.getUrl();
-        //转换回来
+        //定位实际的注册中心使用的协议，比如zookeeper，redis
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
@@ -232,7 +239,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     /**
-     * 返回注册到注册中心的URL，对URL参数进行一次过滤
+     * 返回注册到注册中心的URL，对URL参数进行一次过滤，移除以.开头的键，移除监控的键值信息
      *
      * @param originInvoker
      * @return
@@ -254,8 +261,7 @@ public class RegistryProtocol implements Protocol {
      */
     private URL getSubscribedOverrideUrl(URL registedProviderUrl) {
         return registedProviderUrl.setProtocol(Constants.PROVIDER_PROTOCOL)
-                .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY,
-                        Constants.CHECK_KEY, String.valueOf(false));
+                .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false));
     }
 
     /**
@@ -358,7 +364,12 @@ public class RegistryProtocol implements Protocol {
         return cluster.join(directory);
     }
 
-    //过滤URL中不需要输出的参数(以点号开头的)
+    /**
+     * 过滤URL中不需要输出的参数(以点号开头的)
+     *
+     * @param url 目标url
+     * @return 需要过滤的键
+     */
     private static String[] getFilteredKeys(URL url) {
         Map<String, String> params = url.getParameters();
         if (params != null && !params.isEmpty()) {
