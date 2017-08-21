@@ -133,7 +133,8 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     }
 
     /**
-     * 异常失败信息
+     * 异常失败信息，简单将床底进来的有效参数，从相应的失败集合中移除相关的信息
+     *
      * <ul>
      * <li>尝试从已经订阅的发生了失败的URL映射中删除监听器</li><br/>
      * <li>尝试从未订阅的发生了失败的URL映射中删除监听器</li><br/>
@@ -142,6 +143,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
      *
      * @param url      订阅信息
      * @param listener 监听器
+     * @see #failedSubscribed
+     * @see #failedUnsubscribed
+     * @see #failedNotified
      */
     private void removeFailedSubscribed(URL url, NotifyListener listener) {
         Set<NotifyListener> listeners = failedSubscribed.get(url);
@@ -257,7 +261,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             List<URL> urls = getCacheUrls(url);
             if (urls != null && urls.size() > 0) {
                 notify(url, listener, urls);
-                logger.error("Failed to subscribe " + url + ", Using cached list: " + urls + " from cache file: " + getUrl().getParameter(Constants.FILE_KEY, System.getProperty("user.home") + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
+                logger.error("Failed to subscribe " + url + ", Using cached list: " + urls
+                        + " from cache file: " + getUrl().getParameter(Constants.FILE_KEY, System.getProperty("user.home")
+                        + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
             } else {
                 // 如果开启了启动时检测，则直接抛出异常
                 boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)

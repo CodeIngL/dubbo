@@ -123,12 +123,22 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return urls;
     }
 
-    @Parameter(excluded = true)//该项排除
+    /**
+     * 该项排除
+     * @return 是否已经导出
+     * @see #appendProperties(AbstractConfig)
+     */
+    @Parameter(excluded = true)
     public boolean isExported() {
         return exported;
     }
 
-    @Parameter(excluded = true)//该项排除
+    /**
+     * 该项排除
+     * @return 是否为导出
+     * @see #appendProperties(AbstractConfig)
+     */
+    @Parameter(excluded = true)
     public boolean isUnexported() {
         return unexported;
     }
@@ -648,6 +658,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 设置provider
+     * @see #appendProperties(AbstractConfig)
      */
     private void checkProvider() {
         //服务提供者没有配置，使用默认的配置
@@ -660,6 +671,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 校验设置protocols
+     * @see #appendProperties(AbstractConfig)
      */
     private void checkProtocol() {
         // 兼容旧版本
@@ -728,6 +740,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         this.ref = ref;
     }
 
+    /**
+     * 该项排除
+     * @return 上下文路径
+     * @see #appendProperties(AbstractConfig)
+     */
     @Parameter(excluded = true)
     public String getPath() {
         return path;

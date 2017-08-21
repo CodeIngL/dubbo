@@ -57,17 +57,37 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         return INSTANCE;
     }
 
+    /**
+     * 内部暴露服务
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         return new InjvmExporter<T>(invoker, invoker.getUrl().getServiceKey(), exporterMap);
     }
 
+    /**
+     * 内部引用服务
+     * @param serviceType
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
         return new InjvmInvoker<T>(serviceType, url, url.getServiceKey(), exporterMap);
     }
 
+    /**
+     * 获得Exporter
+     * @param map 缓存
+     * @param key 元信息
+     * @return 元信息对应的内部Exporter
+     */
     static Exporter<?> getExporter(Map<String, Exporter<?>> map, URL key) {
         Exporter<?> result = null;
-
         if (!key.getServiceKey().contains("*")) {
             result = map.get(key.getServiceKey());
         } else {

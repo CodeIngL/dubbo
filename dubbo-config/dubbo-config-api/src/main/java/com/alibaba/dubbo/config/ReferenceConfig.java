@@ -59,10 +59,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private static final long serialVersionUID = -5864351140409987595L;
 
+    //Protocl$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
+    //Cluster$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
+    //proxyFactory$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     // 接口类型
@@ -89,10 +95,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // 接口代理类引用
     private transient volatile T ref;
 
+    // 持有的最外层网络的执行对象（invoker）
     private transient volatile Invoker<?> invoker;
 
+    // 初始化标记
     private transient volatile boolean initialized;
 
+    // 销毁标记
     private transient volatile boolean destroyed;
 
     //远程or本地地址集合(元信息集合)
@@ -141,6 +150,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return ref;
     }
 
+    /**
+     * 对远程引用对象进行销毁
+     */
     public synchronized void destroy() {
         if (ref == null) {
             return;
@@ -166,7 +178,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      * <li>实现服务引用获得{@link Invoker}</li><br/>
      * <li>包装{@link Invoker}获得相应代理</li><br/>
      * </ul>
-     *
      * @see #createProxy
      */
     private void init() {
@@ -207,6 +218,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             checkInterfaceAndMethods(interfaceClass, methods);
         }
 
+        //尝试获得配置信息中的url信息
         String resolve = System.getProperty(interfaceName);
         String resolveFile = null;
         if (resolve == null || resolve.length() == 0) {
@@ -245,6 +257,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
+
+        //完成嵌套配置的转移和默认值的设置
         if (consumer != null) {
             if (application == null) {
                 application = consumer.getApplication();
@@ -278,6 +292,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         checkApplication();
         checkStubAndMock(interfaceClass);
 
+        //构建元信息url的参数信息，map
         Map<String, String> map = new HashMap<String, String>();
         map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
         map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
@@ -290,7 +305,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             if (revision != null && revision.length() > 0) {
                 map.put("revision", revision);
             }
-
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("NO method found in service interface " + interfaceClass.getName());
@@ -300,6 +314,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
         }
         map.put(Constants.INTERFACE_KEY, interfaceName);
+        //复杂的参数信息的构造
         appendParameters(map, application);
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
@@ -322,6 +337,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         //attributes通过系统context进行存储.
         StaticContext.getSystemContext().putAll(attributes);
+        //创建代理
         ref = createProxy(map);
     }
 

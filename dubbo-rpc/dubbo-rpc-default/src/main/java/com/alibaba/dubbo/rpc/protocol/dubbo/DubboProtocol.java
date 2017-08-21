@@ -246,6 +246,8 @@ public class DubboProtocol extends AbstractProtocol {
      * @param <T>
      * @return
      * @throws RpcException
+     * @see #serviceKey(URL) （serviceGroup+"/"+serviceName+":"serviceVersion+":"port）
+     * @see URL#getServiceKey() （serviceGroup+"/"+serviceName+":"serviceVersion）
      */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
 
@@ -256,7 +258,7 @@ public class DubboProtocol extends AbstractProtocol {
         //从url中获得key服务标识
         String key = serviceKey(url);
 
-        //构建
+        //构建dubbo协议下的的exporter
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
 
         //放入缓存

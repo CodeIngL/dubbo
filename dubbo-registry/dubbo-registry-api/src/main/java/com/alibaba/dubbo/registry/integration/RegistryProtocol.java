@@ -121,13 +121,14 @@ public class RegistryProtocol implements Protocol {
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
         //registry provider 获得注册中心
         final Registry registry = getRegistry(originInvoker);
-        //获得协议配置的URL，该URL经过过滤，某些键值对不需要暴露
+        //获得协议配置的URL，该URL经过过滤，某些键值对不需要暴露（隐藏键和监控键）
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
         //使用注册中心注册注册协议配置URL已经做过操作
         registry.register(registedProviderUrl);
 
         // 订阅override数据
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
+        //订阅的url
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
 
         //新建订阅者
@@ -183,7 +184,7 @@ public class RegistryProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
-        //key为需要导出的服务的url去掉dynamic键
+        //key为需要导出的服务的url(provider的url,也就是注册url的export键对应值)去掉dynamic和enable键
         String key = getCacheKey(originInvoker);
         //尝试从缓存中获得，防止重复暴露
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
@@ -223,7 +224,7 @@ public class RegistryProtocol implements Protocol {
     /**
      * 根据invoker的地址获取registry实例
      *
-     * @param originInvoker
+     * @param originInvoker 网络包装的调用者
      * @return 注册中心实例
      */
     private Registry getRegistry(final Invoker<?> originInvoker) {

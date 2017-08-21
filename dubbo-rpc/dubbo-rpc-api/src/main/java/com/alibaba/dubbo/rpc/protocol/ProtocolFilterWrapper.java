@@ -48,6 +48,13 @@ public class ProtocolFilterWrapper implements Protocol {
         return protocol.getDefaultPort();
     }
 
+    /**
+     * 链式包装
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
@@ -66,6 +73,16 @@ public class ProtocolFilterWrapper implements Protocol {
         protocol.destroy();
     }
 
+    /**
+     * 为Invoker包装链式过滤器
+     * ---->调用的时候先调用过滤器，最后内部Invoker
+     * ---->过滤器的筛选通过配置，对应服务方，键为service.filter； 对应消费方，键为reference.filter
+     * @param invoker
+     * @param key
+     * @param group
+     * @param <T>
+     * @return
+     */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);

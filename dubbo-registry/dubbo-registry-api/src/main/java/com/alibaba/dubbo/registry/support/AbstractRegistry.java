@@ -369,7 +369,9 @@ public abstract class AbstractRegistry implements Registry {
 
     /**
      * 添加订阅信息
-     * 简单的加入的已订阅的映射中。k:url,v:listener
+     * 简单的加入的已订阅的映射中。k:url,v:listener列表
+     * <p>url对应可能存在一个监听者列表，同时进行url</p>
+     * 这里只是简单的将合法入参添加进url对应的监听者列表中
      *
      * @param url      订阅条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&application=kylin
      * @param listener 变更事件监听器，不允许为空

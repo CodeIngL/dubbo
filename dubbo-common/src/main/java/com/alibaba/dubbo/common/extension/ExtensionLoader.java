@@ -271,6 +271,7 @@ public class ExtensionLoader<T> {
     public List<T> getActivateExtension(URL url, String[] values, String group) {
         List<T> exts = new ArrayList<T>();
         List<String> names = values == null ? new ArrayList<String>(0) : Arrays.asList(values);
+        //name 不包含-default的值，才会操作
         if (!names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {
             getExtensionClasses();
             for (Map.Entry<String, Activate> entry : cachedActivates.entrySet()) {
@@ -287,11 +288,11 @@ public class ExtensionLoader<T> {
             }
             Collections.sort(exts, ActivateComparator.COMPARATOR);
         }
+        //用户自己的
         List<T> usrs = new ArrayList<T>();
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
-            if (!name.startsWith(Constants.REMOVE_VALUE_PREFIX)
-                    && !names.contains(Constants.REMOVE_VALUE_PREFIX + name)) {
+            if (!name.startsWith(Constants.REMOVE_VALUE_PREFIX) && !names.contains(Constants.REMOVE_VALUE_PREFIX + name)) {
                 if (Constants.DEFAULT_KEY.equals(name)) {
                     if (usrs.size() > 0) {
                         exts.addAll(0, usrs);
@@ -310,6 +311,13 @@ public class ExtensionLoader<T> {
     }
 
 
+    /**
+     * 是否在group列表中
+     *
+     * @param group  组名。provider or consumer
+     * @param groups 列表
+     * @return 是否在列表中
+     */
     private boolean isMatchGroup(String group, String[] groups) {
         if (group == null || group.length() == 0) {
             return true;
@@ -324,11 +332,19 @@ public class ExtensionLoader<T> {
         return false;
     }
 
+    /**
+     * 是否激活
+     *
+     * @param activate 注解参数
+     * @param url      元信息
+     * @return 是否激活
+     */
     private boolean isActive(Activate activate, URL url) {
         String[] keys = activate.value();
         if (keys == null || keys.length == 0) {
             return true;
         }
+        //activate的key在元信息中，同时元信息对应的值不是空的，就激活
         for (String key : keys) {
             for (Map.Entry<String, String> entry : url.getParameters().entrySet()) {
                 String k = entry.getKey();

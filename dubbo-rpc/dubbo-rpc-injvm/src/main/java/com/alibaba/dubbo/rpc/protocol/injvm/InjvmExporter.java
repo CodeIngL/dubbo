@@ -32,6 +32,12 @@ class InjvmExporter<T> extends AbstractExporter<T> {
     
     private final Map<String, Exporter<?>> exporterMap;
 
+    /**
+     * 内部引用导出对象
+     * @param invoker 调用者
+     * @param key 服务标识
+     * @param exporterMap 缓存
+     */
     InjvmExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap){
         super(invoker);
         this.key = key;
@@ -39,6 +45,10 @@ class InjvmExporter<T> extends AbstractExporter<T> {
         exporterMap.put(key, this);
     }
 
+    /**
+     * 简单的不导出
+     * 缓存中删除数据
+     */
     public void unexport() {
         super.unexport();
         exporterMap.remove(key);

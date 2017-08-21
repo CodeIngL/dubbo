@@ -1400,6 +1400,7 @@ public final class URL implements Serializable {
      * <li>添加接口信息--->${inf}</li>
      * <li>添加版本信息--->:${version}</li>
      * </ul>
+     * 返回（serviceGroup+"/"+serviceName+":"serviceVersion）
      *
      * @return 服务的标志
      */

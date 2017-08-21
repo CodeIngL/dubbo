@@ -156,10 +156,11 @@ public abstract class AbstractConfig implements Serializable {
      * <li>尝试获得value: 基本属性对应get or is方法获得是空值。使用legacyProperties和ConfigUtils.getProperty()获得</li><br/>
      * <ul>
      * </p>
-     * @see ConfigUtils
-     * @see ConfigUtils#getProperty(String)
+     *
      * @param config 配置类（简单配置类or复杂配置类）
      * @apiNote
+     * @see ConfigUtils
+     * @see ConfigUtils#getProperty(String)
      */
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
@@ -259,6 +260,7 @@ public abstract class AbstractConfig implements Serializable {
      * if cls equal to DemoConfig or DemoBean ，it will return demo<br/>
      * if cls equal to DemoSimple ，it will return demosimple
      * </p>
+     *
      * @param cls 配置类
      * @return 标识
      */
@@ -282,24 +284,24 @@ public abstract class AbstractConfig implements Serializable {
      * <p>
      * 获取config中的基本类型字段，通过其暴露的get or is 方法，其中去掉了某些特殊方法，形成键值对放入parameter中
      * <ul>
-     *  <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
-     *  <li>排除返回值为Object的方法</li><br/>
-     *  <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
-     *  <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
-     *  <li>放入键值对</li><br/>
+     * <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
+     * <li>排除返回值为Object的方法</li><br/>
+     * <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
+     * <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
+     * <li>放入键值对</li><br/>
      * </ul>
      * </p>
      * <p>
-     *  处理getParameters方法
-     *  <ul>
-     *      <li>根据有无前缀为key追加前缀</li>
-     *      <li>替换key中"-"符号,该符号由{@link #appendProperties(AbstractConfig)}处理引起</li>
-     *  </ul>
+     * 处理getParameters方法
+     * <ul>
+     * <li>根据有无前缀为key追加前缀</li>
+     * <li>替换key中"-"符号,该符号由{@link #appendProperties(AbstractConfig)}处理引起</li>
+     * </ul>
      * </p>
-     * @param parameters 结果集合
-     * @param config 对象
-     * @param prefix 前缀
      *
+     * @param parameters 结果集合
+     * @param config     对象
+     * @param prefix     前缀
      */
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
@@ -394,20 +396,21 @@ public abstract class AbstractConfig implements Serializable {
      * <p>
      * 获取config中的基本类型字段，通过其暴露的get or is 方法，其中去掉了某些特殊方法，形成键值对放入parameter中
      * <ul>
-     *  <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
-     *  <li>排除返回值为Object的方法</li><br/>
-     *  <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
-     *  <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
-     *  <li>放入键值对</li><br/>
+     * <li>获得方法注解@Parameter，排除注解excluded=true的方法</li><br/>
+     * <li>排除返回值为Object的方法</li><br/>
+     * <li>获得键名:优先使用@Parameter的key，其次使用方法名转换，ex:getStudentName will transforms to "student.name"。如果有前缀需要加前缀</li><br/>
+     * <li>获得值值:反射调用方法，string化，根据@Parameter的escaped来编码，根据@Parameter的append来追加前缀</li><br/>
+     * <li>放入键值对</li><br/>
      * </ul>
      * </p>
      * <p>
-     *  处理getParameters方法
-     *  <ul>
-     *      <li>根据有无前缀为key追加前缀</li>
-     *      <li>替换key中"-"符号,该符号由{@link #appendProperties(AbstractConfig)}处理引起</li>
-     *  </ul>
+     * 处理getParameters方法
+     * <ul>
+     * <li>根据有无前缀为key追加前缀</li>
+     * <li>替换key中"-"符号,该符号由{@link #appendProperties(AbstractConfig)}处理引起</li>
+     * </ul>
      * </p>
+     *
      * @param parameters
      * @param config
      * @param prefix
