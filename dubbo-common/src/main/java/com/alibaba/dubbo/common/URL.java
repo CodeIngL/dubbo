@@ -1423,7 +1423,7 @@ public final class URL implements Serializable {
     /**
      * protocol://username:password@ip:port/group/interface:version?参数xxxx=xxxx
      *
-     * @return 服务标识
+     * @return 服务标识，protocol://username:password@ip:port/group/interface:version
      * @see #buildString(boolean, boolean, boolean, boolean, String...)
      */
     public String toServiceString() {

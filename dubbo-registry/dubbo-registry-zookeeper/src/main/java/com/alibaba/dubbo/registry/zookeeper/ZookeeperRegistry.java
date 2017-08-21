@@ -75,6 +75,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
      * @see FailbackRegistry#FailbackRegistry(URL)
      */
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
+
         super(url);
 
         if (url.isAnyHost()) {
@@ -157,28 +158,36 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 构建监听对url的订阅
-     * @param url 元信息
-     * @param listener 监听者
+     * @param url 受订阅的目标url
+     * @param listener url的监听者
      * @see FailbackRegistry#subscribe(URL, NotifyListener)
      */
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            //泛化调用的情况
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
+                //获得顶层路径，由于是泛化调用没有其他的下面的路径了
                 String root = toRootPath();
+                //获得url的监听者，无则新建
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                 if (listeners == null) {
                     zkListeners.putIfAbsent(url, new ConcurrentHashMap<NotifyListener, ChildListener>());
                     listeners = zkListeners.get(url);
                 }
+                //获得监听者的实际监听者
                 ChildListener zkListener = listeners.get(listener);
+                //子监听者为空的情况下，创建实际的监听者
                 if (zkListener == null) {
                     listeners.putIfAbsent(listener, new ChildListener() {
+                        //上一级发生变化时，进行回调，实现对子路径的监听
                         public void childChanged(String parentPath, List<String> currentChilds) {
                             for (String child : currentChilds) {
                                 child = URL.decode(child);
+                                //缓存中不包含相关相关的订阅，需要进行重新订阅
                                 if (!anyServices.contains(child)) {
                                     anyServices.add(child);
+                                    //对子节点重新进行订阅
                                     subscribe(url.setPath(child).addParameters(Constants.INTERFACE_KEY, child,
                                             Constants.CHECK_KEY, String.valueOf(false)), listener);
                                 }
@@ -188,7 +197,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     zkListener = listeners.get(listener);
                 }
                 zkClient.create(root, false);
+                //为顶层节点添加监听器
                 List<String> services = zkClient.addChildListener(root, zkListener);
+                //为下一层节点添加监听器，如果有的话
                 if (services != null && services.size() > 0) {
                     for (String service : services) {
                         service = URL.decode(service);
@@ -198,6 +209,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     }
                 }
             } else {
+                //不是泛化接口的调用
                 List<URL> urls = new ArrayList<URL>();
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
@@ -215,6 +227,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         zkListener = listeners.get(listener);
                     }
                     zkClient.create(path, false);
+                    //为路径的一级子路劲添加监听
                     List<String> children = zkClient.addChildListener(path, zkListener);
                     if (children != null) {
                         urls.addAll(toUrlsWithEmpty(url, path, children));
@@ -345,6 +358,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
     }
 
 
+    /**
+     *
+     * @param consumer
+     * @param providers
+     * @return
+     */
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
         List<URL> urls = new ArrayList<URL>();
         if (providers != null && providers.size() > 0) {
@@ -362,6 +381,13 @@ public class ZookeeperRegistry extends FailbackRegistry {
     }
 
 
+    /**
+     *
+     * @param consumer
+     * @param path
+     * @param providers
+     * @return
+     */
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
         List<URL> urls = toUrlsWithoutEmpty(consumer, providers);
         if (urls == null || urls.isEmpty()) {

@@ -7,6 +7,11 @@ import java.util.List;
  */
 public interface ChildListener {
 
+    /**
+     * 子节点发生变化时回调
+     * @param path 父路径
+     * @param children 父路径对应的所有子节点
+     */
     void childChanged(String path, List<String> children);
 
 }

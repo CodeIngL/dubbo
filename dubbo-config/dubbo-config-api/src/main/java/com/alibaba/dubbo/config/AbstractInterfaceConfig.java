@@ -35,6 +35,7 @@ import com.alibaba.dubbo.monitor.MonitorService;
 import com.alibaba.dubbo.registry.RegistryFactory;
 import com.alibaba.dubbo.registry.RegistryService;
 import com.alibaba.dubbo.rpc.Filter;
+import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.InvokerListener;
 import com.alibaba.dubbo.rpc.ProxyFactory;
 import com.alibaba.dubbo.rpc.cluster.Cluster;
@@ -199,6 +200,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      *
      * @param provider
      * @return
+     * @see com.alibaba.dubbo.registry.integration.RegistryProtocol#getRegistry(Invoker)
      */
     protected List<URL> loadRegistries(boolean provider) {
         //检查注册配置

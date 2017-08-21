@@ -137,7 +137,7 @@ public class RegistryProtocol implements Protocol {
         //放置缓存
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
 
-        //订阅信心注册进注册中心
+        //订阅信息注册进注册中心，实现监听者对受订阅url的监听
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
 
         //保证每次export都返回一个新的exporter实例
@@ -222,7 +222,10 @@ public class RegistryProtocol implements Protocol {
     }
 
     /**
-     * 根据invoker的地址获取registry实例
+     * 根据invoker的信息获取registry实例
+     * <p>invoker中携带了相关的url信息</p>
+     * <p>对于注册中心来说其url的protocol总是registry，相比于其他的配置来说，
+     * 但是，实际上的注册中心协议在其参数信息中的，键为registry所对应的信息，默认是dubbo，开发者一般会选择zookeeper</p>
      *
      * @param originInvoker 网络包装的调用者
      * @return 注册中心实例
@@ -230,12 +233,12 @@ public class RegistryProtocol implements Protocol {
     private Registry getRegistry(final Invoker<?> originInvoker) {
         //获得注册中心URL
         URL registryUrl = originInvoker.getUrl();
-        //定位实际的注册中心使用的协议，比如zookeeper，redis
+        //进行转换，转换为实际的使用的注册中心协议，比如zookeeper，redis
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
         }
-        //进行注册，获得对象
+        //注册中心工厂通过实际的注册中心url来获得实际对应的注册中心对象
         return registryFactory.getRegistry(registryUrl);
     }
 

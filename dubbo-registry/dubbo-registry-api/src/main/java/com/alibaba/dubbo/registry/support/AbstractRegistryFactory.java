@@ -80,7 +80,12 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
     }
 
     /**
-     * 获得注册中心实例
+     * 获得实际的注册中心实例
+     * <p>相关逻辑
+     * <ul>对url进行设置，path为com.alibaba.dubbo.registry.Registry,移除其他非注册中心的属性，比如export，refer</ul><br/>
+     * <ul>从url中获得关键key，一个注册中心对应的url对应一个注册中心</ul><br/>
+     * <ul>缓存操作，构建或获取注册中心实际实例</ul><br/>
+     * </p>
      * @param url 注册中心地址，不允许为空
      * @return 注册中心实例
      */
@@ -89,7 +94,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             url = url.setPath(RegistryService.class.getName())
     			.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
     			.removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
-        //获得地址
+        //获得注册中心和该注册中心url对应的key值:protocol://username:password@ip:port/group/interface:version?
     	String key = url.toServiceString();
         //锁定注册中心获取过程，保证注册中心单一实例
         //尝试从缓存中取，没有则新建
@@ -107,7 +112,6 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             REGISTRIES.put(key, registry);
             return registry;
         } finally {
-            // 释放锁
             LOCK.unlock();
         }
     }
