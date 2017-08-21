@@ -34,27 +34,28 @@ public class RpcInvocation implements Invocation, Serializable {
 
     private static final long serialVersionUID = -4355285085441097045L;
 
-    //方法名
+    // 方法名
     private String methodName;
 
-    //方法参数类型数组
+    // 方法参数类型数组
     private Class<?>[] parameterTypes;
 
-    //方法实际入参数组
+    // 方法实际入参数组
     private Object[] arguments;
 
-    //附加信息
+    // 附加信息
     private Map<String, String> attachments;
 
-    //rpc调用者
+    // rpc调用者
     private transient Invoker<?> invoker;
 
     public RpcInvocation() {
     }
 
     /**
+     * 构建一个RPC调用对象
      *
-     * @param invocation
+     * @param invocation 调用对象
      * @see #RpcInvocation(Invocation, Invoker)
      */
     public RpcInvocation(Invocation invocation) {
@@ -63,32 +64,39 @@ public class RpcInvocation implements Invocation, Serializable {
     }
 
     /**
-     *
-     * @param invocation
-     * @param invoker
+     * 构建一个RPC调用对象
+     * 包装入参invocation，追加入参invoker的信息
+     * @param invocation 调用对象
+     * @param invoker    调用者，只利用其部分数据信息
      */
     public RpcInvocation(Invocation invocation, Invoker<?> invoker) {
         this(invocation.getMethodName(), invocation.getParameterTypes(),
-                invocation.getArguments(), new HashMap<String, String>(invocation.getAttachments()),
-                invocation.getInvoker());
+                invocation.getArguments(), new HashMap<String, String>(invocation.getAttachments()), invocation.getInvoker());
         if (invoker != null) {
             URL url = invoker.getUrl();
+            //path信息
             setAttachment(Constants.PATH_KEY, url.getPath());
+            //interface信息
             if (url.hasParameter(Constants.INTERFACE_KEY)) {
                 setAttachment(Constants.INTERFACE_KEY, url.getParameter(Constants.INTERFACE_KEY));
             }
+            //group信息
             if (url.hasParameter(Constants.GROUP_KEY)) {
                 setAttachment(Constants.GROUP_KEY, url.getParameter(Constants.GROUP_KEY));
             }
+            //version信息
             if (url.hasParameter(Constants.VERSION_KEY)) {
                 setAttachment(Constants.VERSION_KEY, url.getParameter(Constants.VERSION_KEY, "0.0.0"));
             }
+            //timeout信息
             if (url.hasParameter(Constants.TIMEOUT_KEY)) {
                 setAttachment(Constants.TIMEOUT_KEY, url.getParameter(Constants.TIMEOUT_KEY));
             }
+            //token信息
             if (url.hasParameter(Constants.TOKEN_KEY)) {
                 setAttachment(Constants.TOKEN_KEY, url.getParameter(Constants.TOKEN_KEY));
             }
+            //application信息
             if (url.hasParameter(Constants.APPLICATION_KEY)) {
                 setAttachment(Constants.APPLICATION_KEY, url.getParameter(Constants.APPLICATION_KEY));
             }
@@ -120,9 +128,9 @@ public class RpcInvocation implements Invocation, Serializable {
     /**
      * RPC的调用封装形式
      *
-     * @param methodName 方法名
+     * @param methodName     方法名
      * @param parameterTypes 参数类型数组
-     * @param arguments 参数值数组
+     * @param arguments      参数值数组
      * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
      */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments) {
@@ -132,10 +140,10 @@ public class RpcInvocation implements Invocation, Serializable {
     /**
      * RPC的调用封装形式
      *
-     * @param methodName 方法名
+     * @param methodName     方法名
      * @param parameterTypes 参数类型数组
-     * @param arguments 参数值数组
-     * @param attachments 附加信息
+     * @param arguments      参数值数组
+     * @param attachments    附加信息
      * @see #RpcInvocation(String, Class[], Object[], Map, Invoker)
      */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments) {
@@ -143,13 +151,13 @@ public class RpcInvocation implements Invocation, Serializable {
     }
 
     /**
-     * RPC的调用封装形式
+     * RPC的调用封装形式（调用对象)
      *
-     * @param methodName 方法名
+     * @param methodName     方法名
      * @param parameterTypes 参数类型数组
-     * @param arguments 参数值数组
-     * @param attachments 附加信息
-     * @param invoker rpc执行者
+     * @param arguments      参数值数组
+     * @param attachments    附加信息
+     * @param invoker        rpc执行者(调用者)
      */
     public RpcInvocation(String methodName, Class<?>[] parameterTypes, Object[] arguments, Map<String, String> attachments, Invoker<?> invoker) {
         this.methodName = methodName;
