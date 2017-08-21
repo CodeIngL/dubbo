@@ -119,6 +119,13 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return getInterface() + " -> " + (getUrl() == null ? "" : getUrl().toString());
     }
 
+    /**
+     * 协议的invoke
+     * 具体操作由子类回调
+     * @param inv 调用对象
+     * @return 调用结果
+     * @throws RpcException
+     */
     public Result invoke(Invocation inv) throws RpcException {
         if (destroyed) {
             throw new RpcException("Rpc invoker for service " + this + " on consumer " + NetUtils.getLocalHost()
@@ -127,19 +134,22 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         }
         RpcInvocation invocation = (RpcInvocation) inv;
         invocation.setInvoker(this);
+        //尝试添加附加的信息
         if (attachment != null && attachment.size() > 0) {
             invocation.addAttachmentsIfAbsent(attachment);
         }
+        //尝试添加上下文中的信息(线程内)
         Map<String, String> context = RpcContext.getContext().getAttachments();
         if (context != null) {
             invocation.addAttachmentsIfAbsent(context);
         }
+        //继续添加
         if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) {
             invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
-
+        //回调子类的实现
         try {
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception

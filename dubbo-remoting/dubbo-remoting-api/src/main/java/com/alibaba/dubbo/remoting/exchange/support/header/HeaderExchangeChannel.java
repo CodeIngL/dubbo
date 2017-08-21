@@ -77,10 +77,20 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         send(message, getUrl().getParameter(Constants.SENT_KEY, false));
     }
 
+    /**
+     * 最外层的通道，
+     * 接着----》特定的网络框架 nettyClient，minaClient。。
+     * 此时的channel为特定的client（实现了channel），默认是NettyClient
+     * NettyClient没有实现send方法使用了抽象父类也就是AbstractClient的方法来实现send
+     * @param message
+     * @param sent    是否已发送完成
+     * @throws RemotingException
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         if (closed) {
             throw new RemotingException(this.getLocalAddress(), null, "Failed to send message " + message + ", cause: The channel " + this + " is closed!");
         }
+        //根据message不同类型来发送不同的操作
         if (message instanceof Request || message instanceof Response || message instanceof String) {
             channel.send(message, sent);
         } else {

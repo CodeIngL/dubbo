@@ -117,6 +117,15 @@ public class HeaderExchangeClient implements ExchangeClient {
         channel.send(message);
     }
 
+    /**
+     * 网络客户端最外层的客户端操作
+     * 接着---》特定的网络框架 nettyClient，minaClient。。
+     * 此时的channel为HeaderExchangeChannel
+     * @param message
+     * @param sent    是否已发送完成
+     * @throws RemotingException
+     * @see HeaderExchangeChannel
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         channel.send(message, sent);
     }

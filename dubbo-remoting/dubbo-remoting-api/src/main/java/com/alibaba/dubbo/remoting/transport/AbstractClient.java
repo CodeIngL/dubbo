@@ -264,6 +264,15 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         return channel.hasAttribute(key);
     }
 
+    /**
+     * 发送，回调子类的实现，来使用子类中持有的相关对象进行发送信息。
+     * 默认情况下是nettyClient，
+     * 这里的channel，默认对应了nettyChannel
+     * @param message
+     * @param sent    是否已发送完成
+     * @throws RemotingException
+     * @see #getChannel()
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         if (send_reconnect && !isConnected()) {
             connect();

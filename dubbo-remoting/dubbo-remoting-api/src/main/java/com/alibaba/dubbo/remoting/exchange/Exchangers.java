@@ -172,9 +172,9 @@ public class Exchangers {
      * </ul>
      *
      * @param url     元信息
-     * @param handler
-     * @return 客户端实例
-     * @throws RemotingException
+     * @param handler 处理器
+     * @return 客户端实例 默认是HeaderExchangeClient实例对象
+     * @throws RemotingException 远程异常
      */
     public static ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
         if (url == null) {

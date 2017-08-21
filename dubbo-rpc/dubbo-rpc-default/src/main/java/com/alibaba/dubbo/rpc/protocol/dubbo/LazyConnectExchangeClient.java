@@ -66,6 +66,16 @@ final class LazyConnectExchangeClient implements ExchangeClient {
     }
 
 
+    /**
+     * 延迟连接的实际连接，返回的实际连接就是HeaderExchangeClient
+     * 实际连接只有在进行相应的操作，比如请求，写入的时候进行初始化
+     *
+     * @throws RemotingException 远程异常
+     * @see #send(Object)
+     * @see #send(Object, boolean)
+     * @see #request(Object)
+     * @see #request(Object, int)
+     */
     private void initClient() throws RemotingException {
         if (client != null)
             return;
@@ -82,6 +92,11 @@ final class LazyConnectExchangeClient implements ExchangeClient {
         }
     }
 
+    /**
+     * @param request
+     * @return
+     * @throws RemotingException
+     */
     public ResponseFuture request(Object request) throws RemotingException {
         warning(request);
         initClient();
@@ -100,6 +115,12 @@ final class LazyConnectExchangeClient implements ExchangeClient {
         }
     }
 
+    /**
+     * @param request
+     * @param timeout
+     * @return
+     * @throws RemotingException
+     */
     public ResponseFuture request(Object request, int timeout) throws RemotingException {
         warning(request);
         initClient();
@@ -145,11 +166,23 @@ final class LazyConnectExchangeClient implements ExchangeClient {
         return requestHandler;
     }
 
+    /**
+     * @param message
+     * @throws RemotingException
+     */
     public void send(Object message) throws RemotingException {
         initClient();
         client.send(message);
     }
 
+    /**
+     * 延迟暴露的客户端，初始化拖延到首次发送时，进行初始化客户端
+     * 返回的依旧是HeaderExchangeClient
+     *
+     * @param message 发送独享
+     * @param sent    是否已发送完成
+     * @throws RemotingException 远程异常
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         initClient();
         client.send(message, sent);

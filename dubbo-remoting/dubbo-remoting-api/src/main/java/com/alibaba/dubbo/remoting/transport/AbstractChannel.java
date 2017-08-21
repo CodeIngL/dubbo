@@ -31,6 +31,12 @@ public abstract class AbstractChannel extends AbstractPeer implements Channel {
         super(url, handler);
     }
 
+    /**
+     * 抽象的channel进行发送，只是简单验证通道的可用性
+     * @param message
+     * @param sent    是否已发送完成
+     * @throws RemotingException
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         if (isClosed()) {
             throw new RemotingException(this, "Failed to send message "

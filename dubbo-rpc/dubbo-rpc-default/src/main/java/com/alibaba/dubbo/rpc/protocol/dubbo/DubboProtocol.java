@@ -390,12 +390,13 @@ public class DubboProtocol extends AbstractProtocol {
         //是否共享连接
         boolean service_share_connect = false;
         int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
-        //如果connections不配置，则共享连接，否则每服务每连接
+        // 如果connections不配置，则共享连接，否则每服务每连接
+        // 可能存在瓶颈，TCP的网络状态
         if (connections == 0) {
             service_share_connect = true;
             connections = 1;
         }
-
+        //构建网络客户端
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
             if (service_share_connect) {
@@ -438,8 +439,13 @@ public class DubboProtocol extends AbstractProtocol {
     /**
      * 创建新连接.
      * <ul>
-     * <li></li>
+     * <li>为url添加解码编码器</li>
+     * <li>为url添加心跳的信息</li>
+     * <li>选择合适的网络通信框架默认是netty</li>
+     * <li>构建直连的连接还是稍后暴露的连接</li>
      * </ul>
+     * 延迟连接下返回LazyConnectExchangeClient
+     * 非延迟连接下返回HeaderExchangeClient
      *
      * @param url 元信息
      * @return 客户端实例

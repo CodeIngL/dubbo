@@ -105,6 +105,12 @@ final class NettyChannel extends AbstractChannel {
         return channel.isConnected();
     }
 
+    /**
+     * nettyChannel进行发送信息
+     * @param message
+     * @param sent
+     * @throws RemotingException
+     */
     public void send(Object message, boolean sent) throws RemotingException {
         super.send(message, sent);
         

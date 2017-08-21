@@ -82,38 +82,48 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
     }
 
     /**
-     * 消费方默认dubbo协议的调用者，子类回调
+     * 消费方默认dubbo协议的调用者，子类回调.
+     * client两种形式延迟暴露的LazyConnectExchangeClient，和直接暴露的HeaderExchangeClient
      * @param invocation 调用对象
      * @return
      * @throws Throwable
      */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
+        //添加额外的信息
         RpcInvocation inv = (RpcInvocation) invocation;
         final String methodName = RpcUtils.getMethodName(invocation);
         inv.setAttachment(Constants.PATH_KEY, getUrl().getPath());
         inv.setAttachment(Constants.VERSION_KEY, version);
 
+        //只有一个则使用一个
         ExchangeClient currentClient;
         if (clients.length == 1) {
             currentClient = clients[0];
         } else {
+            //多个则使用取余简单的来分散压力
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
+            //是否异步
             boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);
+            //是否oneWay
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            // 超时时间
             int timeout = getUrl().getMethodParameter(methodName, Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
+            //是否是oneway
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
                 RpcContext.getContext().setFuture(null);
                 return new RpcResult();
             } else if (isAsync) {
+                //是否是异步
                 ResponseFuture future = currentClient.request(inv, timeout);
                 RpcContext.getContext().setFuture(new FutureAdapter<Object>(future));
                 return new RpcResult();
             } else {
+                //其他
                 RpcContext.getContext().setFuture(null);
                 return (Result) currentClient.request(inv, timeout).get();
             }

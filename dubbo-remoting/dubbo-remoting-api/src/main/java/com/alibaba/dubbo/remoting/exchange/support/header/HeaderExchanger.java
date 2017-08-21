@@ -72,7 +72,7 @@ public class HeaderExchanger implements Exchanger {
      *
      * @param url     元信息
      * @param handler 原始的handler(被包装的handler)
-     * @return 网络客户端
+     * @return 网络客户端实例，默认是NettyClient
      * @throws RemotingException 异常信息
      * @see Transporters#connect(String, ChannelHandler...)
      */
