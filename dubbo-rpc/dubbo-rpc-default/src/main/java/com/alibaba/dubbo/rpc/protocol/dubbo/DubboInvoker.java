@@ -81,6 +81,12 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         this.invokers = invokers;
     }
 
+    /**
+     * 消费方默认dubbo协议的调用者，子类回调
+     * @param invocation 调用对象
+     * @return
+     * @throws Throwable
+     */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;

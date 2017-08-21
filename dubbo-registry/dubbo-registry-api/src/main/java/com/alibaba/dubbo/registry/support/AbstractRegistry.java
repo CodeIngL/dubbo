@@ -65,7 +65,7 @@ public abstract class AbstractRegistry implements Registry {
     // URL地址分隔正则表达式，用于解析文件缓存中服务提供者URL列表
     private static final String URL_SPLIT = "\\s+";
 
-    //注册的url
+    // 注册的url
     private URL registryUrl;
 
     // 本地磁盘缓存文件
@@ -91,7 +91,7 @@ public abstract class AbstractRegistry implements Registry {
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<URL, Map<String, List<URL>>>();
 
     /**
-     * 抽象类AbstractRegistry构造函数，服务于抽象类FailbackRegistry
+     * 抽象类AbstractRegistry构造函数，服务于抽象类FailbackRegistry，dubbo对注册中心概念的抽象
      * <ul>
      * <li>保存注册的url:{@link #registryUrl}</li><br/>
      * <li>设定保存文件的标志{@link #syncSaveFile}。从url中键为{@link Constants#REGISTRY_FILESAVE_SYNC_KEY}对应的值，默认是false（异步保存）</li><br/>
@@ -105,14 +105,14 @@ public abstract class AbstractRegistry implements Registry {
      * @see #notify(List)
      */
     public AbstractRegistry(URL url) {
-        //设置url
+        // 设置url
         setUrl(url);
         // 启动文件保存定时器:key:save.file 默认false（异步保存）
         syncSaveFile = url.getParameter(Constants.REGISTRY_FILESAVE_SYNC_KEY, false);
-        //获得url中file的的值，默认$user.home$/.dubbo/dubbo-registry-url的host.cache
+        // 获得url中file的的值，默认$user.home$/.dubbo/dubbo-registry-url的host.cache
         String filename = url.getParameter(Constants.FILE_KEY, System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getHost() + ".cache");
 
-        //检查文件存在否，不存在相应处理
+        // 检查文件存在否，不存在相应处理
         File file = null;
         if (ConfigUtils.isNotEmpty(filename)) {
             file = new File(filename);
@@ -122,16 +122,20 @@ public abstract class AbstractRegistry implements Registry {
                 }
             }
         }
-        //本地磁盘文件
+        // 本地磁盘文件
         this.file = file;
 
-        //加载文件配置
+        // 加载文件配置
         loadProperties();
 
-        //通知备份的url
+        // 通知备份的url
         notify(url.getBackupUrls());
     }
 
+    /**
+     * 设置注册中心url
+     * @param url 注册中心url
+     */
     protected void setUrl(URL url) {
         if (url == null) {
             throw new IllegalArgumentException("registry url == null");
@@ -455,22 +459,24 @@ public abstract class AbstractRegistry implements Registry {
      * <li>遍历元素的所有订阅者，尝试通知</li><br/>
      * </ul>
      *
-     * @param urls 备用的url列表
+     * @param urls 注册中心的备用的url列表(简单的认为备机地址)
      * @see #notify(URL, NotifyListener, List)
      */
     protected void notify(List<URL> urls) {
 
         if (urls == null || urls.isEmpty()) return;
 
-        //遍历所有的监听者
+        //遍历所有的监听者，对已经受订阅的相关url进行通知。
         for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
+
             URL url = entry.getKey();
 
-            //对于不匹配的直接忽略掉
+            //对于不匹配的直接忽略掉，
             if (!UrlUtils.isMatch(url, urls.get(0))) {
                 continue;
             }
 
+            //对于匹配的url。则需要进行通知
             Set<NotifyListener> listeners = entry.getValue();
             if (listeners != null) {
                 for (NotifyListener listener : listeners) {
@@ -494,7 +500,7 @@ public abstract class AbstractRegistry implements Registry {
      *
      * @param url      主url
      * @param listener url的订阅者
-     * @param urls     备用的urls
+     * @param urls     和订阅url相匹配的url
      * @see #saveProperties(URL)
      * @see NotifyListener#notify(List)；
      */
@@ -516,8 +522,9 @@ public abstract class AbstractRegistry implements Registry {
         //分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
-            //匹配
+            //进行精确匹配
             if (UrlUtils.isMatch(url, u)) {
+                //对url进行目录分类
                 String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
                 List<URL> categoryList = result.get(category);
                 if (categoryList == null) {
@@ -527,26 +534,27 @@ public abstract class AbstractRegistry implements Registry {
                 categoryList.add(u);
             }
         }
+        //没有则直接返回
         if (result.size() == 0) {
             return;
         }
         //合并上面的分组信息到notified
 
-        //尝试获得依据分组的缓存
+        //尝试获得依据分组的缓存，一个url其可以有多个组。
         //没有则新建
         Map<String, List<URL>> categoryNotified = notified.get(url);
         if (categoryNotified == null) {
             notified.putIfAbsent(url, new ConcurrentHashMap<String, List<URL>>());
             categoryNotified = notified.get(url);
         }
-        //放入分组信息
+        //将上面的result信息进行放入缓存中，放入分组信息
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
             categoryNotified.put(category, categoryList);
-            //保存相关属性
+            //保存相关属性，将相关信息写入文件，url和其信息
             saveProperties(url);
-            //通知
+            //通知，相关组信息
             listener.notify(categoryList);
         }
     }

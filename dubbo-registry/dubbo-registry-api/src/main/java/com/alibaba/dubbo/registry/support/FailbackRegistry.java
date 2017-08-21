@@ -63,7 +63,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     private final ConcurrentMap<URL, Map<NotifyListener, List<URL>>> failedNotified = new ConcurrentHashMap<URL, Map<NotifyListener, List<URL>>>();
 
     /**
-     * 抽象类FailbackRegistry构造函数，服务于具体实现类
+     * 抽象类FailbackRegistry构造函数，服务于具体实现类，代表了可以失败重试的注册中心
      * <ul>
      * <li>从url中获得key为{@link Constants#REGISTRY_RETRY_PERIOD_KEY}的值。默认是5s</li><br/>
      * <li>启动5s一次的定时任务（检测并连接注册中心），进行重试{@link #retry()}</li><br/>
@@ -321,7 +321,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
      * 进行通知
      * @param url   订阅url
      * @param listener url的订阅者
-     * @param urls  备用的urls
+     * @param urls  和订阅url相匹配的url
      */
     @Override
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {

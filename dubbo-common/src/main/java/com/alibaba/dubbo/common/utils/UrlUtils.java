@@ -377,6 +377,12 @@ public class UrlUtils {
                 + (version == null ? "" : "&" + Constants.VERSION_KEY + "=" + version));
     }
 
+    /**
+     * 匹配目录
+     * @param category
+     * @param categories
+     * @return
+     */
     public static boolean isMatchCategory(String category, String categories) {
         if (categories == null || categories.length() == 0) {
             return Constants.DEFAULT_CATEGORY.equals(category);
@@ -390,6 +396,7 @@ public class UrlUtils {
     }
 
     /**
+     * 对url进行匹配
      * @param consumerUrl 受订阅url
      * @param providerUrl 提供方url
      * @return 是否匹配
@@ -397,7 +404,7 @@ public class UrlUtils {
     public static boolean isMatch(URL consumerUrl, URL providerUrl) {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();
-        //检测接口匹配
+        //检测接口匹配，consumerInterface是*则通配所有，两者严格相等
         if (!(Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface))) {
             return false;
         }
