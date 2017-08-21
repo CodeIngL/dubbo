@@ -148,7 +148,14 @@ public class RpcUtils {
         }
     	return invocation.getParameterTypes();
     }
-    
+
+    /**
+     *
+     * @param url 元信息
+     * @param inv 调用对象
+     * @return 是否是异步
+     * @see #getMethodName(Invocation)
+     */
     public static boolean isAsync(URL url, Invocation inv) {
     	boolean isAsync ;
     	//如果Java代码中设置优先.
@@ -159,7 +166,13 @@ public class RpcUtils {
     	}
     	return isAsync;
     }
-    
+
+    /**
+     *
+     * @param url 元信息
+     * @param inv 调用对象
+     * @return 是否是oneway
+     */
     public static boolean isOneway(URL url, Invocation inv) {
     	boolean isOneway ;
     	//如果Java代码中设置优先.

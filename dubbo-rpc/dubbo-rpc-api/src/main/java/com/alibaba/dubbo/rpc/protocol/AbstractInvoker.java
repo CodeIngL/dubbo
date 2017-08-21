@@ -120,11 +120,19 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
     }
 
     /**
-     * 协议的invoke
-     * 具体操作由子类回调
+     * 抽象的invoker调用，具体操作由子类回调
+     * <p>
+     * <ul>DubboInvoker</ul><br/>
+     * <ul>ThriftInvoker</ul><br/>
+     * <ul>InjvmInvoker</ul><br/>
+     * <ul>AbstractProxyProtocol#refer</ul><br/>
+     * <ul>MemcachedProtocol#refer</ul><br/>
+     * <ul>RedisProtocol#refer</ul><br/>
+     * </p>
+     *
      * @param inv 调用对象
      * @return 调用结果
-     * @throws RpcException
+     * @throws RpcException rpc异常
      */
     public Result invoke(Invocation inv) throws RpcException {
         if (destroyed) {

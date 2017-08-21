@@ -427,6 +427,7 @@ public final class URL implements Serializable {
      * <p>
      * 尝试直接使用key从参数结构中获取，并对对应值进行编码
      * </p>
+     *
      * @param key 关键键信息
      * @return 对应值的编码结果
      * @see #getParameterAndDecoded(String, String)
@@ -440,6 +441,7 @@ public final class URL implements Serializable {
      * <p>
      * 尝试直接使用key从参数结构中获取，并对对应值进行编码,带默认值
      * </p>
+     *
      * @param key 关键键信息
      * @return 对应值的编码结果
      * @see #decode(String)
@@ -727,6 +729,13 @@ public final class URL implements Serializable {
         return value;
     }
 
+    /**
+     * @param method       方法名
+     * @param key          关键键
+     * @param defaultValue 默认值
+     * @return 键对应的值
+     * @see #getMethodParameter(String, String)
+     */
     public String getMethodParameter(String method, String key, String defaultValue) {
         String value = getMethodParameter(method, key);
         if (value == null || value.length() == 0) {
@@ -735,6 +744,14 @@ public final class URL implements Serializable {
         return value;
     }
 
+
+    /**
+     *
+     * @param method
+     * @param key
+     * @param defaultValue
+     * @return
+     */
     public char getMethodParameter(String method, String key, char defaultValue) {
         String value = getMethodParameter(method, key);
         if (value == null || value.length() == 0) {
@@ -743,6 +760,14 @@ public final class URL implements Serializable {
         return value.charAt(0);
     }
 
+    /**
+     * 获得method对应的配置
+     *
+     * @param method       方法名
+     * @param key          关键字
+     * @param defaultValue 默认值
+     * @return true or false
+     */
     public boolean getMethodParameter(String method, String key, boolean defaultValue) {
         String value = getMethodParameter(method, key);
         if (value == null || value.length() == 0) {
