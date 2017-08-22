@@ -46,12 +46,12 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     //被包装对象，默认为JavassistProxyFactory
     private final ProxyFactory proxyFactory;
 
-    //协议配置类
-    private Protocol protocol;
-
     public StubProxyFactoryWrapper(ProxyFactory proxyFactory) {
         this.proxyFactory = proxyFactory;
     }
+
+    //协议配置类
+    private Protocol protocol;
 
     public void setProtocol(Protocol protocol) {
         this.protocol = protocol;
@@ -115,10 +115,27 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         return proxy;
     }
 
+    /**
+     *
+     * @param proxy 类型实例
+     * @param type 类型类
+     * @param url 元信息
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
         return proxyFactory.getInvoker(proxy, type, url);
     }
 
+    /**
+     *
+     * @param instance
+     * @param type
+     * @param url
+     * @param <T>
+     * @return
+     */
     private <T> Exporter<T> export(T instance, Class<T> type, URL url) {
         return protocol.export(proxyFactory.getInvoker(instance, type, url));
     }

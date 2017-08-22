@@ -32,10 +32,25 @@ final public class MockProtocol extends AbstractProtocol {
 		return 0;
 	}
 
+	/**
+	 * 不支持服务方
+	 * @param invoker 服务的执行体
+	 * @param <T>
+	 * @return 导出对象
+	 * @throws RpcException 异常
+	 */
 	public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 在消费方构建一个MockInvoker
+	 * @param type 服务的类型
+	 * @param url 远程服务的URL地址
+	 * @param <T>
+	 * @return MockInvoker实例
+	 * @throws RpcException 异常
+	 */
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
 		return new MockInvoker<T>(url);
 	}

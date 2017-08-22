@@ -50,10 +50,25 @@ public class MemcachedProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+    /**
+     * memcachedProtocol不支持服务方
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(final Invoker<T> invoker) throws RpcException {
         throw new UnsupportedOperationException("Unsupported export memcached service. url: " + invoker.getUrl());
     }
 
+    /**
+     * 对消费方的支持，返回其实现
+     * @param type 服务的类型
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return memcached实现
+     * @throws RpcException rpc异常
+     */
     public <T> Invoker<T> refer(final Class<T> type, final URL url) throws RpcException {
         try {
             String address = url.getAddress();

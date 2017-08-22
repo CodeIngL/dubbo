@@ -154,10 +154,11 @@ final public class MockInvoker<T> implements Invoker<T> {
             if (! serviceType.isAssignableFrom(mockClass)) {
                 throw new IllegalArgumentException("The mock implemention class " + mockClass.getName() + " not implement interface " + serviceType.getName());
             }
-			
             try {
+                //构建mock上的invoker返回
                 T mockObject = (T) mockClass.newInstance();
                 invoker = proxyFactory.getInvoker(mockObject, (Class<T>)serviceType, url);
+                //mock的上限是10000个
                 if (mocks.size() < 10000) {
                 	mocks.put(mockService, invoker);
                 }
