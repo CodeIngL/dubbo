@@ -140,6 +140,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     /**
      * 订阅即是设置消费url
      * 同时注册中心注册相应的url
+     *
      * @param url 元信息
      */
     public void subscribe(URL url) {
@@ -168,7 +169,6 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
-     *
      * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
      */
     public synchronized void notify(List<URL> urls) {
@@ -230,6 +230,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private void refreshInvoker(List<URL> invokerUrls) {
         if (invokerUrls != null && invokerUrls.size() == 1 && invokerUrls.get(0) != null
                 && Constants.EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
+            //只有一个，且他的协议是empty
             this.forbidden = true; // 禁止访问
             this.methodInvokerMap = null; // 置空列表
             destroyAllInvokers(); // 关闭所有Invoker
@@ -361,8 +362,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     /**
      * 将urls转成invokers,如果url已经被refer过，不再重新引用。
      *
-     * @param urls
-     * @return invokers
+     * @param urls 元信息列表(服务方元信息)
+     * @return invokers 对应的invokers
      */
     private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<String, Invoker<T>>();
@@ -370,6 +371,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             return newUrlInvokerMap;
         }
         Set<String> keys = new HashSet<String>();
+        //获取消费方配置的协议
         String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);
         for (URL providerUrl : urls) {
             //如果reference端配置了protocol，则只选择匹配的protocol
@@ -386,14 +388,17 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     continue;
                 }
             }
+            //忽略配置为empty的元信息
             if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
                 continue;
             }
+            //验证下是否支持配置,不支持记录错误日记，忽略掉
             if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost()
                         + ", supported protocol: " + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;
             }
+            //合并参数
             URL url = mergeUrl(providerUrl);
 
             String key = url.toFullString(); // URL参数是排序的
@@ -554,7 +559,6 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     /**
      * 检查缓存中的invoker是否需要被destroy
      * 如果url中指定refer.autodestroy=false，则只增加不减少，可能会有refer泄漏，
-     *
      */
     private void destroyUnusedInvokers(Map<String, Invoker<T>> oldUrlInvokerMap, Map<String, Invoker<T>> newUrlInvokerMap) {
         if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {
@@ -596,6 +600,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     /**
      * 根据调用对象在目录服务中寻找对应调用者
+     *
      * @param invocation 调用对象
      * @return 对应的调用者
      */

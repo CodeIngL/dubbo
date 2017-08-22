@@ -245,7 +245,7 @@ public abstract class Wrapper {
         StringBuilder c2 = new StringBuilder("public Object getPropertyValue(Object o, String n){ ")
                 .append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
         //增加方法invokeMethod
-        StringBuilder c3 = new StringBuilder("public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws InvocationTargetException{ ")
+        StringBuilder c3 = new StringBuilder("public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws java.lang.reflect.InvocationTargetException{ ")
                 .append(name).append(" w; try{ w = ((").append(name).append(")$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }");
 
 
