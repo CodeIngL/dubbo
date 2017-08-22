@@ -59,6 +59,8 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     /**
      * 获得代理
+     * 当消费引用暴露后，获得是一个代理，这里是最早的获得代理的调用处
+     * 获得代理后，尝试对mock服务进行一次暴露，如果有的话。
      *
      * @param invoker rpc Invoker
      * @param <T>     类型
@@ -68,7 +70,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> T getProxy(Invoker<T> invoker) throws RpcException {
         T proxy = proxyFactory.getProxy(invoker);
-        //不是泛华接口
+        //不是泛化调用接口，
         if (GenericService.class != invoker.getInterface()) {
             //寻找mock服务，优先使用stub，stub等价于local
             String stub = invoker.getUrl().getParameter(Constants.STUB_KEY, invoker.getUrl().getParameter(Constants.LOCAL_KEY));

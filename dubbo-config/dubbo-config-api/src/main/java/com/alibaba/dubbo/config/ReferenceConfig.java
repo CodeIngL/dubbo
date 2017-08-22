@@ -423,7 +423,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         urls.add(ClusterUtils.mergeUrl(url, map));
                     }
                 }
-            } else { // 通过注册中心配置拼装URL
+            } else {
+                // 通过注册中心配置拼装URL
                 List<URL> us = loadRegistries(false);
                 if (us != null && us.size() > 0) {
                     for (URL u : us) {
@@ -438,11 +439,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
                 }
             }
-            //urls.length = 1 的情况下无论是注册中心，还是其他url，总是能暴露出来，也不需要统一的cluster取分发
+            //多种策略共存只能通过设置字符串url，否则全部都是使用注册中心，注册中心的支持决定了其范围
             if (urls.size() == 1) {
+                //urls.length = 1 的情况下无论是注册中心，还是其他url，总是能暴露出来，也不需要统一的cluster取分发
+                //这个是最寻常的角色，一般开发者，不会配置字符串url，只会单独配置一个注册中心，也就是urls.size为1的情况
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             } else {
-                //urls.length = 2 的情况下存在多种url，需要使用统一的门户完成对外要求
+                //urls.length > 1 的情况下存在多种url，需要使用统一的门户完成对外要求
+                //构建的原因也很简单，这一个消费接口需要引用多个地方来保证高可用性，等等
+                //一个接口消费引用多个地方，涉及到调用时选择其中之一进行消费了
+                //两种可能:使用字符串url获得的（多种形式）；使用xml注册中心获得的（全部都是注册中心url）
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
@@ -451,11 +457,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         registryURL = url; // 用了最后一个registry url
                     }
                 }
-                if (registryURL != null) { // 有 注册中心协议的URL
+                if (registryURL != null) {
                     // 对有注册中心的Cluster 只用 AvailableCluster
                     URL u = registryURL.addParameter(Constants.CLUSTER_KEY, AvailableCluster.NAME);
                     invoker = cluster.join(new StaticDirectory(u, invokers));
-                } else { // 不是 注册中心的URL
+                } else {
+                    // 只能由配置字符串url构建的多个普通的url，没有使用注册中心，
+                    // 同时配置文件中，没有配置相关的注册中心的标签，spring情况下
                     invoker = cluster.join(new StaticDirectory(invokers));
                 }
             }
