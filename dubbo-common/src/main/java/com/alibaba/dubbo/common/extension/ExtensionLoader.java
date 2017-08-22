@@ -1135,7 +1135,12 @@ public class ExtensionLoader<T> {
                             getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
                         }
                     } else {
-                        getNameCode = String.format("( url.getProtocol() == null ? (%s) : url.getProtocol() )", getNameCode);
+                        if (i == value.length - 1) {
+                            getNameCode = String.format("url.getProtocol() == null ? (\"%s\") : url.getProtocol()", getNameCode);
+                        } else {
+                            getNameCode = String.format("( url.getProtocol() == null ? (%s) : url.getProtocol() )", getNameCode);
+                        }
+
                     }
                 }
                 code.append("\nString extName = ").append(getNameCode).append(";");
