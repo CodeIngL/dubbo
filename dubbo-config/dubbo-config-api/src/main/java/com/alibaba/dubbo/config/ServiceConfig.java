@@ -327,6 +327,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 结束导出
+     */
     public synchronized void unexport() {
         if (!exported) {
             return;
