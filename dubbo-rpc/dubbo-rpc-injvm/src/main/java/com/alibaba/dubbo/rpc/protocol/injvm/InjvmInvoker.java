@@ -38,12 +38,24 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
 
     private final Map<String, Exporter<?>> exporterMap;
 
+    /**
+     * 内部injvm的invoker实现
+     * @param type 类类型
+     * @param url 元信息
+     * @param key 关键键
+     * @param exporterMap 缓存
+     */
     InjvmInvoker(Class<T> type, URL url, String key, Map<String, Exporter<?>> exporterMap){
         super(type, url);
         this.key = key;
         this.exporterMap = exporterMap;
     }
 
+    /**
+     * 在服务有暴露存在的情况下，使用服务的状态
+     * 否则使用父类的方法来确定
+     * @return 可用性
+     */
     @Override
 	public boolean isAvailable() {
     	InjvmExporter<?> exporter = (InjvmExporter<?>) exporterMap.get(key);
@@ -54,6 +66,13 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
         }
 	}
 
+    /**
+     * injvm的doInvoker的实现，
+     * 获得暴露的服务，然后直接使用该export进行调用
+     * @param invocation 调用对象
+     * @return 结果
+     * @throws Throwable 异常
+     */
 	public Result doInvoke(Invocation invocation) throws Throwable {
         Exporter<?> exporter = InjvmProtocol.getExporter(exporterMap, getUrl());
         if (exporter == null)  {

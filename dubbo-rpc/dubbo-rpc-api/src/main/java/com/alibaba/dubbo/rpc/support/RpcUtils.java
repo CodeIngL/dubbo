@@ -29,7 +29,7 @@ import com.alibaba.dubbo.rpc.RpcInvocation;
 
 /**
  * RpcUtils
- * 
+ *
  * @author william.liangf
  * @author chao.liuc
  */
@@ -41,7 +41,7 @@ public class RpcUtils {
         try {
             if (invocation != null && invocation.getInvoker() != null
                     && invocation.getInvoker().getUrl() != null
-                    && ! invocation.getMethodName().startsWith("$")) {
+                    && !invocation.getMethodName().startsWith("$")) {
                 String service = invocation.getInvoker().getUrl().getServiceInterface();
                 if (service != null && service.length() > 0) {
                     Class<?> cls = ReflectUtils.forName(service);
@@ -62,7 +62,7 @@ public class RpcUtils {
         try {
             if (invocation != null && invocation.getInvoker() != null
                     && invocation.getInvoker().getUrl() != null
-                    && ! invocation.getMethodName().startsWith("$")) {
+                    && !invocation.getMethodName().startsWith("$")) {
                 String service = invocation.getInvoker().getUrl().getServiceInterface();
                 if (service != null && service.length() > 0) {
                     Class<?> cls = ReflectUtils.forName(service);
@@ -78,78 +78,122 @@ public class RpcUtils {
         }
         return null;
     }
-    
+
     private static final AtomicLong INVOKE_ID = new AtomicLong(0);
-    
-	public static Long getInvocationId(Invocation inv) {
-    	String id = inv.getAttachment(Constants.ID_KEY);
-		return id == null ? null : new Long(id);
-	}
-    
+
+    /**
+     * 获得调用对象的id
+     * @param inv 调用对象
+     * @return 其对应的id
+     */
+    public static Long getInvocationId(Invocation inv) {
+        String id = inv.getAttachment(Constants.ID_KEY);
+        return id == null ? null : new Long(id);
+    }
+
     /**
      * 幂等操作:异步操作默认添加invocation id
+     *
      * @param url
      * @param inv
      */
-    public static void attachInvocationIdIfAsync(URL url, Invocation inv){
-    	if (isAttachInvocationId(url, inv) && getInvocationId(inv) == null && inv instanceof RpcInvocation) {
-    		((RpcInvocation)inv).setAttachment(Constants.ID_KEY, String.valueOf(INVOKE_ID.getAndIncrement()));
+    public static void attachInvocationIdIfAsync(URL url, Invocation inv) {
+        if (isAttachInvocationId(url, inv) && getInvocationId(inv) == null && inv instanceof RpcInvocation) {
+            ((RpcInvocation) inv).setAttachment(Constants.ID_KEY, String.valueOf(INVOKE_ID.getAndIncrement()));
         }
-    }
-    
-    private static boolean isAttachInvocationId(URL url , Invocation invocation) {
-    	String value = url.getMethodParameter(invocation.getMethodName(), Constants.AUTO_ATTACH_INVOCATIONID_KEY);
-    	if ( value == null ) {
-    		//异步操作默认添加invocationid
-    		return isAsync(url,invocation) ;
-    	} else if (Boolean.TRUE.toString().equalsIgnoreCase(value)) {
-    		//设置为添加，则一定添加
-    		return true;
-    	} else {
-    		//value为false时，不添加
-    		return false;
-    	}
-    }
-    
-    public static String getMethodName(Invocation invocation){
-    	if(Constants.$INVOKE.equals(invocation.getMethodName()) 
-                && invocation.getArguments() != null 
-                && invocation.getArguments().length > 0 
-                && invocation.getArguments()[0] instanceof String){
-            return (String) invocation.getArguments()[0];
-        }
-    	return invocation.getMethodName();
     }
 
-    public static Object[] getArguments(Invocation invocation){
-    	if(Constants.$INVOKE.equals(invocation.getMethodName()) 
-                && invocation.getArguments() != null 
-                && invocation.getArguments().length > 2
-                && invocation.getArguments()[2] instanceof Object[]){
-            return (Object[]) invocation.getArguments()[2];
+    private static boolean isAttachInvocationId(URL url, Invocation invocation) {
+        String value = url.getMethodParameter(invocation.getMethodName(), Constants.AUTO_ATTACH_INVOCATIONID_KEY);
+        if (value == null) {
+            //异步操作默认添加invocationid
+            return isAsync(url, invocation);
+        } else if (Boolean.TRUE.toString().equalsIgnoreCase(value)) {
+            //设置为添加，则一定添加
+            return true;
+        } else {
+            //value为false时，不添加
+            return false;
         }
-    	return invocation.getArguments();
-    }
-
-    public static Class<?>[] getParameterTypes(Invocation invocation){
-    	if(Constants.$INVOKE.equals(invocation.getMethodName()) 
-                && invocation.getArguments() != null 
-                && invocation.getArguments().length > 1
-                && invocation.getArguments()[1] instanceof String[]){
-            String[] types = (String[]) invocation.getArguments()[1];
-            if (types == null) {
-            	return new Class<?>[0];
-            }
-            Class<?>[] parameterTypes = new Class<?>[types.length];
-            for (int i = 0; i < types.length; i ++) {
-            	parameterTypes[i] = ReflectUtils.forName(types[0]);
-            }
-            return parameterTypes;
-        }
-    	return invocation.getParameterTypes();
     }
 
     /**
+     * 获得方法名
+     * <p>
+     * <ul>
+     * <li>对于被包装的且第一个参数是string，则该参数就是方法名</li><br/>
+     * <li>否则返回调用对象的getMethodName返回值</li><br/>
+     * </ul>
+     * </P>
+     *
+     * @param invocation 调用对象
+     * @return 方法名
+     */
+    public static String getMethodName(Invocation invocation) {
+        if (Constants.$INVOKE.equals(invocation.getMethodName())
+                && invocation.getArguments() != null
+                && invocation.getArguments().length > 0
+                && invocation.getArguments()[0] instanceof String) {
+            return (String) invocation.getArguments()[0];
+        }
+        return invocation.getMethodName();
+    }
+
+    /**
+     * 获得方法参数
+     * <p>
+     * <ul>
+     * <li>对于被包装的且第三个参数是Object[]，则该参数就是返回的参数数组</li><br/>
+     * <li>否则返回调用对象的getArguments返回值</li><br/>
+     * </ul>
+     * </P>
+     *
+     * @param invocation 调用对象
+     * @return 方法名
+     */
+    public static Object[] getArguments(Invocation invocation) {
+        if (Constants.$INVOKE.equals(invocation.getMethodName())
+                && invocation.getArguments() != null
+                && invocation.getArguments().length > 2
+                && invocation.getArguments()[2] instanceof Object[]) {
+            return (Object[]) invocation.getArguments()[2];
+        }
+        return invocation.getArguments();
+    }
+
+    /**
+     * 获得方法参数类型
+     * <p>
+     * <ul>
+     * <li>对于被包装的且第二个参数是String[]，则该参数就是返回的参数类型数组</li><br/>
+     * <li>否则返回调用对象的getParametersTypes返回值</li><br/>
+     * </ul>
+     * </P>
+     *
+     * @param invocation 调用对象
+     * @return 方法名
+     */
+    public static Class<?>[] getParameterTypes(Invocation invocation) {
+        if (Constants.$INVOKE.equals(invocation.getMethodName())
+                && invocation.getArguments() != null
+                && invocation.getArguments().length > 1
+                && invocation.getArguments()[1] instanceof String[]) {
+            String[] types = (String[]) invocation.getArguments()[1];
+            if (types == null) {
+                return new Class<?>[0];
+            }
+            Class<?>[] parameterTypes = new Class<?>[types.length];
+            for (int i = 0; i < types.length; i++) {
+                parameterTypes[i] = ReflectUtils.forName(types[0]);
+            }
+            return parameterTypes;
+        }
+        return invocation.getParameterTypes();
+    }
+
+    /**
+     * 调用对象中有配置，async=true，直接返回true
+     * 方法中对应的采用了配置 ，使用该配置，否则默认为false
      *
      * @param url 元信息
      * @param inv 调用对象
@@ -157,31 +201,32 @@ public class RpcUtils {
      * @see #getMethodName(Invocation)
      */
     public static boolean isAsync(URL url, Invocation inv) {
-    	boolean isAsync ;
-    	//如果Java代码中设置优先.
-    	if (Boolean.TRUE.toString().equals(inv.getAttachment(Constants.ASYNC_KEY))) {
-    		isAsync = true;
-    	} else {
-	    	isAsync = url.getMethodParameter(getMethodName(inv), Constants.ASYNC_KEY, false);
-    	}
-    	return isAsync;
+        boolean isAsync;
+        //如果Java代码中设置优先.
+        if (Boolean.TRUE.toString().equals(inv.getAttachment(Constants.ASYNC_KEY))) {
+            isAsync = true;
+        } else {
+            isAsync = url.getMethodParameter(getMethodName(inv), Constants.ASYNC_KEY, false);
+        }
+        return isAsync;
     }
 
     /**
-     *
+     * 调用对象中有配置，return=false，直接返回true
+     * 方法中对应的采用了配置 ，使用该配置，否则默认为false
      * @param url 元信息
      * @param inv 调用对象
      * @return 是否是oneway
      */
     public static boolean isOneway(URL url, Invocation inv) {
-    	boolean isOneway ;
-    	//如果Java代码中设置优先.
-    	if (Boolean.FALSE.toString().equals(inv.getAttachment(Constants.RETURN_KEY))) {
-    		isOneway = true;
-    	} else {
-    		isOneway = ! url.getMethodParameter(getMethodName(inv), Constants.RETURN_KEY, true);
-    	}
-    	return isOneway;
+        boolean isOneway;
+        //如果Java代码中设置优先.
+        if (Boolean.FALSE.toString().equals(inv.getAttachment(Constants.RETURN_KEY))) {
+            isOneway = true;
+        } else {
+            isOneway = !url.getMethodParameter(getMethodName(inv), Constants.RETURN_KEY, true);
+        }
+        return isOneway;
     }
-    
+
 }

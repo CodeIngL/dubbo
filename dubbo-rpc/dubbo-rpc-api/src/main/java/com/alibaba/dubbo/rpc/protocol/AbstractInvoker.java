@@ -181,6 +181,12 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         }
     }
 
+    /**
+     *
+     * @param invocation 调用对象
+     * @return rpc调用结果
+     * @throws Throwable 异常
+     */
     protected abstract Result doInvoke(Invocation invocation) throws Throwable;
 
 }

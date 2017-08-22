@@ -43,6 +43,7 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
  */
 public class DubboInvoker<T> extends AbstractInvoker<T> {
 
+    //持有的客户端
     private final ExchangeClient[] clients;
 
     private final AtomicPositiveInteger index = new AtomicPositiveInteger();
@@ -83,14 +84,19 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
 
     /**
      * 消费方默认dubbo协议的调用者，子类回调.
-     * client两种形式延迟暴露的LazyConnectExchangeClient，和直接暴露的HeaderExchangeClient
+     * client两种形式
+     * 延迟连接的LazyConnectExchangeClient；
+     * 直接暴露的HeaderExchangeClient；
+     *
      * @param invocation 调用对象
-     * @return
-     * @throws Throwable
+     * @return rpc调用结果
+     * @throws Throwable 异常
      */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         //添加额外的信息
+        //添加path，接口信息（不是泛化调用)
+        //添加version，版本信息
         RpcInvocation inv = (RpcInvocation) invocation;
         final String methodName = RpcUtils.getMethodName(invocation);
         inv.setAttachment(Constants.PATH_KEY, getUrl().getPath());
@@ -109,21 +115,21 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);
             //是否oneWay
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
-            // 超时时间
+            // 调用的超时时间
             int timeout = getUrl().getMethodParameter(methodName, Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
-            //是否是oneway
             if (isOneway) {
+                //是否是oneway，配置这一项，不需要接收方进行答复，直接返回
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
                 RpcContext.getContext().setFuture(null);
                 return new RpcResult();
             } else if (isAsync) {
-                //是否是异步
+                //是否是异步，配置这一项，不需要接收方进行答复，直接返回，但是能收到返回值
                 ResponseFuture future = currentClient.request(inv, timeout);
                 RpcContext.getContext().setFuture(new FutureAdapter<Object>(future));
                 return new RpcResult();
             } else {
-                //其他
+                //其他，需要接收方答复，得到结果
                 RpcContext.getContext().setFuture(null);
                 return (Result) currentClient.request(inv, timeout).get();
             }
