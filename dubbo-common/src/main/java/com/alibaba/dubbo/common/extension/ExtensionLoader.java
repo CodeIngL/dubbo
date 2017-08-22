@@ -1126,21 +1126,35 @@ public class ExtensionLoader<T> {
                 //key2没有Value，使用缺省的扩展。
                 //如果没有设定缺省扩展，则方法调用会抛出IllegalStateException。
                 String defaultExtName = cachedDefaultName;
-                String getNameCode = defaultExtName;
+                String getNameCode = null;
                 for (int i = value.length - 1; i >= 0; --i) {
-                    if (!"protocol".equals(value[i])) {
-                        if (hasInvocation) {
-                            getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
+                    if (i == value.length - 1) {
+                        //有默认参数名
+                        if (null != defaultExtName) {
+                            if (!"protocol".equals(value[i]))
+                                if (hasInvocation)
+                                    getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
+                                else
+                                    getNameCode = String.format("url.getParameter(\"%s\", \"%s\")", value[i], defaultExtName);
+                            else
+                                getNameCode = String.format("( url.getProtocol() == null ? \"%s\" : url.getProtocol() )", defaultExtName);
                         } else {
-                            getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
+                            if (!"protocol".equals(value[i]))
+                                if (hasInvocation)
+                                    getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
+                                else
+                                    getNameCode = String.format("url.getParameter(\"%s\")", value[i]);
+                            else
+                                getNameCode = "url.getProtocol()";
                         }
                     } else {
-                        if (i == value.length - 1) {
-                            getNameCode = String.format("url.getProtocol() == null ? (\"%s\") : url.getProtocol()", getNameCode);
-                        } else {
-                            getNameCode = String.format("( url.getProtocol() == null ? (%s) : url.getProtocol() )", getNameCode);
-                        }
-
+                        if (!"protocol".equals(value[i]))
+                            if (hasInvocation)
+                                getNameCode = String.format("url.getMethodParameter(methodName, \"%s\", \"%s\")", value[i], defaultExtName);
+                            else
+                                getNameCode = String.format("url.getParameter(\"%s\", %s)", value[i], getNameCode);
+                        else
+                            getNameCode = String.format("url.getProtocol() == null ? (%s) : url.getProtocol()", getNameCode);
                     }
                 }
                 code.append("\nString extName = ").append(getNameCode).append(";");
