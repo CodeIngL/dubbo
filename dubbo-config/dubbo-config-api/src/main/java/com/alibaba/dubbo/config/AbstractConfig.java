@@ -276,6 +276,13 @@ public abstract class AbstractConfig implements Serializable {
         return tag;
     }
 
+    /**
+     * 将config中一些信息形成键值对，加入入参parameters中<br/>
+     * it equals to appendParameters(parameters, config, null)
+     * @param parameters 参数集合
+     * @param config 配置类实例
+     * @see #appendAttributes(Map, Object, String)
+     */
     protected static void appendParameters(Map<String, String> parameters, Object config) {
         appendParameters(parameters, config, null);
     }

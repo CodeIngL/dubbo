@@ -52,24 +52,35 @@ final public class MockInvoker<T> implements Invoker<T> {
     public MockInvoker(URL url) {
         this.url = url;
     }
+
+    /**
+     * mock操作
+     * @param invocation 调用者
+     * @return mock的结果
+     * @throws RpcException rpc异常
+     */
 	public Result invoke(Invocation invocation) throws RpcException {
+        //获得方法级别配置的mock信息，从url中获得，key:方法名.mock
     	String mock = getUrl().getParameter(invocation.getMethodName()+"."+Constants.MOCK_KEY);
     	if (invocation instanceof RpcInvocation) {
     		((RpcInvocation) invocation).setInvoker(this);
     	}
+    	//方法级别上没有相应mock，使用key:mock从其中获得相应的mock
     	if (StringUtils.isBlank(mock)){
     		mock = getUrl().getParameter(Constants.MOCK_KEY);
     	}
-    	
+    	//都没有，说明没有mock，配置出错了，扔出异常。
     	if (StringUtils.isBlank(mock)){
     		throw new RpcException(new IllegalAccessException("mock can not be null. url :" + url));
     	}
         mock = normallizeMock(URL.decode(mock));
         if (Constants.RETURN_PREFIX.trim().equalsIgnoreCase(mock.trim())){
+            //return ex void
         	RpcResult result = new RpcResult();
         	result.setValue(null);
         	return result;
         } else if (mock.startsWith(Constants.RETURN_PREFIX)) {
+            //return ex return xxxx
             mock = mock.substring(Constants.RETURN_PREFIX.length()).trim();
             mock = mock.replace('`', '"');
             try {
@@ -80,6 +91,7 @@ final public class MockInvoker<T> implements Invoker<T> {
             	throw new RpcException("mock return invoke error. method :" + invocation.getMethodName() + ", mock:" + mock + ", url: "+ url , ew);
             }
         } else if (mock.startsWith(Constants.THROW_PREFIX)) {
+            //throw
         	mock = mock.substring(Constants.THROW_PREFIX.length()).trim();
             mock = mock.replace('`', '"');
             if (StringUtils.isBlank(mock)){
@@ -88,7 +100,8 @@ final public class MockInvoker<T> implements Invoker<T> {
             	Throwable t = getThrowable(mock);
 				throw new RpcException(RpcException.BIZ_EXCEPTION, t);
             }
-        } else { //impl mock
+        } else {
+            //impl mock class
              try {
                  Invoker<T> invoker = getInvoker(mock);
                  return invoker.invoke(invocation);
@@ -118,26 +131,30 @@ final public class MockInvoker<T> implements Invoker<T> {
 			return t;
 		}
     }
-    
+
+    /**
+     * 尝试从缓存中获得，缓存不存在，构建缓存
+     * @param mockService 名字
+     * @return 由mock类构建的invoker对象
+     */
     @SuppressWarnings("unchecked")
 	private Invoker<T> getInvoker(String mockService){
     	Invoker<T> invoker =(Invoker<T>) mocks.get(mockService);
 		if (invoker != null ){
 			return invoker;
 		} else {
+            //获得service的类型
        	 	Class<T> serviceType = (Class<T>)ReflectUtils.forName(url.getServiceInterface());
+            //构建mock的类名字
             if (ConfigUtils.isDefault(mockService)) {
             	mockService = serviceType.getName() + "Mock";
             }
-            
+            //反射并检测mock的合法性
             Class<?> mockClass = ReflectUtils.forName(mockService);
             if (! serviceType.isAssignableFrom(mockClass)) {
                 throw new IllegalArgumentException("The mock implemention class " + mockClass.getName() + " not implement interface " + serviceType.getName());
             }
 			
-            if (! serviceType.isAssignableFrom(mockClass)) {
-                throw new IllegalArgumentException("The mock implemention class " + mockClass.getName() + " not implement interface " + serviceType.getName());
-            }
             try {
                 T mockObject = (T) mockClass.newInstance();
                 invoker = proxyFactory.getInvoker(mockObject, (Class<T>)serviceType, url);
@@ -155,15 +172,24 @@ final public class MockInvoker<T> implements Invoker<T> {
     //mock=fail:throw
     //mock=fail:return
     //mock=xx.Service
+    /**
+     * 获得mock的相关信息
+     * 如上mock有多种形式
+     * @param mock 粗级别的mock
+     * @return
+     */
     private String normallizeMock(String mock) {
     	if (mock == null || mock.trim().length() ==0){
     		return mock;
     	} else if (ConfigUtils.isDefault(mock) || "fail".equalsIgnoreCase(mock.trim()) || "force".equalsIgnoreCase(mock.trim())){
+            //mock类
     		mock = url.getServiceInterface()+"Mock";
     	}
     	if (mock.startsWith(Constants.FAIL_PREFIX)) {
+            //fail
             mock = mock.substring(Constants.FAIL_PREFIX.length()).trim();
         } else if (mock.startsWith(Constants.FORCE_PREFIX)) {
+            //force
             mock = mock.substring(Constants.FORCE_PREFIX.length()).trim();
         }
     	return mock;
