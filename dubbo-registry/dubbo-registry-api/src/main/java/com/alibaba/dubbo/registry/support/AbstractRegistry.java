@@ -97,7 +97,7 @@ public abstract class AbstractRegistry implements Registry {
      * <li>设定保存文件的标志{@link #syncSaveFile}。从url中键为{@link Constants#REGISTRY_FILESAVE_SYNC_KEY}对应的值，默认是false（异步保存）</li><br/>
      * <li>设定保存文件路劲{@link #file}。从url中键为{@link Constants#FILE_KEY}对应的值，默认是System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getHost() + ".cache"</li><br/>
      * <li>加载文件中的配置到{@link #properties}</li><br/>
-     * <li>通知</li><br/>
+     * <li>通知整个集群地址</li><br/>
      * </ul>
      *
      * @param url 注册的url
@@ -128,12 +128,13 @@ public abstract class AbstractRegistry implements Registry {
         // 加载文件配置
         loadProperties();
 
-        // 通知备份的url
+        // 通知整个集群地址
         notify(url.getBackupUrls());
     }
 
     /**
      * 设置注册中心url
+     *
      * @param url 注册中心url
      */
     protected void setUrl(URL url) {
@@ -442,6 +443,12 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 简单检验，包装返回的值总是有值的
+     * @param url
+     * @param urls
+     * @return
+     */
     protected static List<URL> filterEmpty(URL url, List<URL> urls) {
         if (urls == null || urls.size() == 0) {
             List<URL> result = new ArrayList<URL>(1);
@@ -454,12 +461,12 @@ public abstract class AbstractRegistry implements Registry {
     /**
      * 通知事件
      * <ul>
-     * <li>检验备用urls合法性</li><br/>
+     * <li>检验整个集群urls合法性</li><br/>
      * <li>遍历{@link #subscribed}，寻找能与备用urls匹配的映射元素</li><br/>
      * <li>遍历元素的所有订阅者，尝试通知</li><br/>
      * </ul>
      *
-     * @param urls 注册中心的备用的url列表(简单的认为备机地址)
+     * @param urls 注册中心的集群地址url列表，不是单纯的备机地址
      * @see #notify(URL, NotifyListener, List)
      */
     protected void notify(List<URL> urls) {
@@ -471,7 +478,7 @@ public abstract class AbstractRegistry implements Registry {
 
             URL url = entry.getKey();
 
-            //对于不匹配的直接忽略掉，
+            //对于不匹配的直接忽略掉，只需要和集群地址的第一个也就是主地址进行匹配就可以了
             if (!UrlUtils.isMatch(url, urls.get(0))) {
                 continue;
             }
@@ -498,9 +505,9 @@ public abstract class AbstractRegistry implements Registry {
      * <li>合并相关信息到{@link #notified}</li><br/>
      * </ul>
      *
-     * @param url      主url
+     * @param url      受订阅的url
      * @param listener url的订阅者
-     * @param urls     和订阅url相匹配的url
+     * @param urls     与订阅url相匹配的url列表，其中的第一个元素能够和url进行匹配
      * @see #saveProperties(URL)
      * @see NotifyListener#notify(List)；
      */
@@ -520,9 +527,10 @@ public abstract class AbstractRegistry implements Registry {
             logger.info("Notify urls for subscribe url " + url + ", urls: " + urls);
         }
         //分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
+        //key为目录的信息，value为对应目录的元信息列表集合
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
-            //进行精确匹配
+            //进行精确匹配每一个元素
             if (UrlUtils.isMatch(url, u)) {
                 //对url进行目录分类
                 String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);

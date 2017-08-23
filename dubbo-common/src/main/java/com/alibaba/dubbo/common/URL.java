@@ -330,12 +330,24 @@ public final class URL implements Serializable {
         return port <= 0 ? host : host + ":" + port;
     }
 
+    /**
+     * 获得整个集群地址
+     *
+     * @return 备机地址
+     */
     public String getBackupAddress() {
         return getBackupAddress(0);
     }
 
+    /**
+     * 集群地址
+     *
+     * @param defaultPort 端口号
+     * @return 集群地址
+     */
     public String getBackupAddress(int defaultPort) {
         StringBuilder address = new StringBuilder(appendDefaultPort(getAddress(), defaultPort));
+        //获得集群中其他节点的地址，进行追加
         String[] backups = getParameter(Constants.BACKUP_KEY, new String[0]);
         if (backups != null && backups.length > 0) {
             for (String backup : backups) {
@@ -346,6 +358,11 @@ public final class URL implements Serializable {
         return address.toString();
     }
 
+    /**
+     * 名字具有疑惑性。
+     * 获得整个集群地址url列表
+     * @return 集群地址的url列表
+     */
     public List<URL> getBackupUrls() {
         List<URL> urls = new ArrayList<URL>();
         urls.add(this);
@@ -359,8 +376,7 @@ public final class URL implements Serializable {
     }
 
     private String appendDefaultPort(String address, int defaultPort) {
-        if (address != null && address.length() > 0
-                && defaultPort > 0) {
+        if (address != null && address.length() > 0 && defaultPort > 0) {
             int i = address.indexOf(':');
             if (i < 0) {
                 return address + ":" + defaultPort;
@@ -746,7 +762,6 @@ public final class URL implements Serializable {
 
 
     /**
-     *
      * @param method
      * @param key
      * @param defaultValue
@@ -1073,6 +1088,11 @@ public final class URL implements Serializable {
         return NetUtils.isLocalHost(host) || getParameter(Constants.LOCALHOST_KEY, false);
     }
 
+    /**
+     * 验证是不是本机的信息
+     *
+     * @return 是否本机信息
+     */
     public boolean isAnyHost() {
         return Constants.ANYHOST_VALUE.equals(host) || getParameter(Constants.ANYHOST_KEY, false);
     }

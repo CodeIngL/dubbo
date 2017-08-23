@@ -82,6 +82,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private final String[] serviceMethods;
 
+    //接口引用属于多个group的标志，当group配置项为*或者a,b形式
     private final boolean multiGroup;
 
     private volatile boolean forbidden = false;
@@ -298,11 +299,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * 将overrideURL转换为map，供重新refer时使用.
      * 每次下发全部规则，全部重新组装计算
      *
-     * @param urls 契约：
-     *             </br>1.override://0.0.0.0/...(或override://ip:port...?anyhost=true)&para1=value1...表示全局规则(对所有的提供者全部生效)
-     *             </br>2.override://ip:port...?anyhost=false 特例规则（只针对某个提供者生效）
-     *             </br>3.不支持override://规则... 需要注册中心自行计算.
-     *             </br>4.不带参数的override://0.0.0.0/ 表示清除override
+     * @param urls 契约：<br/>
+     * 1.override://0.0.0.0/...(或override://ip:port...?anyhost=true)&para1=value1...表示全局规则(对所有的提供者全部生效)<br/>
+     * 2.override://ip:port...?anyhost=false 特例规则（只针对某个提供者生效<br>
+     * 3.不支持override://规则... 需要注册中心自行计算.<br/>
+     * 4.不带参数的override://0.0.0.0/ 表示清除override<br/>
      * @return
      */
     public static List<Configurator> toConfigurators(List<URL> urls) {
@@ -366,7 +367,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @return invokers 对应的invokers
      */
     private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
+        //新的缓存结构
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<String, Invoker<T>>();
+        //为空直接返回
         if (urls == null || urls.size() == 0) {
             return newUrlInvokerMap;
         }
@@ -374,8 +377,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         //获取消费方配置的协议
         String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);
         for (URL providerUrl : urls) {
-            //如果reference端配置了protocol，则只选择匹配的protocol
             if (queryProtocols != null && queryProtocols.length() > 0) {
+                //如果reference端配置了protocol，则只选择匹配的protocol
                 boolean accept = false;
                 String[] acceptProtocols = queryProtocols.split(",");
                 for (String acceptProtocol : acceptProtocols) {
@@ -388,12 +391,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     continue;
                 }
             }
-            //忽略配置为empty的元信息
             if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
+                //忽略配置为empty的元信息
                 continue;
             }
-            //验证下是否支持配置,不支持记录错误日记，忽略掉
+
             if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
+                //验证下是否支持配置,不支持记录错误日记，忽略掉
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost()
                         + ", supported protocol: " + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;

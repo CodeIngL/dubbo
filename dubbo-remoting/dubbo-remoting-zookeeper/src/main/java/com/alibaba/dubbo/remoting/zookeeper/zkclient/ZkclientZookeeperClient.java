@@ -20,6 +20,10 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 
 	private volatile KeeperState state = KeeperState.SyncConnected;
 
+	/**
+	 * 元信息
+	 * @param url 连接地址
+	 */
 	public ZkclientZookeeperClient(URL url) {
 		super(url);
 		client = new ZkClient(url.getBackupAddress());

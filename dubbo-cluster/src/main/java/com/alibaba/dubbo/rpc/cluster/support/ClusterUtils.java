@@ -27,7 +27,15 @@ import com.alibaba.dubbo.common.URL;
  * @author william.liangf
  */
 public class ClusterUtils {
-    
+
+    /**
+     * 合并参数工具类<br/>
+     * 线程相关的不使用提供者的信息<br/>
+     *
+     * @param remoteUrl 主元信息url
+     * @param localMap 待合并的参数映射
+     * @return 合并后的元信息
+     */
     public static URL mergeUrl(URL remoteUrl, Map<String, String> localMap) {
         Map<String, String> map = new HashMap<String, String>();
         Map<String, String> remoteMap = remoteUrl.getParameters();
@@ -35,63 +43,64 @@ public class ClusterUtils {
         
         if (remoteMap != null && remoteMap.size() > 0) {
             map.putAll(remoteMap);
-            
             //线程池配置不使用提供者的
-            map.remove(Constants.THREAD_NAME_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREAD_NAME_KEY);
+            map.remove(Constants.THREAD_NAME_KEY);//threadname
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREAD_NAME_KEY);//default.threadname
 
-            map.remove(Constants.THREADPOOL_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREADPOOL_KEY);
+            map.remove(Constants.THREADPOOL_KEY);//threadpool
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREADPOOL_KEY);//default.threadpool
 
-            map.remove(Constants.CORE_THREADS_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.CORE_THREADS_KEY);
+            map.remove(Constants.CORE_THREADS_KEY);//corethreads
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.CORE_THREADS_KEY);//default.corethreads
 
-            map.remove(Constants.THREADS_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREADS_KEY);
+            map.remove(Constants.THREADS_KEY);//threads
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.THREADS_KEY);//default.threads
 
-            map.remove(Constants.QUEUES_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.QUEUES_KEY);
+            map.remove(Constants.QUEUES_KEY);//queues
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.QUEUES_KEY);//default.queues
 
-            map.remove(Constants.ALIVE_KEY);
-            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.ALIVE_KEY);
+            map.remove(Constants.ALIVE_KEY);//alive
+            map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.ALIVE_KEY);//default.alive
         }
-        
+
         if (localMap != null && localMap.size() > 0) {
             map.putAll(localMap);
         }
         if (remoteMap != null && remoteMap.size() > 0) { 
-            // 版本号使用提供者的
+            // dubbo使用提供者的
             String dubbo = remoteMap.get(Constants.DUBBO_VERSION_KEY);
             if (dubbo != null && dubbo.length() > 0) {
                 map.put(Constants.DUBBO_VERSION_KEY, dubbo);
             }
+            // 版本号使用提供者的
             String version = remoteMap.get(Constants.VERSION_KEY);
             if (version != null && version.length() > 0) {
                 map.put(Constants.VERSION_KEY, version);
             }
+            // 分组信息使用提供者的
             String group = remoteMap.get(Constants.GROUP_KEY);
             if (group != null && group.length() > 0) {
                 map.put(Constants.GROUP_KEY, group);
             }
+            // 方法名使用提供者的
             String methods = remoteMap.get(Constants.METHODS_KEY);
             if (methods != null && methods.length() > 0) {
                 map.put(Constants.METHODS_KEY, methods);
             }
-            // 合并filter和listener
+            // 合并filter
             String remoteFilter = remoteMap.get(Constants.REFERENCE_FILTER_KEY);
             String localFilter = localMap.get(Constants.REFERENCE_FILTER_KEY);
-            if (remoteFilter != null && remoteFilter.length() > 0
-                    && localFilter != null && localFilter.length() > 0) {
+            if (remoteFilter != null && remoteFilter.length() > 0 && localFilter != null && localFilter.length() > 0) {
                 localMap.put(Constants.REFERENCE_FILTER_KEY, remoteFilter + "," + localFilter);
             }
+            // 合并listener
             String remoteListener = remoteMap.get(Constants.INVOKER_LISTENER_KEY);
             String localListener = localMap.get(Constants.INVOKER_LISTENER_KEY);
-            if (remoteListener != null && remoteListener.length() > 0
-                    && localListener != null && localListener.length() > 0) {
+            if (remoteListener != null && remoteListener.length() > 0 && localListener != null && localListener.length() > 0) {
                 localMap.put(Constants.INVOKER_LISTENER_KEY, remoteListener + "," + localListener);
             }
         }
-
+        //构建新的url
         return remoteUrl.clearParameters().addParameters(map);
     }
 

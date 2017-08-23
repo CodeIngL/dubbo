@@ -318,10 +318,14 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     }
 
     /**
-     * 进行通知
+     * 进行通知，
+     * tip:这里的doNotify并没有进行回调子类的实现，而是重新调用了其父类也就是AbstractRegistry的方法<br/>
+     * 当通知失败只是简单的将ulr添加进相应的缓存结构中，等待重试。
      * @param url   订阅url
      * @param listener url的订阅者
      * @param urls  和订阅url相匹配的url
+     * @see #doNotify(URL, NotifyListener, List)
+     * @see AbstractRegistry#notify(URL, NotifyListener, List)
      */
     @Override
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
@@ -332,6 +336,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         if (listener == null) {
             throw new IllegalArgumentException("notify listener == null");
         }
+        //调用父类的实现
         try {
             doNotify(url, listener, urls);
         } catch (Exception t) {

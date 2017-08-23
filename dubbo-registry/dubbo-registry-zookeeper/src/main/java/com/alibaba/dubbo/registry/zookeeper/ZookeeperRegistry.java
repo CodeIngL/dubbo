@@ -75,16 +75,19 @@ public class ZookeeperRegistry extends FailbackRegistry {
      * @see FailbackRegistry#FailbackRegistry(URL)
      */
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
-
+        //父类构造函数
         super(url);
-
+        //校验合理性
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
+        //获得组信息
         String group = url.getParameter(Constants.GROUP_KEY, DEFAULT_ROOT);
+        //尝试为group添加前缀
         if (!group.startsWith(Constants.PATH_SEPARATOR)) {
             group = Constants.PATH_SEPARATOR + group;
         }
+        //接口对应的顶层节点路径
         this.root = group;
         //连接到zk
         zkClient = zookeeperTransporter.connect(url);
