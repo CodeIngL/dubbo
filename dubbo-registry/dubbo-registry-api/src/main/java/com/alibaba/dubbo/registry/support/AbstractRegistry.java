@@ -459,7 +459,7 @@ public abstract class AbstractRegistry implements Registry {
     }
 
     /**
-     * 通知事件
+     * 通知注册事件
      * <ul>
      * <li>检验整个集群urls合法性</li><br/>
      * <li>遍历{@link #subscribed}，寻找能与备用urls匹配的映射元素</li><br/>
@@ -479,6 +479,7 @@ public abstract class AbstractRegistry implements Registry {
             URL url = entry.getKey();
 
             //对于不匹配的直接忽略掉，只需要和集群地址的第一个也就是主地址进行匹配就可以了
+            //这里是注册事件，对于url列表来说，其path为RegistryService，其interface为RegistryService
             if (!UrlUtils.isMatch(url, urls.get(0))) {
                 continue;
             }
@@ -503,11 +504,12 @@ public abstract class AbstractRegistry implements Registry {
      * <li>检验传入参数</li><br/>
      * <li>遍历所有urls，寻找与url匹配的元素，获取元素中键为{@link Constants#CATEGORY_KEY}的值，默认{@link Constants#DEFAULT_CATEGORY}作为分组依据</li><br/>
      * <li>合并相关信息到{@link #notified}</li><br/>
+     * <li>分组通知所有能和受订阅的url匹配上的url</li><br/>
      * </ul>
      *
      * @param url      受订阅的url
      * @param listener url的订阅者
-     * @param urls     与订阅url相匹配的url列表，其中的第一个元素能够和url进行匹配
+     * @param urls     候选的url列表，其中可能存在元素和受订阅的url匹配
      * @see #saveProperties(URL)
      * @see NotifyListener#notify(List)；
      */
@@ -526,8 +528,9 @@ public abstract class AbstractRegistry implements Registry {
         if (logger.isInfoEnabled()) {
             logger.info("Notify urls for subscribe url " + url + ", urls: " + urls);
         }
-        //分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
+        //队候选的url列表进行分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
         //key为目录的信息，value为对应目录的元信息列表集合
+        //不匹配的忽略的掉
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
             //进行精确匹配每一个元素

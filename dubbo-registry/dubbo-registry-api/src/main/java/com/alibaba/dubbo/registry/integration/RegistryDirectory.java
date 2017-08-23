@@ -170,7 +170,17 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
-     * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
+     * 当相关的urls发生变化时，进行通知。
+     * <p>
+     * 处理相关的url列表,对其目录属性进行处理。对于不支持的目录属性，将会记录日志进行警告
+     * <ul>
+     * <li>构建invoker相关的urls:目录为providers</li><br/>
+     * <li>构建router相关的urls:目录为router或者routers</li><br/>
+     * <li>构建configurator相关的的urls:目录为configurators或者override</li><br/>
+     * </ul>
+     * </p>
+     *
+     * @param urls 相关的已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
      */
     public synchronized void notify(List<URL> urls) {
         //invoker的urls
@@ -196,11 +206,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
             }
         }
-        // configurators 
+        // configurators 的处理
         if (configuratorUrls != null && configuratorUrls.size() > 0) {
             this.configurators = toConfigurators(configuratorUrls);
         }
-        // routers
+        // routers 的处理
         if (routerUrls != null && routerUrls.size() > 0) {
             List<Router> routers = toRouters(routerUrls);
             if (routers != null) { // null - do nothing
@@ -208,6 +218,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
         }
         List<Configurator> localConfigurators = this.configurators; // local reference
+
         // 合并override参数
         this.overrideDirectoryUrl = directoryUrl;
         if (localConfigurators != null && localConfigurators.size() > 0) {
@@ -298,13 +309,15 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     /**
      * 将overrideURL转换为map，供重新refer时使用.
      * 每次下发全部规则，全部重新组装计算
-     *
-     * @param urls 契约：<br/>
+     * <p>
+     * 入参urls的契约：
      * 1.override://0.0.0.0/...(或override://ip:port...?anyhost=true)&para1=value1...表示全局规则(对所有的提供者全部生效)<br/>
      * 2.override://ip:port...?anyhost=false 特例规则（只针对某个提供者生效<br>
      * 3.不支持override://规则... 需要注册中心自行计算.<br/>
      * 4.不带参数的override://0.0.0.0/ 表示清除override<br/>
-     * @return
+     *
+     * @param urls 元信息
+     * @return 配置对象
      */
     public static List<Configurator> toConfigurators(List<URL> urls) {
         List<Configurator> configurators = new ArrayList<Configurator>(urls.size());
@@ -312,19 +325,23 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             return configurators;
         }
         for (URL url : urls) {
+            //url中含有empty，则清空所有，返回一个空的配置项
             if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {
                 configurators.clear();
                 break;
             }
+            //获得url中的参数
             Map<String, String> override = new HashMap<String, String>(url.getParameters());
             //override 上的anyhost可能是自动添加的，不能影响改变url判断
             override.remove(Constants.ANYHOST_KEY);
             if (override.size() == 0) {
+                //对于遇见空参数，清空全部，并继续？？why is not break;
                 configurators.clear();
                 continue;
             }
             configurators.add(configuratorFactory.getConfigurator(url));
         }
+        //对其进行一个配置
         Collections.sort(configurators);
         return configurators;
     }

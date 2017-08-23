@@ -76,7 +76,10 @@ public class RegistryServerSync implements InitializingBean, DisposableBean, Not
         registryService.unsubscribe(SUBSCRIBE, this);
     }
 
-    // 收到的通知对于 ，同一种类型数据（override、subcribe、route、其它是Provider），同一个服务的数据是全量的
+    /**
+     * 收到的通知对于 ，同一种类型数据（override、subcribe、route、其它是Provider），同一个服务的数据是全量的
+     * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
+     */
     public void notify(List<URL> urls) {
         if (urls == null || urls.isEmpty()) {
             return;

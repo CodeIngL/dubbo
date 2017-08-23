@@ -81,7 +81,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
-        //获得组信息
+        //获得组信息,默认是dubbo(一般情况下都是默认的，很少有开发者会配置注册中心的group)
         String group = url.getParameter(Constants.GROUP_KEY, DEFAULT_ROOT);
         //尝试为group添加前缀
         if (!group.startsWith(Constants.PATH_SEPARATOR)) {

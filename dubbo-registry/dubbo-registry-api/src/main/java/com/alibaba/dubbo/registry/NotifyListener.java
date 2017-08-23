@@ -37,7 +37,7 @@ public interface NotifyListener {
      * 4. 如果一种类型的数据为空，需通知一个empty协议并带category参数的标识性URL数据。<br>
      * 5. 通知者(即注册中心实现)需保证通知的顺序，比如：单线程推送，队列串行化，带版本对比。<br>
      * 
-     * @param urls 已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
+     * @param urls 相关的已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
      */
     void notify(List<URL> urls);
 
