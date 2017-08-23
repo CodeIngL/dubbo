@@ -84,7 +84,12 @@ public abstract class AbstractRegistry implements Registry {
 
     private final Set<URL> registered = new ConcurrentHashSet<URL>();
 
-    //URL和其订阅者的集合
+    /**
+     * <p>
+     * 受订阅的url和对其监听的监听者集合<br/>
+     * key:url,value:对url监听的监听者集合
+     * </p>
+     */
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<URL, Set<NotifyListener>>();
 
     //key：URL  v:Map--->key:url的分组依据，v：同一组URL集合
@@ -373,10 +378,14 @@ public abstract class AbstractRegistry implements Registry {
     }
 
     /**
-     * 添加订阅信息
-     * 简单的加入的已订阅的映射中。k:url,v:listener列表
-     * <p>url对应可能存在一个监听者列表，同时进行url</p>
-     * 这里只是简单的将合法入参添加进url对应的监听者列表中
+     * 订阅:绑定监听者和受订阅url之间的关系
+     * <ul>
+     * <li>检验入参</li><br/>
+     * <li>将监听者，加入受订阅的url其对应的监听者集合中</li><br/>
+     * </ul>
+     * <p>
+     * tip:缓存关系由{@link #subscribed}维护
+     * </p>
      *
      * @param url      订阅条件，不允许为空，如：consumer://10.20.153.10/com.alibaba.foo.BarService?version=1.0.0&application=kylin
      * @param listener 变更事件监听器，不允许为空
@@ -445,6 +454,7 @@ public abstract class AbstractRegistry implements Registry {
 
     /**
      * 简单检验，包装返回的值总是有值的
+     *
      * @param url
      * @param urls
      * @return

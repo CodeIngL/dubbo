@@ -306,8 +306,8 @@ public class RegistryProtocol implements Protocol {
      * @param type 服务的类型
      * @param url  远程服务的URL地址
      * @param <T>
-     * @return
-     * @throws RpcException
+     * @return 调用者
+     * @throws RpcException rpc异常
      */
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
@@ -318,8 +318,7 @@ public class RegistryProtocol implements Protocol {
             return proxyFactory.getInvoker((T) registry, type, url);
         }
 
-        // group="a,b" or group="*"
-        //处理group配置项
+        //处理group配置项:group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
         if (group != null && group.length() > 0) {
@@ -331,6 +330,9 @@ public class RegistryProtocol implements Protocol {
         return doRefer(cluster, registry, type, url);
     }
 
+    /**
+     * @return MergeableCluster实例
+     */
     private Cluster getMergeableCluster() {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
@@ -353,18 +355,15 @@ public class RegistryProtocol implements Protocol {
         directory.setRegistry(registry);
         //为目录服务设置协议配置类（默认Protocol$Adaptive)
         directory.setProtocol(protocol);
-        //构建订阅的url
+        //构建受订阅的url
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
-        if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
-                && url.getParameter(Constants.REGISTER_KEY, true)) {
-            //像注册中心注册地址
+        if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
+            // 非泛化调用，向注册中心注册相关信息
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
         //目录服务进行订阅(category:providers,configurators,routers)
-        directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY
-                + "," + Constants.CONFIGURATORS_CATEGORY
-                + "," + Constants.ROUTERS_CATEGORY));
+        directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
         return cluster.join(directory);
     }
 

@@ -235,9 +235,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     }
 
     /**
-     * 增加订阅信息
+     * 订阅:绑定监听者和受订阅url之间的关系
      * <ul>
-     * <li>简单将url和监听器从相关缓存中移走</li><br/>
+     * <li>简单将url和监听器从相关失败缓存结构中移走</li><br/>
      * <li>回调子类的业务逻辑{@link #doSubscribe(URL, NotifyListener)}实现订阅</li><br/>
      * <li>抛出异常后，尝试使用缓存解决，同时记录错误日记</li><br/>
      * <li>对配置URL设置了check=false时，注册失败后不报错，在后台定时重试，否则抛出异常</li><br/>
@@ -247,6 +247,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
      *
      * @param url      订阅URL
      * @param listener 变更事件监听器，不允许为空
+     * @see  AbstractRegistry#subscribe(URL, NotifyListener)
      */
     @Override
     public void subscribe(URL url, NotifyListener listener) {
@@ -257,17 +258,17 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;
-
+            //获得本地文件缓存中能够和入参url匹配的url列表
             List<URL> urls = getCacheUrls(url);
             if (urls != null && urls.size() > 0) {
+                //订阅失败，相关监听者进行处理
                 notify(url, listener, urls);
                 logger.error("Failed to subscribe " + url + ", Using cached list: " + urls
                         + " from cache file: " + getUrl().getParameter(Constants.FILE_KEY, System.getProperty("user.home")
                         + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
             } else {
                 // 如果开启了启动时检测，则直接抛出异常
-                boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
-                        && url.getParameter(Constants.CHECK_KEY, true);
+                boolean check = getUrl().getParameter(Constants.CHECK_KEY, true) && url.getParameter(Constants.CHECK_KEY, true);
                 boolean skipFailback = t instanceof SkipFailbackWrapperException;
                 if (check || skipFailback) {
                     if (skipFailback) {
@@ -278,7 +279,6 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                     logger.error("Failed to subscribe " + url + ", waiting for retry, cause: " + t.getMessage(), t);
                 }
             }
-
             // 将失败的订阅请求记录到失败列表，定时重试
             addFailedSubscribed(url, listener);
         }
