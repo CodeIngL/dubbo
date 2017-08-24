@@ -149,7 +149,12 @@ public class NetUtils {
                 && ! LOCALHOST.equals(name) 
                 && IP_PATTERN.matcher(name).matches());
     }
-    
+
+    /**
+     * 获得本地的地址
+     * @return 获得本地的地址
+     * @see #getLocalAddress()
+     */
     public static String getLocalHost(){
         InetAddress address = getLocalAddress();
         return address == null ? LOCALHOST : address.getHostAddress();
@@ -176,13 +181,15 @@ public class NetUtils {
         }
     	return host;
     }
-    
+
+    //本地地址的缓存
     private static volatile InetAddress LOCAL_ADDRESS = null;
 
     /**
      * 遍历本地网卡，返回第一个合理的IP。
      * 
      * @return 本地网卡IP
+     * @see #getLocalAddress0()
      */
     public static InetAddress getLocalAddress() {
         if (LOCAL_ADDRESS != null)
@@ -196,7 +203,12 @@ public class NetUtils {
         InetAddress address = LOCAL_ADDRESS;
         return address == null ? LOCALHOST : address.getHostAddress();
     }
-    
+
+    /**
+     * 尝试获得本地地址；
+     * 尝试获得本地网卡的第一个地址
+     * @return 本地地址
+     */
     private static InetAddress getLocalAddress0() {
         InetAddress localAddress = null;
         try {

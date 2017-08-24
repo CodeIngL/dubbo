@@ -68,26 +68,34 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private static final ConfiguratorFactory configuratorFactory = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).getAdaptiveExtension();
 
+    //协议配置
     private Protocol protocol; // 注入时初始化，断言不为null
 
+    //持有的注册中心
     private Registry registry; // 注入时初始化，断言不为null
 
+    //接口引用的服务标识（serviceGroup+"/"+serviceName+":"serviceVersion）
     private final String serviceKey; // 构造时初始化，断言不为null
 
+    //持有的接口引用类型
     private final Class<T> serviceType; // 构造时初始化，断言不为null
 
+    //接口引用方信息（注册中心url的refer键)
     private final Map<String, String> queryMap; // 构造时初始化，断言不为null
 
+    //目录url(对应可覆盖的目录url)
     private final URL directoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
 
+    //可覆盖的目录url
+    private volatile URL overrideDirectoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
+
+    //接口引用所要rpc的方法名的列表
     private final String[] serviceMethods;
 
     //接口引用属于多个group的标志，当group配置项为*或者a,b形式
     private final boolean multiGroup;
 
     private volatile boolean forbidden = false;
-
-    private volatile URL overrideDirectoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
 
     /*override规则 
      * 优先级：override>-D>consumer>provider
@@ -117,15 +125,21 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (serviceType == null) {
             throw new IllegalArgumentException("service type is null.");
         }
+        //检验入参
         if (url.getServiceKey() == null || url.getServiceKey().length() == 0) {
             throw new IllegalArgumentException("registry serviceKey is null.");
         }
         this.serviceType = serviceType;
         this.serviceKey = url.getServiceKey();
         this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
+        //设置目录url，浅拷贝:为入参url去掉注册中心url的相关参数，并添加接口引用的相关参数,并去掉接口引用参数中的关于监控的信息
         this.overrideDirectoryUrl = this.directoryUrl = url.setPath(url.getServiceInterface()).clearParameters().addParameters(queryMap).removeParameter(Constants.MONITOR_KEY);
+
+        //设置接口引用是否设置了多个组
         String group = directoryUrl.getParameter(Constants.GROUP_KEY, "");
-        this.multiGroup = group != null && ("*".equals(group) || group.contains(","));
+        this.multiGroup = "*".equals(group) || group.contains(",");
+
+        //设置接口引用所要应用的方法的名字列表
         String methods = queryMap.get(Constants.METHODS_KEY);
         this.serviceMethods = methods == null ? null : Constants.COMMA_SPLIT_PATTERN.split(methods);
     }

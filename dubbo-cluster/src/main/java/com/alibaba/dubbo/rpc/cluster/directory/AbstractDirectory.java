@@ -51,7 +51,8 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     private volatile List<Router> routers;
 
     /**
-     * 目录服务抽象类
+     * 目录服务抽象类的构造
+     * 不带任何路由信息，会自动生成一个MockInvokersSelector
      *
      * @param url 元信息
      * @see AbstractDirectory#AbstractDirectory(URL, List)
@@ -62,6 +63,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
 
     /**
      * 目录服务抽象类
+     * 主体的url和消费的url一致
      *
      * @param url 元信息
      * @see AbstractDirectory#AbstractDirectory(URL, URL, List)
@@ -72,10 +74,12 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
 
     /**
      * 目录服务抽象类
+     * 构建了目录服务的主体url和消费url，并设置了其路由信息
      *
      * @param url         元信息
      * @param consumerUrl 元信息
-     * @param routers     路由组件
+     * @param routers     路由列表
+     * @see #setRouters(List)
      */
     public AbstractDirectory(URL url, URL consumerUrl, List<Router> routers) {
         if (url == null)

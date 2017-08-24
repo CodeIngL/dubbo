@@ -301,7 +301,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     /**
-     * 消费方引用实现
+     * 消费方注册中心引用实现
      *
      * @param type 服务的类型
      * @param url  远程服务的URL地址
@@ -313,8 +313,10 @@ public class RegistryProtocol implements Protocol {
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         //协议转换回来，当protcol为registry只是临时代表这个需要注册到注册中心上，但是真正的协议类型还是元信息中的registry的值
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
+        //获得注册中心，特定注册中心由url的protocol(协议）决定。ex:zookeeper
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
+            //对于接口是RegistryService，直接获得Invoker后返回
             return proxyFactory.getInvoker((T) registry, type, url);
         }
 
@@ -324,9 +326,11 @@ public class RegistryProtocol implements Protocol {
         if (group != null && group.length() > 0) {
             if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length > 1
                     || "*".equals(group)) {
+                //对于传递进来的接口应引用，从属于多个组的，应使用MergeableCluster来聚集
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
+        //对于传递进来的接口应引用，单个组的或者没有配置的，应使用默认的Cluster来聚集
         return doRefer(cluster, registry, type, url);
     }
 
@@ -338,13 +342,20 @@ public class RegistryProtocol implements Protocol {
     }
 
     /**
-     * 对于配置项中group配置项，且属于多个组的，cluster为MergeableCluster
-     * 其他则为配置的cluster
+     * <p>对于接口信息中group处理
+     * <ul>
+     * <li>group配置项，从属于多个组的(group=*;group=a,b)，cluster为MergeableCluster</li><br/>
+     * <li>group配置项，属于单个组或者没有配置的(无group;group=a)，cluster为默认的cluster</li><br/>
+     * </ul>
+     * </p>
+     * <p>
+     * tip: 入参url--->其protocol为具体的注册中心协议，其refer为接口引用信息映射，不存在registry键。<br/>
+     * tip: directory(注册目录服务)的getUrl返回的是overridedirctoryUrl，其参数信息就是消费方的参数信息，而不是注册中心url的参数信息，并且去掉了监控信息
      *
      * @param cluster  合并形式
      * @param registry 注册中心
-     * @param type     接口类
-     * @param url      元信息
+     * @param type     接口类(不可能是RegistryService)
+     * @param url      元信息，
      * @param <T>      返回的Invoker
      * @return 返回的Invoker
      */
@@ -355,14 +366,19 @@ public class RegistryProtocol implements Protocol {
         directory.setRegistry(registry);
         //为目录服务设置协议配置类（默认Protocol$Adaptive)
         directory.setProtocol(protocol);
-        //构建受订阅的url
+
+        //构建受订阅的url(consumer://本地地址:0/type?参数信息)，参数信息包括注册中心参数信息，也包括接口引用的参数信息，也就是含有refer键
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
+
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
-            // 非泛化调用，向注册中心注册相关信息
+            // 非泛化调用，向注册中心注册相关信息，增加了目录信息
+            // 对于zk来说，会产生/dubbo/接口名/consumers/url的String；这样的路径，最后一个节点是否为临时节点，由url中的信息决定（key:dynamic)
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+
         //目录服务进行订阅(category:providers,configurators,routers)
+        //设置了目录服务的消费url，使用注册中心去订阅该消费url，
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
         return cluster.join(directory);
     }

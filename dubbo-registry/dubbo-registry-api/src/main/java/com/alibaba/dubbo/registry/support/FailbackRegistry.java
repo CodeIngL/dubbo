@@ -323,7 +323,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
      * 当通知失败只是简单的将ulr添加进相应的缓存结构中，等待重试。
      * @param url   订阅url
      * @param listener url的订阅者
-     * @param urls  和订阅url相匹配的url
+     * @param urls  和订阅url相关联的url
      * @see #doNotify(URL, NotifyListener, List)
      * @see AbstractRegistry#notify(URL, NotifyListener, List)
      */

@@ -184,13 +184,14 @@ public class ZookeeperRegistry extends FailbackRegistry {
                 if (zkListener == null) {
                     listeners.putIfAbsent(listener, new ChildListener() {
                         //上一级发生变化时，进行回调，实现对子路径的监听
+                        //由于是*，所以parentPath是更高一层的节点，也就是currentChilds，是各种接口的名字
                         public void childChanged(String parentPath, List<String> currentChilds) {
                             for (String child : currentChilds) {
                                 child = URL.decode(child);
                                 //缓存中不包含相关相关的订阅，需要进行重新订阅
                                 if (!anyServices.contains(child)) {
                                     anyServices.add(child);
-                                    //对子节点重新进行订阅
+                                    //对新增加的代表引用接口的节点进行新的订阅
                                     subscribe(url.setPath(child).addParameters(Constants.INTERFACE_KEY, child,
                                             Constants.CHECK_KEY, String.valueOf(false)), listener);
                                 }
@@ -202,7 +203,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                 zkClient.create(root, false);
                 //为顶层节点添加监听器
                 List<String> services = zkClient.addChildListener(root, zkListener);
-                //为下一层节点添加监听器，如果有的话
+                //第一次，添加所有的节点服务，因此不需要判断，全部加进来
                 if (services != null && services.size() > 0) {
                     for (String service : services) {
                         service = URL.decode(service);
@@ -214,6 +215,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
             } else {
                 //不是泛化接口的调用
                 List<URL> urls = new ArrayList<URL>();
+                //处理url中的目录信息
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                     if (listeners == null) {
@@ -229,13 +231,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         });
                         zkListener = listeners.get(listener);
                     }
+                    //创建到目录的路劲，默认为/dubbo/接口名/path，永久节点
                     zkClient.create(path, false);
-                    //为路径的一级子路劲添加监听
+                    //为path添加监听，一旦path下的节点发生变化，调用监听的方法
                     List<String> children = zkClient.addChildListener(path, zkListener);
                     if (children != null) {
                         urls.addAll(toUrlsWithEmpty(url, path, children));
                     }
                 }
+                //进行通知
                 notify(url, listener, urls);
             }
         } catch (Throwable e) {
@@ -363,9 +367,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      *
-     * @param consumer
-     * @param providers
-     * @return
+     * @param consumer 主url，消费方url
+     * @param providers 子节点
+     * @return 子节点能和主url匹配上的，返回
      */
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
         List<URL> urls = new ArrayList<URL>();
@@ -386,16 +390,19 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      *
-     * @param consumer
-     * @param path
-     * @param providers
+     * @param consumer 主url
+     * @param path 主url搞出来的某个目录对应的路径
+     * @param providers 目录下子节点名称
      * @return
      */
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
         List<URL> urls = toUrlsWithoutEmpty(consumer, providers);
+        //目录下没有能匹配consumer的url的处理
         if (urls == null || urls.isEmpty()) {
             int i = path.lastIndexOf('/');
+            //获得目录名字
             String category = i < 0 ? path : path.substring(i + 1);
+            //为consumer打个桩，将其协议设定为empty，目录服务设定为当前的目录
             URL empty = consumer.setProtocol(Constants.EMPTY_PROTOCOL).addParameter(Constants.CATEGORY_KEY, category);
             urls.add(empty);
         }
