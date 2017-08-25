@@ -360,14 +360,14 @@ public class RegistryProtocol implements Protocol {
      * @return 返回的Invoker
      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        //新建注册目录服务
+        // 新建注册目录服务
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
-        //为目录服务设置注册中心
+        // 为目录服务设置注册中心
         directory.setRegistry(registry);
-        //为目录服务设置协议配置类（默认Protocol$Adaptive)
+        // 为目录服务设置协议配置类（默认Protocol$Adaptive)
         directory.setProtocol(protocol);
 
-        //构建受订阅的url(consumer://本地地址:0/type?参数信息)，参数信息包括注册中心参数信息，也包括接口引用的参数信息，也就是含有refer键
+        // 构建受订阅的url(consumer://本地地址:0/type?参数信息)，参数信息包括注册中心参数信息，也包括接口引用的参数信息，也就是含有refer键
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
 
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
@@ -376,8 +376,8 @@ public class RegistryProtocol implements Protocol {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false)));
         }
 
-        //目录服务进行订阅(category:providers,configurators,routers)
-        //设置了目录服务的消费url，使用注册中心去订阅该消费url，
+        // 目录服务进行订阅(category:providers,configurators,routers)
+        // 设置了目录服务的消费url，使用注册中心去订阅该消费url，
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
         return cluster.join(directory);
     }

@@ -67,6 +67,12 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
     public void destroy() {
     }
 
+    /**
+     * 返回一个结果
+     * @param invocation 调用对象
+     * @return rpc结果
+     * @throws RpcException rpc异常
+     */
     public Result invoke(Invocation invocation) throws RpcException {
         try {
             return new RpcResult(doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments()));
@@ -76,7 +82,16 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
             throw new RpcException("Failed to invoke remote proxy method " + invocation.getMethodName() + " to " + getUrl() + ", cause: " + e.getMessage(), e);
         }
     }
-    
+
+    /**
+     * 提供子类实现，返回rpc的对象结果
+     * @param proxy 代理
+     * @param methodName 方法名
+     * @param parameterTypes 参数类型
+     * @param arguments 参数
+     * @return rpc结果对象
+     * @throws Throwable 异常信息
+     */
     protected abstract Object doInvoke(T proxy, String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Throwable;
 
     @Override

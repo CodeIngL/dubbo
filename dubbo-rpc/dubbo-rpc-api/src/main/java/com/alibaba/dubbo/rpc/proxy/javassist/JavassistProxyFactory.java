@@ -49,9 +49,7 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
         final Wrapper wrapper = Wrapper.getWrapper(proxy.getClass().getName().indexOf('$') != -1 ? proxy.getClass() : type);
         return new AbstractProxyInvoker<T>(proxy, type, url) {
             @Override
-            protected Object doInvoke(T proxy, String methodName, 
-                                      Class<?>[] parameterTypes, 
-                                      Object[] arguments) throws Throwable {
+            protected Object doInvoke(T proxy, String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Throwable {
                 return wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);
             }
         };

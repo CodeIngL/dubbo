@@ -361,6 +361,7 @@ public final class URL implements Serializable {
     /**
      * 名字具有疑惑性。
      * 获得整个集群地址url列表
+     *
      * @return 集群地址的url列表
      */
     public List<URL> getBackupUrls() {
@@ -1481,10 +1482,11 @@ public final class URL implements Serializable {
     }
 
     /**
-     * 获得服务类名称
+     * 获得服务类名称，元信息中的interface信息，默认是元信息的path属性
+     * 对非泛化调用来说通常是接口类的名称
      * 使用{@link Constants#INTERFACE_KEY}作为键从URL中获取，默认值是{@link #path}，即全类名
      *
-     * @return
+     * @return 服务信息
      */
     public String getServiceInterface() {
         return getParameter(Constants.INTERFACE_KEY, path);
