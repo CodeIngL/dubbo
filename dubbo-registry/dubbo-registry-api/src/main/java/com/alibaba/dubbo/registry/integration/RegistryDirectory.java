@@ -290,6 +290,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
     }
 
+    /**
+     * 合并相关invoker
+     * @param methodMap
+     * @return
+     */
     private Map<String, List<Invoker<T>>> toMergeMethodInvokerMap(Map<String, List<Invoker<T>>> methodMap) {
         Map<String, List<Invoker<T>>> result = new HashMap<String, List<Invoker<T>>>();
         for (Map.Entry<String, List<Invoker<T>>> entry : methodMap.entrySet()) {

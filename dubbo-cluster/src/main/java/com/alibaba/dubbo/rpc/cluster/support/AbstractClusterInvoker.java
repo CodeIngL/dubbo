@@ -90,16 +90,24 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * a)先lb选择，如果在selected列表中 或者 不可用且做检验时，进入下一步(重选),否则直接返回</br>
      * b)重选验证规则：selected > available .保证重选出的结果尽量不在select中，并且是可用的
      *
-     * @param availablecheck 如果设置true，在选择的时候先选invoker.available == true
-     * @param selected       已选过的invoker.注意：输入保证不重复
+     * @param loadbalance 负载均衡策略
+     * @param invocation 调用者
+     * @param invokers 可用的调用者
+     * @param selected 以选择的调用者
+     * @return
+     * @throws RpcException
      */
     protected Invoker<T> select(LoadBalance loadbalance, Invocation invocation, List<Invoker<T>> invokers, List<Invoker<T>> selected) throws RpcException {
+        //校验参数
         if (invokers == null || invokers.size() == 0) {
             return null;
         }
+        //方法名
         String methodName = invocation == null ? "" : invocation.getMethodName();
 
+        //是否采用sticky策略
         boolean sticky = invokers.get(0).getUrl().getMethodParameter(methodName, Constants.CLUSTER_STICKY_KEY, Constants.DEFAULT_CLUSTER_STICKY);
+
         {
             //ignore overloaded method
             if (stickyInvoker != null && !invokers.contains(stickyInvoker)) {
@@ -131,9 +139,11 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * @throws RpcException rpc异常
      */
     private Invoker<T> doselect(LoadBalance loadbalance, Invocation invocation, List<Invoker<T>> invokers, List<Invoker<T>> selected) throws RpcException {
+        //参数校验
         if (invokers == null || invokers.size() == 0) {
             return null;
         }
+        //只有一个直接返回
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
@@ -141,6 +151,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (invokers.size() == 2 && selected != null && selected.size() > 0) {
             return selected.get(0) == invokers.get(0) ? invokers.get(1) : invokers.get(0);
         }
+        //委托给负载均衡进行选择
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
         //如果 selected中包含（优先判断） 或者 不可用&&availablecheck=true 则重试.

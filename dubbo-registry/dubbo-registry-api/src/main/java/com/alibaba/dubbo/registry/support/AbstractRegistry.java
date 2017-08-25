@@ -575,7 +575,7 @@ public abstract class AbstractRegistry implements Registry {
             categoryNotified.put(category, categoryList);
             //保存相关属性，将相关信息写入文件，url和其信息
             saveProperties(url);
-            //通知，相关组信息
+            //分组通知信息
             listener.notify(categoryList);
         }
     }

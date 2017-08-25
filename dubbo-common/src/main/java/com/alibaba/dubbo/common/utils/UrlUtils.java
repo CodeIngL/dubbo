@@ -379,18 +379,23 @@ public class UrlUtils {
 
     /**
      * 匹配目录
-     * @param category
-     * @param categories
-     * @return
+     * @param category 源目录
+     * @param categories 目标目录
+     * @return 是否匹配
      */
     public static boolean isMatchCategory(String category, String categories) {
         if (categories == null || categories.length() == 0) {
+            //目标目录不存在的情况下，和默认目录进行匹配:providers
             return Constants.DEFAULT_CATEGORY.equals(category);
         } else if (categories.contains(Constants.ANY_VALUE)) {
+            //目标目录含有通配符，说明肯定匹配，这里可能是有漏洞的，直接返回true
             return true;
         } else if (categories.contains(Constants.REMOVE_VALUE_PREFIX)) {
+            //目标目录含有-
+            //则目标目录不含-源目录，返回true
             return !categories.contains(Constants.REMOVE_VALUE_PREFIX + category);
         } else {
+            //目标目录含有源目录字符串
             return categories.contains(category);
         }
     }
@@ -400,26 +405,29 @@ public class UrlUtils {
      * @param consumerUrl 受订阅url
      * @param providerUrl 提供方url
      * @return 是否匹配
+     * @see #isMatchCategory(String, String)
      */
     public static boolean isMatch(URL consumerUrl, URL providerUrl) {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();
-        //检测接口匹配，consumerInterface是*则通配所有，两者严格相等
+        // 检测接口匹配，
+        // 不是通配或者严格意义上的相等返回false；
         if (!(Constants.ANY_VALUE.equals(consumerInterface) || StringUtils.isEquals(consumerInterface, providerInterface))) {
             return false;
         }
-        //检测目录匹配
+        //检测目录匹配,
         if (!isMatchCategory(providerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY),
                 consumerUrl.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY))) {
             return false;
         }
-        //providerUrl 无效 且 订阅url的enable不为*
+        //providerUrl 无效 且 订阅url的enable不为*，直接返回false
         if (!providerUrl.getParameter(Constants.ENABLED_KEY, true)
                 && !Constants.ANY_VALUE.equals(consumerUrl.getParameter(Constants.ENABLED_KEY))) {
             return false;
         }
 
         //版本信息完全一致
+        //源url有通配，或者源和目标严格相等
         String consumerGroup = consumerUrl.getParameter(Constants.GROUP_KEY);
         String consumerVersion = consumerUrl.getParameter(Constants.VERSION_KEY);
         String consumerClassifier = consumerUrl.getParameter(Constants.CLASSIFIER_KEY, Constants.ANY_VALUE);

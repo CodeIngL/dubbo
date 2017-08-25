@@ -40,15 +40,20 @@ public abstract class AbstractLoadBalance implements LoadBalance {
      * @see #doSelect(List, URL, Invocation)
      */
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) {
-        if (invokers == null || invokers.size() == 0)
+        //简单校验
+        if (invokers == null || invokers.size() == 0) {
             return null;
-        if (invokers.size() == 1)
+        }
+        if (invokers.size() == 1) {
             return invokers.get(0);
+        }
+        //回调子类的实现
         return doSelect(invokers, url, invocation);
     }
 
     protected abstract <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation);
 
+    //获得权重
     protected int getWeight(Invoker<?> invoker, Invocation invocation) {
         int weight = invoker.getUrl().getMethodParameter(invocation.getMethodName(), Constants.WEIGHT_KEY, Constants.DEFAULT_WEIGHT);
         if (weight > 0) {

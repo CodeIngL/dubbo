@@ -168,8 +168,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
-            //泛化调用的情况
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
+                //泛化调用的情况
                 //获得顶层路径，由于是泛化调用没有其他的下面的路径了
                 String root = toRootPath();
                 //获得url的监听者，无则新建

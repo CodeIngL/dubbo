@@ -26,7 +26,7 @@ import com.alibaba.dubbo.rpc.cluster.Directory;
 import com.alibaba.dubbo.rpc.cluster.LoadBalance;
 
 /**
- * AvailableCluster
+ * AvailableCluster(可用的集群方式)
  * 
  * @author william.liangf
  */
@@ -35,7 +35,11 @@ public class AvailableCluster implements Cluster {
     public static final String NAME = "available";
 
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
-        
+
+        /**
+         * 返回一个集群抽象invoker的实现，在回调的时候，按顺序选取第一个可用的，返回其调用结果<br/>
+         * 集群选择一个可用返回就ok了。
+         */
         return new AbstractClusterInvoker<T>(directory) {
             public Result doInvoke(Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
                 for (Invoker<T> invoker : invokers) {
