@@ -51,8 +51,8 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     private volatile List<Router> routers;
 
     /**
-     * 目录服务抽象类的构造
-     * 不带任何路由信息，会自动生成一个MockInvokersSelector
+     * 抽象类的目录服务构造方法<br/>
+     * 不带上路由,会自动生成一个长度为1的元素为MockInvokersSelector的路由列表
      *
      * @param url 元信息
      * @see AbstractDirectory#AbstractDirectory(URL, List)
@@ -62,8 +62,8 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     }
 
     /**
-     * 目录服务抽象类
-     * 主体的url和消费的url一致
+     * 抽象类的目录服务构造方法<br/>
+     * 默认主体的url和消费的url一致<br/>
      *
      * @param url 元信息
      * @see AbstractDirectory#AbstractDirectory(URL, URL, List)
@@ -73,8 +73,12 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     }
 
     /**
-     * 目录服务抽象类
-     * 构建了目录服务的主体url和消费url，并设置了其路由信息
+     * 抽象类的目录服务构造方法<br/>
+     * <p>
+     * <ul>设置目录主体的url</ul><br/>
+     * <ul>设置目录消费的url</ul><br/>
+     * <ul>设置路由信息</ul><br/>
+     * </p>
      *
      * @param url         元信息
      * @param consumerUrl 元信息
@@ -137,7 +141,15 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     }
 
     /**
-     * 处理路由
+     * <p>
+     * 路由信息的设置,路由信息来自目录服务持有的主体url
+     * <ul>
+     * <li>从url中获得路由信息</li></li><br/>
+     * <li>根据路由信息加载不同的路由扩展类，并加入路由列表</li><br/>
+     * <li>增加一个mock的路由</li><br/>
+     * <li>排序，并设置上面的路由列表</li><br/>
+     * </ul>
+     * </p>
      *
      * @param routers 路由列表
      */

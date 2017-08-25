@@ -114,7 +114,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private volatile Set<URL> cachedInvokerUrls; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
     /**
-     * 注册中心目录服务相关
+     * 构建注册中心的目录服务实例
      *
      * @param serviceType 注册服务类
      * @param url         元信息
