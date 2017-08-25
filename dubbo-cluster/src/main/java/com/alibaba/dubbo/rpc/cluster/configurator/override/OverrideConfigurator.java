@@ -19,7 +19,7 @@ import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.rpc.cluster.configurator.AbstractConfigurator;
 
 /**
- * AbsentConfigurator
+ * AbsentConfigurator(强制更新无论存在与否)
  * 
  * @author william.liangf
  */
@@ -29,6 +29,12 @@ public class OverrideConfigurator extends AbstractConfigurator {
         super(url);
     }
 
+    /**
+     * 强制更新
+     * @param currentUrl 当前url
+     * @param configUrl 配置的url
+     * @return 新的url
+     */
     public URL doConfigure(URL currentUrl, URL configUrl) {
         return currentUrl.addParameters(configUrl.getParameters());
     }

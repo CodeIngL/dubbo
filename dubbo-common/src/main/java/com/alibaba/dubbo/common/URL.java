@@ -1452,7 +1452,9 @@ public final class URL implements Serializable {
      */
     public String getServiceKey() {
         String inf = getServiceInterface();
-        if (inf == null) return null;
+        if (inf == null) {
+            return null;
+        }
         StringBuilder buf = new StringBuilder();
         String group = getParameter(Constants.GROUP_KEY);
         if (group != null && group.length() > 0) {

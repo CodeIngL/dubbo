@@ -371,7 +371,7 @@ public class RegistryProtocol implements Protocol {
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
 
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
-            // 非泛化调用，向注册中心注册相关信息，增加了目录信息
+            // 非泛化调用，在注册中心相关目录下注册相关信息，目录为:consumers
             // 对于zk来说，会产生/dubbo/接口名/consumers/url的String；这样的路径，最后一个节点是否为临时节点，由url中的信息决定（key:dynamic)
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false)));
         }

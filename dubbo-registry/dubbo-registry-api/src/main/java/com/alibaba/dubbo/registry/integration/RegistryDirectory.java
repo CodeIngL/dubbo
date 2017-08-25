@@ -84,6 +84,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private final Map<String, String> queryMap; // 构造时初始化，断言不为null
 
     //目录url(对应可覆盖的目录url)
+    //默认情况下等价于注册中心url去掉其本身相关参数，并添加接口引用的相关参数,并去掉接口引用参数中的关于监控的信息，同时其path为RegistryService的全类名
     private final URL directoryUrl; // 构造时初始化，断言不为null，并且总是赋非null值
 
     //可覆盖的目录url
@@ -117,7 +118,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * 构建注册中心的目录服务实例
      *
      * @param serviceType 注册服务类
-     * @param url         元信息
+     * @param url         元信息，其protocol为具体的注册中心协议，其refer为接口引用信息映射，不存在registry键。
      */
     public RegistryDirectory(Class<T> serviceType, URL url) {
         super(url);
@@ -209,12 +210,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             //获得url中目录默认为（providers）
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
             if (Constants.ROUTERS_CATEGORY.equals(category) || Constants.ROUTE_PROTOCOL.equals(protocol)) {
-                //目录分类是router或routers加入路由列表中
+                //目录分类是router或者协议是routers加入路由列表中
                 routerUrls.add(url);
             } else if (Constants.CONFIGURATORS_CATEGORY.equals(category) || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
-                //目录分类是configurators或override加入配置列表中
+                //目录分类是configurators，或者协议是override加入配置列表中
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
+                //目录分类是providers加入调用者列表中
                 invokerUrls.add(url);
             } else {
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
@@ -292,6 +294,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     /**
      * 合并相关invoker
+     *
      * @param methodMap
      * @return
      */
@@ -427,6 +430,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     continue;
                 }
             }
+
             if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
                 //忽略配置为empty的元信息
                 continue;
@@ -453,17 +457,21 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 try {
                     boolean enabled = true;
                     if (url.hasParameter(Constants.DISABLED_KEY)) {
+                        //是否含有disable键
                         enabled = !url.getParameter(Constants.DISABLED_KEY, false);
                     } else {
+                        //使用enable键来设置
                         enabled = url.getParameter(Constants.ENABLED_KEY, true);
                     }
                     if (enabled) {
+                        //url是可以被转换为invoker的
                         invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
                     logger.error("Failed to refer invoker for interface:" + serviceType + ",url:(" + url + ")" + t.getMessage(), t);
                 }
-                if (invoker != null) { // 将新的引用放入缓存
+                if (invoker != null) {
+                    // 将新的引用放入缓存
                     newUrlInvokerMap.put(key, invoker);
                 }
             } else {
@@ -481,6 +489,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @return
      */
     private URL mergeUrl(URL providerUrl) {
+
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // 合并消费端参数
 
         List<Configurator> localConfigurators = this.configurators; // local reference
@@ -495,8 +504,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         //directoryUrl 与 override 合并是在notify的最后，这里不能够处理
         this.overrideDirectoryUrl = this.overrideDirectoryUrl.addParametersIfAbsent(providerUrl.getParameters()); // 合并提供者参数        
 
-        if ((providerUrl.getPath() == null || providerUrl.getPath().length() == 0)
-                && "dubbo".equals(providerUrl.getProtocol())) { // 兼容1.0
+        if ((providerUrl.getPath() == null || providerUrl.getPath().length() == 0) && "dubbo".equals(providerUrl.getProtocol())) { // 兼容1.0
             //fix by tony.chenl DUBBO-44
             String path = directoryUrl.getParameter(Constants.INTERFACE_KEY);
             if (path != null) {
@@ -734,6 +742,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @author chao.liuc
      */
     private static class InvokerDelegete<T> extends InvokerWrapper<T> {
+
         private URL providerUrl;
 
         public InvokerDelegete(Invoker<T> invoker, URL url, URL providerUrl) {
