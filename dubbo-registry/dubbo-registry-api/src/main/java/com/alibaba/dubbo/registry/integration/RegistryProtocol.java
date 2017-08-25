@@ -355,7 +355,7 @@ public class RegistryProtocol implements Protocol {
      * @param cluster  合并形式
      * @param registry 注册中心
      * @param type     接口类(不可能是RegistryService)
-     * @param url      元信息，
+     * @param url      元信息，其protocol为具体的注册中心协议，其refer为接口引用信息映射，不存在registry键。
      * @param <T>      返回的Invoker
      * @return 返回的Invoker
      */
@@ -373,8 +373,7 @@ public class RegistryProtocol implements Protocol {
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
             // 非泛化调用，向注册中心注册相关信息，增加了目录信息
             // 对于zk来说，会产生/dubbo/接口名/consumers/url的String；这样的路径，最后一个节点是否为临时节点，由url中的信息决定（key:dynamic)
-            registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
-                    Constants.CHECK_KEY, String.valueOf(false)));
+            registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false)));
         }
 
         //目录服务进行订阅(category:providers,configurators,routers)
