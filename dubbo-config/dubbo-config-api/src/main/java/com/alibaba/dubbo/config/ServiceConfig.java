@@ -304,6 +304,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         appendProperties(this);
         //检验,设置属性
         checkStubAndMock(interfaceClass);
+        //设置path，url的应用路径部分
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }

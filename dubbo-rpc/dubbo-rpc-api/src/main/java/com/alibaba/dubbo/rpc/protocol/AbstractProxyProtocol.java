@@ -84,6 +84,14 @@ public abstract class AbstractProxyProtocol extends AbstractProtocol {
         return exporter;
     }
 
+    /**
+     * 
+     * @param type 服务的类型
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> refer(final Class<T> type, final URL url) throws RpcException {
         final Invoker<T> tagert = proxyFactory.getInvoker(doRefer(type, url), type, url);
         Invoker<T> invoker = new AbstractInvoker<T>(type, url) {

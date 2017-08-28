@@ -62,11 +62,11 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
     }
 
     /**
-     * 合并低啊用
+     * 集群合并调用
      *
-     * @param invocation
-     * @return
-     * @throws RpcException
+     * @param invocation 调动对象
+     * @return 结果
+     * @throws RpcException rpc异常
      */
     @SuppressWarnings("rawtypes")
     public Result invoke(final Invocation invocation) throws RpcException {
@@ -74,7 +74,8 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
         List<Invoker<T>> invokers = directory.list(invocation);
         //获得url中中的配置信息
         String merger = getUrl().getMethodParameter(invocation.getMethodName(), Constants.MERGER_KEY);
-        if (ConfigUtils.isEmpty(merger)) { // 如果方法不需要Merge，退化为只调一个Group
+        if (ConfigUtils.isEmpty(merger)) {
+            // 如果方法不需要Merge，退化为只调一个Group
             for (final Invoker<T> invoker : invokers) {
                 if (invoker.isAvailable()) {
                     return invoker.invoke(invocation);
@@ -83,14 +84,15 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
             return invokers.iterator().next().invoke(invocation);
         }
 
+        // 尝试获得返货的类型
         Class<?> returnType;
         try {
-            returnType = getInterface().getMethod(
-                    invocation.getMethodName(), invocation.getParameterTypes()).getReturnType();
+            returnType = getInterface().getMethod(invocation.getMethodName(), invocation.getParameterTypes()).getReturnType();
         } catch (NoSuchMethodException e) {
             returnType = null;
         }
 
+        // 操作形成一个map
         Map<String, Future<Result>> results = new HashMap<String, Future<Result>>();
         for (final Invoker<T> invoker : invokers) {
             Future<Result> future = executor.submit(new Callable<Result>() {
@@ -105,36 +107,32 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
 
         List<Result> resultList = new ArrayList<Result>(results.size());
 
+        // 获得超时时间
         int timeout = getUrl().getMethodParameter(invocation.getMethodName(), Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
         for (Map.Entry<String, Future<Result>> entry : results.entrySet()) {
             Future<Result> future = entry.getValue();
             try {
                 Result r = future.get(timeout, TimeUnit.MILLISECONDS);
                 if (r.hasException()) {
-                    log.error(new StringBuilder(32).append("Invoke ")
-                                    .append(getGroupDescFromServiceKey(entry.getKey()))
-                                    .append(" failed: ")
-                                    .append(r.getException().getMessage()).toString(),
-                            r.getException());
+                    log.error(new StringBuilder(32).append("Invoke ").append(getGroupDescFromServiceKey(entry.getKey()))
+                                    .append(" failed: ").append(r.getException().getMessage()).toString(), r.getException());
                 } else {
                     resultList.add(r);
                 }
             } catch (Exception e) {
-                throw new RpcException(new StringBuilder(32)
-                        .append("Failed to invoke service ")
-                        .append(entry.getKey())
-                        .append(": ")
-                        .append(e.getMessage()).toString(),
-                        e);
+                throw new RpcException(new StringBuilder(32).append("Failed to invoke service ")
+                        .append(entry.getKey()).append(": ").append(e.getMessage()).toString(), e);
             }
         }
 
+        // 没有
         if (resultList.size() == 0) {
             return new RpcResult((Object) null);
         } else if (resultList.size() == 1) {
             return resultList.iterator().next();
         }
 
+        // 返货值是void
         if (returnType == void.class) {
             return new RpcResult((Object) null);
         }

@@ -360,14 +360,16 @@ public class RegistryProtocol implements Protocol {
      * @return 返回的Invoker
      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        // 新建注册目录服务
+        // 注册中心目录服务
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
-        // 为目录服务设置注册中心
+        // 目录服务设置相应的注册中心
         directory.setRegistry(registry);
-        // 为目录服务设置协议配置类（默认Protocol$Adaptive)
+        // 目录服务设置相应的协议配置类（默认Protocol$Adaptive)
         directory.setProtocol(protocol);
 
-        // 构建受订阅的url(consumer://本地地址:0/type?参数信息)，参数信息包括注册中心参数信息，也包括接口引用的参数信息，也就是含有refer键
+        // 构建受订阅的url(consumer://本地地址:0/type?参数信息)。
+        // 参数信息仅含接口引用的参数信息，同时去掉了监控信息
+        // getUrl()实现上是overrideDirectoryUrl而不是url
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
 
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
