@@ -199,7 +199,15 @@ public class PojoUtils {
     public static Object realize(Object pojo, Class<?> type) {
         return realize0(pojo, type, null , new IdentityHashMap<Object, Object>());
     }
-    
+
+    /**
+     *
+     * @param pojo 对象
+     * @param type 类型
+     * @param genericType 通用类型
+     * @return 新对象
+     * @see #realize0(Object, Class, Type, Map)
+     */
     public static Object realize(Object pojo, Class<?> type, Type genericType) {
         return realize0(pojo, type, genericType, new IdentityHashMap<Object, Object>());
     }
@@ -292,40 +300,55 @@ public class PojoUtils {
         return result;
     }
 
+    /**
+     *
+     * @param pojo
+     * @param type
+     * @param genericType
+     * @param history
+     * @return
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static Object realize0(Object pojo, Class<?> type, Type genericType, final Map<Object, Object> history) {
+        // old对象为空直接返回
         if (pojo == null) {
             return null;
         }
-        
-        if (type != null && type.isEnum() 
-        		&& pojo.getClass() == String.class) {
+
+        // type是枚举pojo是文本，直接转换为对应枚举
+        if (type != null && type.isEnum() && pojo.getClass() == String.class) {
     		return Enum.valueOf((Class<Enum>)type, (String)pojo);
     	}
 
-        if (ReflectUtils.isPrimitives(pojo.getClass())
-        		&& ! (type != null && type.isArray()
-        				&& type.getComponentType().isEnum()
-        				&& pojo.getClass() == String[].class)) {
+    	// pojo是基本类型， type是数组，数组类型是枚举且pojo类型是数组
+        // 转换为对应的集合
+        if (ReflectUtils.isPrimitives(pojo.getClass()) && ! (type != null && type.isArray() && type.getComponentType().isEnum() && pojo.getClass() == String[].class)) {
             return CompatibleTypeUtils.compatibleTypeConvert(pojo, type);
         }
 
+        // 从历史中获得
         Object o = history.get(pojo);
-        
+
+        // 存在直接返回
         if(o != null){
             return o;
         }
-        
+
+        // 放入历史
         history.put(pojo, pojo);
-        
+
+        // pojo是数组
         if (pojo.getClass().isArray()) {
+            // type是集合
         	if (Collection.class.isAssignableFrom(type)) {
+                // 集合类型
         		Class<?> ctype = pojo.getClass().getComponentType();
 	            int len = Array.getLength(pojo);
         		Collection dest = createCollection(type, len);
                 history.put(pojo, dest);
         		for (int i = 0; i < len; i ++) {
 	                Object obj = Array.get(pojo, i);
+                    //递归处理
                     Object value = realize0(obj, ctype, null, history);
 	                dest.add(value);
 	            }

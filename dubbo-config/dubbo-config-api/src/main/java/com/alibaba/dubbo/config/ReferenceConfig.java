@@ -15,9 +15,7 @@
  */
 package com.alibaba.dubbo.config;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +50,7 @@ import com.alibaba.dubbo.rpc.support.ProtocolUtils;
 
 /**
  * ReferenceConfig 服务引用类（消费方）
+ * 该类通过持有一个接口来实现读服务的引用，包括对内和对外应用
  *
  * @author william.liangf
  */
@@ -71,16 +70,18 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     //加载时刻，类载入jvm后
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
-    // 接口类型
+    // 接口类型，用于表明服务引用的接口全类名
     private String interfaceName;
 
-    // 接口类名
+    // 接口类名，用于表明服务引用的接口类类型
+    // 对于泛化调用。其为:GenericService
     private Class<?> interfaceClass;
 
-    // 客户端类型
+    // 客户端类型，
     private String client;
 
     // 点对点直连服务提供地址(not only 点对点)
+    // 该配置是最高优先级配置，一旦有配置，会忽略注册中心配置类
     private String url;
 
     // 方法配置
@@ -92,7 +93,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // 协议
     private String protocol;
 
-    // 接口代理类引用
+    // 接口代理类引用，代表了能实现引用的接口实现
     private transient volatile T ref;
 
     // 持有的最外层网络的执行对象（invoker）
@@ -135,7 +136,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
-     * 服务引用的入口
+     * 服务引用的入口。<br/>
+     * 获得配置接口对应的服务引用实现。<br/>
+     * tip：一旦销毁就不能引用
      *
      * @return rpc接口的代理, 包装了网络细节
      * @see #init()
@@ -188,7 +191,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         initialized = true;
 
         //检验接口名(接口名是必填的配置项)
-        if (interfaceName == null || interfaceName.length() == 0) {
+        if (StringUtils.isEmpty(interfaceName)) {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
 
@@ -218,7 +221,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             checkInterfaceAndMethods(interfaceClass, methods);
         }
 
-        //尝试获得配置信息中的url信息
+        // 尝试获得该接口对应的元信息配置
+        // 1. 从系统属性中获得
+        // 2. 从文件中获得---文件路径从系统属性中获得，否则使用默认文件
         String resolve = System.getProperty(interfaceName);
         String resolveFile = null;
         if (resolve == null || resolve.length() == 0) {
@@ -247,6 +252,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 resolve = properties.getProperty(interfaceName);
             }
         }
+
+        // 根据接口对应的元信息配置获得不同的方式打印不同的日志提示信息
         if (resolve != null && resolve.length() > 0) {
             url = resolve;
             if (logger.isWarnEnabled()) {
@@ -292,7 +299,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         checkApplication();
         checkStubAndMock(interfaceClass);
 
-        //构建元信息url的参数信息，map
+        //构建本接口对应元信息url的剩下参数信息map。
         Map<String, String> map = new HashMap<String, String>();
         map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
         map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
@@ -319,10 +326,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
         appendParameters(map, this);
+        // 获得前缀，也就是使用接口信息区分其他接口引用，由group，interfaceName，version组成
         String prefix = StringUtils.getServiceKey(map);
         Map<Object, Object> attributes = new HashMap<Object, Object>();
         if (methods != null && methods.size() > 0) {
             for (MethodConfig method : methods) {
+                //这里的前缀没有加接口信息的原因是该map最后作为接口对应url的参数信息，url已经能区分不同接口
                 appendParameters(map, method, method.getName());
                 String retryKey = method.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
@@ -331,7 +340,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         map.put(method.getName() + ".retries", "0");
                     }
                 }
+                //这里加上了前缀的原因是该attribute会在线程上下文传递，需要区分不同接口的方法
                 appendAttributes(attributes, method, prefix + "." + method.getName());
+                //处理其他的的配置需要加入attribute从而在线程上下文中可见
                 checkAndConvertImplicitConfig(method, map, attributes);
             }
         }
@@ -341,24 +352,37 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         ref = createProxy(map);
     }
 
+    /**
+     *
+     * @param method 方法配置类
+     * @param map 接口引用的相关参数
+     * @param attributes 暴露给线程上下文的属性
+     */
     private static void checkAndConvertImplicitConfig(MethodConfig method, Map<String, String> map, Map<Object, Object> attributes) {
         //check config conflict
+        // 检查配置
         if (Boolean.FALSE.equals(method.isReturn()) && (method.getOnreturn() != null || method.getOnthrow() != null)) {
             throw new IllegalStateException("method config error : return attribute must be set true when onreturn or onthrow has been setted.");
         }
         //convert onreturn methodName to Method
+        //获得关键的key
         String onReturnMethodKey = StaticContext.getKey(map, method.getName(), Constants.ON_RETURN_METHOD_KEY);
+        //获得attribute中已有的信息
         Object onReturnMethod = attributes.get(onReturnMethodKey);
         if (onReturnMethod != null && onReturnMethod instanceof String) {
+            //已有信息，是String字符串,需要做转换
+            //转换放入信息信息，将字符串转换对应的方法
             attributes.put(onReturnMethodKey, getMethodByName(method.getOnreturn().getClass(), onReturnMethod.toString()));
         }
         //convert onthrow methodName to Method
+        //同上
         String onThrowMethodKey = StaticContext.getKey(map, method.getName(), Constants.ON_THROW_METHOD_KEY);
         Object onThrowMethod = attributes.get(onThrowMethodKey);
         if (onThrowMethod != null && onThrowMethod instanceof String) {
             attributes.put(onThrowMethodKey, getMethodByName(method.getOnthrow().getClass(), onThrowMethod.toString()));
         }
         //convert oninvoke methodName to Method
+        //同上
         String onInvokeMethodKey = StaticContext.getKey(map, method.getName(), Constants.ON_INVOKE_METHOD_KEY);
         Object onInvokeMethod = attributes.get(onInvokeMethodKey);
         if (onInvokeMethod != null && onInvokeMethod instanceof String) {
@@ -597,4 +621,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return invoker;
     }
 
+    public static void main(String[] args) {
+        String[] methods = Wrapper.getWrapper(GenericService.class).getMethodNames();
+        System.out.println(methods.length);
+        System.out.println(methods[0]);
+        Wrapper wrapper =  Wrapper.getWrapper(Serializable.class);
+        methods = wrapper.getMethodNames();
+        System.out.println(methods.length);
+        System.out.println(methods[0]);
+    }
 }

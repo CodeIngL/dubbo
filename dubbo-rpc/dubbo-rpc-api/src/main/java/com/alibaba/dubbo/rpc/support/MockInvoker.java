@@ -195,36 +195,60 @@ final public class MockInvoker<T> implements Invoker<T> {
         }
     	return mock;
     }
-    
+
+    /**
+     * 将简单文本代码转换java对象
+     * @param mock 文本代码
+     * @return java 对象
+     * @throws Exception 异常
+     * @see #parseMockValue(String, Type[])
+     */
     public static Object parseMockValue(String mock) throws Exception {
         return parseMockValue(mock, null);
     }
-    
+
+    /**
+     *
+     * @param mock mock 文本代码
+     * @param returnTypes 类型数组
+     * @return java 对象
+     * @throws Exception 异常
+     */
     public static Object parseMockValue(String mock, Type[] returnTypes) throws Exception {
         Object value = null;
         if ("empty".equals(mock)) {
+            // return empty
             value = ReflectUtils.getEmptyObject(returnTypes != null && returnTypes.length > 0 ? (Class<?>)returnTypes[0] : null);
         } else if ("null".equals(mock)) {
+            // return null
             value = null;
         } else if ("true".equals(mock)) {
+            // return true
             value = true;
         } else if ("false".equals(mock)) {
+            // return false
             value = false;
-        } else if (mock.length() >=2 && (mock.startsWith("\"") && mock.endsWith("\"")
-                || mock.startsWith("\'") && mock.endsWith("\'"))) {
+        } else if (mock.length() >=2 && (mock.startsWith("\"") && mock.endsWith("\"") || mock.startsWith("\'") && mock.endsWith("\'"))) {
+            // return "xxxxx" 或者 return 'xxxxx'
             value = mock.subSequence(1, mock.length() - 1);
         } else if (returnTypes !=null && returnTypes.length >0 && returnTypes[0] == String.class) {
+            // type 的首元素是String，直接返回文本
             value = mock;
         } else if (StringUtils.isNumeric(mock)) {
+            // 没有数字,json解析
             value = JSON.parse(mock);
         }else if (mock.startsWith("{")) {
+            // json解析
             value = JSON.parse(mock, Map.class);
         } else if (mock.startsWith("[")) {
+            // json解析
             value = JSON.parse(mock, List.class);
         } else {
+            // 直接文本
             value = mock;
         }
         if (returnTypes != null && returnTypes.length > 0) {
+            //  type存在，使用type进行实现
             value = PojoUtils.realize(value, (Class<?>)returnTypes[0], returnTypes.length > 1 ? returnTypes[1] : null);
         }
         return value;

@@ -338,12 +338,18 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     /**
-     * 检验设置local和stub以及mock
+     * <p>
+     * 检验local、stub和mock设置的正确性<br/>
      * local不建议被使用和stub功能一致
+     * 一旦配置，相关的桩类应该要在程序中能找到，
+     * 桩类必须提供一个构造函数，完成对接口类的包装
      *
-     * @param interfaceClass
+     * mock类有不同的处理:mock 可以配置片段代码，直接进行返回，否则同local和stub
+     *</p>
+     * @param interfaceClass 引用接口类
      */
     protected void checkStubAndMock(Class<?> interfaceClass) {
+        //locol的检查
         if (ConfigUtils.isNotEmpty(local)) {
             Class<?> localClass = ConfigUtils.isDefault(local) ? ReflectUtils.forName(interfaceClass.getName() + "Local") : ReflectUtils.forName(local);
             if (!interfaceClass.isAssignableFrom(localClass)) {
@@ -355,6 +361,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() + "(" + interfaceClass.getName() + ")\" in local implemention class " + localClass.getName());
             }
         }
+        //stub的检查
         if (ConfigUtils.isNotEmpty(stub)) {
             Class<?> localClass = ConfigUtils.isDefault(stub) ? ReflectUtils.forName(interfaceClass.getName() + "Stub") : ReflectUtils.forName(stub);
             if (!interfaceClass.isAssignableFrom(localClass)) {
@@ -368,6 +375,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
         //生成mock
         if (ConfigUtils.isNotEmpty(mock)) {
+            // 对应mock直接配置为代码的，需要使用工具类建议下其是否配置正确
+            // 配置为代码的特征，以return开头
             if (mock.startsWith(Constants.RETURN_PREFIX)) {
                 String value = mock.substring(Constants.RETURN_PREFIX.length());
                 try {

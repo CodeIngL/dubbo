@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public class ConfigUtilTest {
 
-    @Test
+/*    @Test
     public void testReplaceProperty() {
         Map<String, String> map = new HashMap<>();
         map.putIfAbsent("a", "1");
@@ -25,5 +25,5 @@ public class ConfigUtilTest {
         String expression = "${${c}}${bb}${c}";
         String result = ConfigUtils.replaceProperty(expression, map);
         System.out.println(result);
-    }
+    }*/
 }

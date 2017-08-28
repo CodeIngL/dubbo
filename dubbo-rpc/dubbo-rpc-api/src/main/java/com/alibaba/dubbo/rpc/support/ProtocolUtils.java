@@ -46,10 +46,13 @@ public class ProtocolUtils {
         return buf.toString();
     }
 
+    /**
+     * 是否是泛化调用
+     * @param generic 泛化属性
+     * @return 是否泛化调用
+     */
     public static boolean isGeneric(String generic) {
-        return generic != null
-            && !"".equals(generic)
-            && (Constants.GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic)  /* 正常的泛化调用 */
+        return generic != null && !"".equals(generic) && (Constants.GENERIC_SERIALIZATION_DEFAULT.equalsIgnoreCase(generic)  /* 正常的泛化调用 */
             || Constants.GENERIC_SERIALIZATION_NATIVE_JAVA.equalsIgnoreCase(generic) /* 支持java序列化的流式泛化调用 */
             || Constants.GENERIC_SERIALIZATION_BEAN.equalsIgnoreCase(generic));
     }
