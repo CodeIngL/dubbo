@@ -326,11 +326,11 @@ public class RegistryProtocol implements Protocol {
         if (group != null && group.length() > 0) {
             if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length > 1
                     || "*".equals(group)) {
-                //对于传递进来的接口应引用，从属于多个组的，应使用MergeableCluster来聚集
+                //对于传递进来的接口引用，从属于多个组的，应使用MergeableCluster来聚集
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
-        //对于传递进来的接口应引用，单个组的或者没有配置的，应使用默认的Cluster来聚集
+        //对于传递进来的接口引用，单个组的或者没有配置的，应使用默认的Cluster来聚集
         return doRefer(cluster, registry, type, url);
     }
 

@@ -62,7 +62,7 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
     }
 
     /**
-     * 集群合并调用
+     * 接口集群合并调用
      *
      * @param invocation 调动对象
      * @return 结果
