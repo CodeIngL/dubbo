@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
@@ -380,6 +381,7 @@ public class RegistryProtocol implements Protocol {
 
         // 目录服务进行订阅(category:providers,configurators,routers)
         // 设置了目录服务的消费url，使用注册中心去订阅该消费url，
+        // 目录服务订阅其需要消费的url的在注册中心上的相关信息
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
         return cluster.join(directory);
     }

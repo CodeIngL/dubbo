@@ -125,6 +125,10 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         return invokers;
     }
 
+    /**
+     * 注意子类的不同实现
+     * @return 元信息
+     */
     public URL getUrl() {
         return url;
     }

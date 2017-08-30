@@ -59,7 +59,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
     //未订阅的失败的映射
     private final ConcurrentMap<URL, Set<NotifyListener>> failedUnsubscribed = new ConcurrentHashMap<URL, Set<NotifyListener>>();
 
-    //特殊的映射
+    //已经订阅的发生了失败的通知
     private final ConcurrentMap<URL, Map<NotifyListener, List<URL>>> failedNotified = new ConcurrentHashMap<URL, Map<NotifyListener, List<URL>>>();
 
     /**

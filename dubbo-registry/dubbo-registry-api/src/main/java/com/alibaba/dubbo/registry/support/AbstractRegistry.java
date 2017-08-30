@@ -202,9 +202,11 @@ public abstract class AbstractRegistry implements Registry {
      * @param version
      */
     public void doSaveProperties(long version) {
+        //校验下新旧的关系
         if (version < lastCacheChanged.get()) {
             return;
         }
+        //文件不存在直接返回
         if (file == null) {
             return;
         }
@@ -229,11 +231,13 @@ public abstract class AbstractRegistry implements Registry {
         }
         // 保存
         try {
+            //使用内存的配置，覆盖掉原来的所有的配置
             newProperties.putAll(properties);
             File lockfile = new File(file.getAbsolutePath() + ".lock");
             if (!lockfile.exists()) {
                 lockfile.createNewFile();
             }
+            //防止竞争的设计
             RandomAccessFile raf = new RandomAccessFile(lockfile, "rw");
             try {
                 FileChannel channel = raf.getChannel();
@@ -263,6 +267,7 @@ public abstract class AbstractRegistry implements Registry {
                 raf.close();
             }
         } catch (Throwable e) {
+            //失败后异步执行
             if (version < lastCacheChanged.get()) {
                 return;
             } else {
@@ -524,6 +529,7 @@ public abstract class AbstractRegistry implements Registry {
      * @see NotifyListener#notify(List)；
      */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
+        //入参的检查
         if (url == null) {
             throw new IllegalArgumentException("notify url == null");
         }
@@ -538,6 +544,7 @@ public abstract class AbstractRegistry implements Registry {
         if (logger.isInfoEnabled()) {
             logger.info("Notify urls for subscribe url " + url + ", urls: " + urls);
         }
+
         //队候选的url列表进行分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
         //key为目录的信息，value为对应目录的元信息列表集合
         //不匹配的忽略的掉
@@ -568,12 +575,13 @@ public abstract class AbstractRegistry implements Registry {
             notified.putIfAbsent(url, new ConcurrentHashMap<String, List<URL>>());
             categoryNotified = notified.get(url);
         }
-        //将上面的result信息进行放入缓存中，放入分组信息
+        //将上面的result信息进行放入缓存中，放入分组信息，分组进行通知
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
             categoryNotified.put(category, categoryList);
-            //保存相关属性，将相关信息写入文件，url和其信息
+            // 分组通知时，尝试先写入缓存，保证注册中心订阅失败时，使用缓存进行通知
+            // 保存相关属性，将相关信息写入文件，url和其信息
             saveProperties(url);
             //分组通知信息
             listener.notify(categoryList);
@@ -593,6 +601,7 @@ public abstract class AbstractRegistry implements Registry {
      * @see #doSaveProperties(long)
      */
     private void saveProperties(URL url) {
+        // 文件为null直接返回
         if (file == null) {
             return;
         }
@@ -601,6 +610,7 @@ public abstract class AbstractRegistry implements Registry {
             StringBuilder buf = new StringBuilder();
             Map<String, List<URL>> categoryNotified = notified.get(url);
             if (categoryNotified != null) {
+                //遍历值，不区分相关组别
                 for (List<URL> us : categoryNotified.values()) {
                     for (URL u : us) {
                         if (buf.length() > 0) {
@@ -610,8 +620,11 @@ public abstract class AbstractRegistry implements Registry {
                     }
                 }
             }
+            // 保存对应的url和该url的信息
             properties.setProperty(url.getServiceKey(), buf.toString());
+            // 自动+1
             long version = lastCacheChanged.incrementAndGet();
+            //是否异步进行
             if (syncSaveFile) {
                 doSaveProperties(version);
             } else {

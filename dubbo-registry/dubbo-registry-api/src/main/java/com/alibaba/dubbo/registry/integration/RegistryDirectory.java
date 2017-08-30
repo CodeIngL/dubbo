@@ -155,6 +155,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     /**
      * 订阅即是设置消费url
+     * 也就是目录服务需要消费的url
      * 同时注册中心注册相应的url
      *
      * @param url 元信息
@@ -685,6 +686,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         return serviceType;
     }
 
+    /**
+     * tip 特别的注意点，
+     * 注册中心的目录服务覆盖了其父类的方法，
+     * 返回的是一个overrideDirectoryUrl
+     * @return overrideDirectoryUrl
+     * @see #RegistryDirectory(Class, URL)
+     * @see AbstractDirectory#getUrl()
+     */
     public URL getUrl() {
         return this.overrideDirectoryUrl;
     }
