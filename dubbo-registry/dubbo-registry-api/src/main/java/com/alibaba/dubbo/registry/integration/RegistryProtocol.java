@@ -15,9 +15,7 @@
  */
 package com.alibaba.dubbo.registry.integration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -303,12 +301,22 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * 消费方注册中心引用实现
+     * <p>
+     * <ul>
+     * <li>第一步进行协议的转换说明，注册中心url的protocol（协议）一定是registry，真正的注册协议在其参数属性中，键为registry</li><br/>
+     * <li>第二步进行协议的转换过程，注册中心url重新设置其protocol为参数映射中registry对应的值，移除参数中registry的键值对</li></li><br/>
+     * <li>通过转换过的注册中心协议获得相应的注册中心</li></li><br/>
+     * <li>对应消费接口引用为RegistryService关于注册中心的直接返回，没有必要继续操作</li></li><br/>
+     * <li>根据消费方的接口应用的参数来选取不同集群方式，对于多group的消费接口，使用MergeableCluster来集权调用,单个则使用默认值</li></li><br/>
+     * </ul>
+     * </p>
      *
      * @param type 服务的类型
      * @param url  远程服务的URL地址
      * @param <T>
      * @return 调用者
      * @throws RpcException rpc异常
+     * @see #doRefer(Cluster, Registry, Class, URL)
      */
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
@@ -359,6 +367,8 @@ public class RegistryProtocol implements Protocol {
      * @param url      元信息，其protocol为具体的注册中心协议，其refer为接口引用信息映射，不存在registry键。
      * @param <T>      返回的Invoker
      * @return 返回的Invoker
+     * @see Registry#register(URL)
+     * @see RegistryDirectory#subscribe(URL)
      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
         // 注册中心目录服务

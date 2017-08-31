@@ -42,13 +42,15 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     // 日志输出
     private static final Logger logger = LoggerFactory.getLogger(AbstractDirectory.class);
 
+    // 核心完整url，有很多信息
     private final URL url;
 
     private volatile boolean destroyed = false;
 
-    //目录服务需要消费的url
+    //目录服务所需要进行消费的url
     private volatile URL consumerUrl;
 
+    //路由列表
     private volatile List<Router> routers;
 
     /**
