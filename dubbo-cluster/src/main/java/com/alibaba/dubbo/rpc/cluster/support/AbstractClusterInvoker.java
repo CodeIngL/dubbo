@@ -250,8 +250,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         //负载均衡策略，默认的策略是随机策略
         LoadBalance loadbalance;
 
-        //获取调用对象对应的调用者，并选择合适的负载均衡策略
+        //使用目录服务来从调用对象中获取相关的调用者列表
         List<Invoker<T>> invokers = list(invocation);
+        //选择合适的负载均衡策略
         if (invokers != null && invokers.size() > 0) {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(0).getUrl()
                     .getMethodParameter(invocation.getMethodName(), Constants.LOADBALANCE_KEY, Constants.DEFAULT_LOADBALANCE));

@@ -33,6 +33,13 @@ import com.alibaba.dubbo.rpc.RpcStatus;
 @Activate(group = Constants.CONSUMER, value = Constants.ACTIVES_KEY)
 public class ActiveLimitFilter implements Filter {
 
+    /**
+     *
+     * @param invoker service
+     * @param invocation invocation.
+     * @return
+     * @throws RpcException
+     */
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         URL url = invoker.getUrl();
         String methodName = invocation.getMethodName();

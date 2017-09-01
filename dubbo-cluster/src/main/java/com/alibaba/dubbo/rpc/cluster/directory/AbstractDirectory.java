@@ -97,7 +97,8 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
     }
 
     /**
-     * 根据调用对象寻找对应的调用者列表
+     *
+     * 目录服务根据调用对象寻找与之对应的调用者列表
      *
      * @param invocation 调用对象
      * @return 调用者列表
@@ -108,6 +109,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         if (destroyed) {
             throw new RpcException("Directory already destroyed .url: " + getUrl());
         }
+
         //回调子类实现
         List<Invoker<T>> invokers = doList(invocation);
 

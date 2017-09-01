@@ -149,7 +149,6 @@ public abstract class AbstractRegistry implements Registry {
         this.registryUrl = url;
     }
 
-    @Override
     public URL getUrl() {
         return registryUrl;
     }

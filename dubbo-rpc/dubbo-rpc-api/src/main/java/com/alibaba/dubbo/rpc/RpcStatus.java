@@ -27,7 +27,6 @@ import com.alibaba.dubbo.common.URL;
  * 
  * @see com.alibaba.dubbo.rpc.filter.ActiveLimitFilter
  * @see com.alibaba.dubbo.rpc.filter.ExecuteLimitFilter
- * @see com.alibaba.dubbo.rpc.cluster.loadbalance.LeastActiveLoadBalance
  * @author william.liangf
  */
 public class RpcStatus {

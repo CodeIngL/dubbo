@@ -113,7 +113,6 @@ public class RegistryProtocol implements Protocol {
      * @throws RpcException rpc异常
      * @see #doLocalExport(Invoker)
      */
-    @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
 
         //这里会导出相应的东西

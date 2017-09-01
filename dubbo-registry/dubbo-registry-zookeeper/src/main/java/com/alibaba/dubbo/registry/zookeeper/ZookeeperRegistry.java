@@ -110,7 +110,6 @@ public class ZookeeperRegistry extends FailbackRegistry {
      *
      * @return
      */
-    @Override
     public boolean isAvailable() {
         return zkClient.isConnected();
     }
