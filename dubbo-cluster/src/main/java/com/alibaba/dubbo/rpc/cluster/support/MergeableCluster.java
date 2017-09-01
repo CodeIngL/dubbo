@@ -27,6 +27,13 @@ public class MergeableCluster implements Cluster {
 
     public static final String NAME = "mergeable";
 
+    /**
+     * 合并的集群方式调用
+     * @param directory 目录服务
+     * @param <T>
+     * @return 合并的集群方式调用者对象
+     * @throws RpcException rpc异常
+     */
     public <T> Invoker<T> join( Directory<T> directory ) throws RpcException {
         return new MergeableClusterInvoker<T>( directory );
     }

@@ -435,6 +435,7 @@ public class RegistryProtocol implements Protocol {
 
         private volatile List<Configurator> configurators;
 
+        //监听者所订阅消费的url
         private final URL subscribeUrl;
 
         public OverrideListener(URL subscribeUrl) {
@@ -450,8 +451,7 @@ public class RegistryProtocol implements Protocol {
             List<URL> result = null;
             for (URL url : urls) {
                 URL overrideUrl = url;
-                if (url.getParameter(Constants.CATEGORY_KEY) == null
-                        && Constants.OVERRIDE_PROTOCOL.equals(url.getProtocol())) {
+                if (url.getParameter(Constants.CATEGORY_KEY) == null && Constants.OVERRIDE_PROTOCOL.equals(url.getProtocol())) {
                     // 兼容旧版本
                     overrideUrl = url.addParameter(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY);
                 }

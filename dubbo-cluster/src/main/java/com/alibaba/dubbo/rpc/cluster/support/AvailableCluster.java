@@ -34,6 +34,13 @@ public class AvailableCluster implements Cluster {
     
     public static final String NAME = "available";
 
+    /**
+     * 返回一个集群抽象invoker的实现，在回调的时候，按顺序选取第一个可用的，返回其调用结果<br/>
+     * @param directory 目录服务
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
 
         /**
