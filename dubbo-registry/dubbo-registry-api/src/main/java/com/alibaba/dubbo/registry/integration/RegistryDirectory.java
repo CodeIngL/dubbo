@@ -489,6 +489,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                         //url是可以被转换为invoker的
                         //根据远程注册中心上的相关目录服务下的信息的url，来实现对服务提供方的引用
                         //这个引用总是使用InvokerDelegete进行包装
+                        //其中url是合并了远程提供方的相关信息的url
                         invoker = new InvokerDelegate<T>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
@@ -780,12 +781,15 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     /**
      * 代理类，主要用于存储注册中心下发的url地址，用于重新重新refer时能够根据providerURL queryMap overrideMap重新组装
+     * url是合并过参数的url
+     * providerurl是合并之前的url也就是服务提供方的url信息
      *
      * @param <T>
      * @author chao.liuc
      */
     private static class InvokerDelegate<T> extends InvokerWrapper<T> {
 
+        //服务提供方的相关参数
         private URL providerUrl;
 
         public InvokerDelegate(Invoker<T> invoker, URL url, URL providerUrl) {
