@@ -49,8 +49,17 @@ import com.alibaba.dubbo.rpc.service.GenericService;
 import com.alibaba.dubbo.rpc.support.ProtocolUtils;
 
 /**
+ * <p>
  * ReferenceConfig 服务引用类（消费方）
- * 该类通过持有一个接口来实现读服务的引用，包括对内和对外应用
+ * </p>
+ * <p>
+ * 该类通过持有一个接口来实现对服务方提供的服务(包括自己本身作为服务方，以及多服务提供方形成集群)的引用<br/>
+ * 两种基本方式：
+ * <ul>
+ * <li>对内引用</li><br/>
+ * <li>对外引用</li><br/>
+ * </ul>
+ * </p>
  *
  * @author william.liangf
  */
@@ -58,16 +67,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private static final long serialVersionUID = -5864351140409987595L;
 
-    //Protocl$Adaptive单例唯一,
-    //加载时刻，类载入jvm后
+    // Protocl$Adaptive单例唯一,
+    // 加载时刻，类载入jvm后
     private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
-    //Cluster$Adaptive单例唯一,
-    //加载时刻，类载入jvm后
+    // Cluster$Adaptive单例唯一,
+    // 加载时刻，类载入jvm后
     private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
-    //proxyFactory$Adaptive单例唯一,
-    //加载时刻，类载入jvm后
+    // proxyFactory$Adaptive单例唯一,
+    // 加载时刻，类载入jvm后
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     // 接口类型，用于表明服务引用的接口全类名
@@ -81,10 +90,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private String client;
 
     // 点对点直连服务提供地址(not only 点对点)
-    // 该配置是最高优先级配置，一旦有配置，会忽略注册中心配置类
+    // 该配置是最高优先级配置，一旦有配置，会忽略配置的相关注册中心配置类
     private String url;
 
-    // 方法配置
+    // 方法配置类集合，接口方法对应的相关配置
     private List<MethodConfig> methods;
 
     // 缺省配置
@@ -113,7 +122,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         @Override
         protected void finalize() throws Throwable {
             super.finalize();
-
             if (!ReferenceConfig.this.destroyed) {
                 logger.warn("ReferenceConfig(" + url + ") is not DESTROYED when FINALIZE");
             }
@@ -147,6 +155,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (destroyed) {
             throw new IllegalStateException("Already destroyed!");
         }
+        //ref==null是很粗略的检查是否已经存在引用了，因为init是一个重量级操作，时间跨度比较大。另一个属性initialized来避免竞争
         if (ref == null) {
             init();
         }
@@ -174,7 +183,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
-     * 服务引用入口
+     * 服务引用入口(重量操作)
      * <p>
      * <ul>
      * <li>对配置属性进行校验，对元信息{@link URL}进行信息生成</li><br/>
@@ -184,24 +193,24 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      * @see #createProxy
      */
     private void init() {
-        //校验初始化标志(对于已经初始化过的，不再继续逻辑处理)
+        // 校验初始化标志(对于已经初始化过的，不再继续逻辑处理)，防止并发多初始化，
         if (initialized) {
             return;
         }
         initialized = true;
 
-        //检验接口名(接口名是必填的配置项)
+        // 检验接口名(接口名是必填的配置项)
         if (StringUtils.isEmpty(interfaceName)) {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
 
-        //获取消费配置类全局配置(consumer代表的配置类是可选的)
+        // 获取消费配置类全局配置(consumer代表的配置类是可选的)
         checkConsumer();
 
-        //尝试对引用(本身)配置类完成基本属性的填充
+        // 尝试对引用(本身)配置类完成基本属性的填充
         appendProperties(this);
 
-        //泛接口不存在尝试使用消费配置类来获得
+        // 泛接口不存在尝试使用消费配置类来获得
         if (generic == null) {
             if (consumer != null) {
                 setGeneric(consumer.getGeneric());
@@ -212,7 +221,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (ProtocolUtils.isGeneric(generic)) {
             interfaceClass = GenericService.class;
         } else {
-            //使用反射获得接口名
+            // 使用反射获得接口名
             try {
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e) {

@@ -15,10 +15,7 @@
  */
 package com.alibaba.dubbo.config;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
@@ -302,8 +299,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     /**
      * MethodConfig标签为<dubbo:service>或<dubbo:reference>的子标签，用于控制到方法级，
      *
-     * @param interfaceClass
-     * @param methods
+     * @param interfaceClass 引用接口类
+     * @param methods        接口类对应的方法配置类
      */
     protected void checkInterfaceAndMethods(Class<?> interfaceClass, List<MethodConfig> methods) {
         // 接口不能为空
@@ -316,22 +313,18 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
         // 检查方法是否在接口中存在
         if (methods != null && methods.size() > 0) {
-            //所有methodConfig中方法，interface中必须有
+            // 所有方法配置类中配置的方法，对应的消费方的引用接口必须有相应的方法
+            // 匹配规则这两者名字相等
+            Set<String> interfaceMethodNames = new HashSet<String>();
+            for (java.lang.reflect.Method method : interfaceClass.getMethods()) {
+                interfaceMethodNames.add(method.getName());
+            }
             for (MethodConfig methodBean : methods) {
-                String methodName = methodBean.getName();
-                if (methodName == null || methodName.length() == 0) {
-                    throw new IllegalStateException("<dubbo:method> name attribute is required! Please check: <dubbo:service interface=\"" + interfaceClass.getName() + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>");
-                }
-                boolean hasMethod = false;
-                for (java.lang.reflect.Method method : interfaceClass.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        hasMethod = true;
-                        break;
-                    }
-                }
-                if (!hasMethod) {
-                    throw new IllegalStateException("The interface " + interfaceClass.getName()
-                            + " not found method " + methodName);
+                //方法配置类的名字(必须配置)
+                //接口引用的方法必须包含method中配置的方法
+                if (!interfaceMethodNames.contains(methodBean.getName())) {
+                    throw new IllegalStateException("<dubbo:method> name attribute is required and in interface's method name! Please check: <dubbo:service interface=\"" + interfaceClass.getName()
+                            + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>; you method's name is: " + methodBean.getName());
                 }
             }
         }
@@ -343,9 +336,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * local不建议被使用和stub功能一致
      * 一旦配置，相关的桩类应该要在程序中能找到，
      * 桩类必须提供一个构造函数，完成对接口类的包装
-     *
+     * <p>
      * mock类有不同的处理:mock 可以配置片段代码，直接进行返回，否则同local和stub
-     *</p>
+     * </p>
+     *
      * @param interfaceClass 引用接口类
      */
     protected void checkStubAndMock(Class<?> interfaceClass) {
@@ -588,6 +582,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     public void setScope(String scope) {
         this.scope = scope;
+    }
+
+    public static void main(String[] args) {
+        Set<String> sets = new HashSet<String>();
+        System.out.println(sets.contains(null));
+        System.out.println(sets.contains(""));
+        sets.add(null);
+        System.out.println(sets.contains(null));
     }
 
 }

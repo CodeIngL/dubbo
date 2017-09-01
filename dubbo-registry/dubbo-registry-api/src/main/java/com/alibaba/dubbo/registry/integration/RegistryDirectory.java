@@ -62,10 +62,16 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
 
+    //Cluster$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
+    //RouterFactory$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final RouterFactory routerFactory = ExtensionLoader.getExtensionLoader(RouterFactory.class).getAdaptiveExtension();
 
+    //ConfiguratorFactory$Adaptive单例唯一,
+    //加载时刻，类载入jvm后
     private static final ConfiguratorFactory configuratorFactory = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).getAdaptiveExtension();
 
     //协议配置
@@ -191,8 +197,8 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * 处理相关的url列表,对其目录属性进行处理。对于不支持的目录属性，将会记录日志进行警告
      * <ul>
      * <li>构建invoker相关的urls:目录为providers</li><br/>
-     * <li>构建router相关的urls:目录为router或者routers</li><br/>
-     * <li>构建configurator相关的的urls:目录为configurators或者override</li><br/>
+     * <li>构建router相关的urls:目录为routers或者协议为router</li><br/>
+     * <li>构建configurator相关的的urls:目录为configurators或者协议为override</li><br/>
      * </ul>
      * </p>
      *
@@ -696,6 +702,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * tip 特别的注意点，
      * 注册中心的目录服务覆盖了其父类的方法，
      * 返回的是一个overrideDirectoryUrl
+     *
      * @return overrideDirectoryUrl
      * @see #RegistryDirectory(Class, URL)
      * @see AbstractDirectory#getUrl()

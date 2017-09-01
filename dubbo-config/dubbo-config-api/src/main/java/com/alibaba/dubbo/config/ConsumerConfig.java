@@ -16,7 +16,8 @@
 package com.alibaba.dubbo.config;
 
 /**
- * ConsumerConfig
+ * ConsumerConfig(消费方的默认的模本配置)
+ * 通过配置该类，配置通用的属性对应ReferenceConfig来说
  *
  * @author william.liangf
  * @export
