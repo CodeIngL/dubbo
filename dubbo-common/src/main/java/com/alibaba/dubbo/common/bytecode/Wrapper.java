@@ -94,12 +94,13 @@ public abstract class Wrapper {
      * @return Wrapper instance(not null).
      */
     public static Wrapper getWrapper(Class<?> c) {
-        while (ClassGenerator.isDynamicClass(c)) // can not wrapper on dynamic class.
+        // can not wrapper on dynamic class.
+        while (ClassGenerator.isDynamicClass(c)) {
             c = c.getSuperclass();
-
-        if (c == Object.class)
+        }
+        if (c == Object.class) {
             return OBJECT_WRAPPER;
-
+        }
         Wrapper ret = WRAPPER_MAP.get(c);
         if (ret == null) {
             ret = makeWrapper(c);
@@ -299,7 +300,7 @@ public abstract class Wrapper {
         }
         //遍历方法
         //对invokeMethod(Object o, String n, Class[] p, Object[] v)的说明
-		/*try {
+        /*try {
 			if (方法名1.equals($2) && $3.length == 方法名1对应的参数长度) {
 				return ($w) w.方法名1((参数类型0)$4[0],(参数类型1)$4[1],...);
 			}

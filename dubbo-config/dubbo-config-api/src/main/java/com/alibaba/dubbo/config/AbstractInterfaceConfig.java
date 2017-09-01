@@ -319,9 +319,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             for (java.lang.reflect.Method method : interfaceClass.getMethods()) {
                 interfaceMethodNames.add(method.getName());
             }
+            //方法配置类的名字(必须配置)
+            //接口引用的方法必须包含method中配置的方法
             for (MethodConfig methodBean : methods) {
-                //方法配置类的名字(必须配置)
-                //接口引用的方法必须包含method中配置的方法
                 if (!interfaceMethodNames.contains(methodBean.getName())) {
                     throw new IllegalStateException("<dubbo:method> name attribute is required and in interface's method name! Please check: <dubbo:service interface=\"" + interfaceClass.getName()
                             + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>; you method's name is: " + methodBean.getName());

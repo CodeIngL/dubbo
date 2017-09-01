@@ -44,6 +44,12 @@ public class ConfigUtils {
         return !isEmpty(value);
     }
 
+    /**
+     * 是否为空
+     * 值为空，或者false，0，null，或者N/A
+     * @param value 入参
+     * @return 是否默认
+     */
     public static boolean isEmpty(String value) {
         return value == null || value.length() == 0
                 || "false".equalsIgnoreCase(value)
@@ -52,9 +58,14 @@ public class ConfigUtils {
                 || "N/A".equalsIgnoreCase(value);
     }
 
+    /**
+     * 是否是默认
+     * 入参值为true或者default即为默认
+     * @param value 入参
+     * @return 是否默认
+     */
     public static boolean isDefault(String value) {
-        return "true".equalsIgnoreCase(value)
-                || "default".equalsIgnoreCase(value);
+        return "true".equalsIgnoreCase(value) || "default".equalsIgnoreCase(value);
     }
 
     /**
