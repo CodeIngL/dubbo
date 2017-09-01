@@ -401,6 +401,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
+     * 对注册在provider不同的服务，实现对转换为消费方的invoker，服务提供方方可能是集群，那么多个invoker是对的
      * 将urls转成invokers,如果url已经被refer过，不再重新引用。
      *
      * @param urls 元信息列表(服务方元信息)
@@ -414,11 +415,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             return newUrlInvokerMap;
         }
         Set<String> keys = new HashSet<String>();
-        //获取消费方配置的协议
+        //获取消费方配置的协议,
         String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);
         for (URL providerUrl : urls) {
             if (queryProtocols != null && queryProtocols.length() > 0) {
-                //如果reference端配置了protocol，则只选择匹配的protocol
+                //如果reference端配置了protocol，则只选择匹配的protocol(服务方集群的方式下会有多个)
                 boolean accept = false;
                 String[] acceptProtocols = queryProtocols.split(",");
                 for (String acceptProtocol : acceptProtocols) {
@@ -432,17 +433,19 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 }
             }
 
+            //empty的产生是由于目录下木有相关的节点而生成的一个占位，因此这里要忽略掉
             if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
                 //忽略配置为empty的元信息
                 continue;
             }
 
+            //验证下是否支持配置,不支持记录错误日记，忽略掉
             if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
-                //验证下是否支持配置,不支持记录错误日记，忽略掉
                 logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost()
                         + ", supported protocol: " + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
                 continue;
             }
+
             //合并参数
             URL url = mergeUrl(providerUrl);
 
@@ -491,8 +494,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private URL mergeUrl(URL providerUrl) {
 
+        //合并本地消费方接口的相关参数，以及远程注册中心上的相关参数
+        //大部分使用消费方的除了基本的信息
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // 合并消费端参数
 
+        //使用configurators对上面的url再次进行相关的操作
         List<Configurator> localConfigurators = this.configurators; // local reference
         if (localConfigurators != null && localConfigurators.size() > 0) {
             for (Configurator configurator : localConfigurators) {

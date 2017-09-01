@@ -87,13 +87,13 @@ public class ClusterUtils {
             if (methods != null && methods.length() > 0) {
                 map.put(Constants.METHODS_KEY, methods);
             }
-            // 合并filter
+            // 合并filter，两者的合集
             String remoteFilter = remoteMap.get(Constants.REFERENCE_FILTER_KEY);
             String localFilter = localMap.get(Constants.REFERENCE_FILTER_KEY);
             if (remoteFilter != null && remoteFilter.length() > 0 && localFilter != null && localFilter.length() > 0) {
                 localMap.put(Constants.REFERENCE_FILTER_KEY, remoteFilter + "," + localFilter);
             }
-            // 合并listener
+            // 合并listener，两者的合集
             String remoteListener = remoteMap.get(Constants.INVOKER_LISTENER_KEY);
             String localListener = localMap.get(Constants.INVOKER_LISTENER_KEY);
             if (remoteListener != null && remoteListener.length() > 0 && localListener != null && localListener.length() > 0) {

@@ -368,7 +368,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      *
      * @param consumer 主url，消费方url
-     * @param providers 子节点
+     * @param providers 子节点，消费url的一个目录下的子节点集合
      * @return 子节点能和主url匹配上的，返回
      */
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
@@ -390,9 +390,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      *
-     * @param consumer 主url
-     * @param path 主url搞出来的某个目录对应的路径
-     * @param providers 目录下子节点名称
+     * @param consumer 主url（被目录服务消费的url）
+     * @param path 主url使用其中的一个目录形成的zknode节点
+     * @param providers path下的子节点名称
      * @return
      */
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
