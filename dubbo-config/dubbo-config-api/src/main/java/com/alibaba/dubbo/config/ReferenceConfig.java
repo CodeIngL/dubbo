@@ -190,6 +190,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      * <li>实现服务引用获得{@link Invoker}</li><br/>
      * <li>包装{@link Invoker}获得相应代理</li><br/>
      * </ul>
+     *
      * @see #createProxy
      */
     private void init() {
@@ -204,18 +205,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
 
-        // 获取模板配置类全局配置(consumer代表的各类ReferenceConfig的模板)
-        checkConsumer();
-
         // 尝试对引用(本身)配置类完成基本属性的填充
         appendProperties(this);
 
-        // 泛接口不存在尝试使用模板配置类来获得
-        if (generic == null) {
-            if (consumer != null) {
-                setGeneric(consumer.getGeneric());
-            }
-        }
+        // 处理模板配置类
+        checkAndUseConsumer();
 
         //对是泛接口的处理
         if (ProtocolUtils.isGeneric(generic)) {
@@ -273,23 +267,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
-        checkApplication();
 
+        checkApplication();
         //对应ReferenceConfig不存在相关配置类，尝试使用模板配置类完成默认值的设定
-        if (consumer != null) {
-            if (application == null) {
-                application = consumer.getApplication();
-            }
-            if (module == null) {
-                module = consumer.getModule();
-            }
-            if (registries == null) {
-                registries = consumer.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = consumer.getMonitor();
-            }
-        }
         if (module != null) {
             if (registries == null) {
                 registries = module.getRegistries();
@@ -335,7 +315,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
         appendParameters(map, this);
-        // 获得前缀，也就是使用接口信息区分其他接口引用，由group，interfaceName，version组成
+        // 获得前缀，也就是使用接口信息区分其他接口引用，由group，interfaceName，version组成(主要区分的是本地jvm中的信息)
         String prefix = StringUtils.getServiceKey(map);
         Map<Object, Object> attributes = new HashMap<Object, Object>();
         if (methods != null && methods.size() > 0) {
@@ -362,9 +342,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
-     *
-     * @param method 方法配置类
-     * @param map 接口引用的相关参数
+     * @param method     方法配置类
+     * @param map        接口引用的相关参数
      * @param attributes 暴露给线程上下文的属性
      */
     private static void checkAndConvertImplicitConfig(MethodConfig method, Map<String, String> map, Map<Object, Object> attributes) {
@@ -440,8 +419,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         } else {
             //对外引用
             if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
-                String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
-                for (String u : us) {
+                for (String u : Constants.SEMICOLON_SPLIT_PATTERN.split(url)) {
                     URL url = URL.valueOf(u);
                     if (url.getPath() == null || url.getPath().length() == 0) {
                         url = url.setPath(interfaceName);
@@ -458,15 +436,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             } else {
                 // 通过注册中心配置拼装URL
-                List<URL> us = loadRegistries(false);
-                if (us != null && us.size() > 0) {
-                    for (URL u : us) {
-                        URL monitorUrl = loadMonitor(u);
-                        if (monitorUrl != null) {
-                            map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                        }
-                        urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                for (URL u : loadRegistries(false)) {
+                    URL monitorUrl = loadMonitor(u);
+                    if (monitorUrl != null) {
+                        map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                     }
+                    urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
                 }
                 if (urls == null || urls.size() == 0) {
                     throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
@@ -502,16 +477,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
         }
 
-        //3.对 (check)标记进行处理
-        Boolean c = check;
-        if (c == null && consumer != null) {
-            c = consumer.isCheck();
-        }
         //默认是true，即会检测invoker的可用性
-        if (c == null) {
-            c = true; // default true
+        if (check == null) {
+            check = true; // default true
         }
-        if (c && !invoker.isAvailable()) {
+        if (check && !invoker.isAvailable()) {
             throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
         }
         if (logger.isInfoEnabled()) {
@@ -525,14 +495,34 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     /**
      * 检验消费配置类(可选)，无则新建
      * 使用{@link #appendProperties(AbstractConfig)}完成配置类基本属性填充
+     * 获取模板配置类全局配置(consumer代表的各类ReferenceConfig的模板)
+     * 配置类不存在相关配置尝试使用模板配置类来获得
      *
      * @see #appendProperties(AbstractConfig)
      */
-    private void checkConsumer() {
+    private void checkAndUseConsumer() {
         if (consumer == null) {
             consumer = new ConsumerConfig();
         }
         appendProperties(consumer);
+        if (application == null) {
+            application = consumer.getApplication();
+        }
+        if (module == null) {
+            module = consumer.getModule();
+        }
+        if (registries == null) {
+            registries = consumer.getRegistries();
+        }
+        if (monitor == null) {
+            monitor = consumer.getMonitor();
+        }
+        if (generic == null) {
+            generic = consumer.getGeneric();
+        }
+        if (check == null) {
+            check = consumer.isCheck();
+        }
     }
 
     public Class<?> getInterfaceClass() {
@@ -635,7 +625,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         String[] methods = Wrapper.getWrapper(GenericService.class).getMethodNames();
         System.out.println(methods.length);
         System.out.println(methods[0]);
-        Wrapper wrapper =  Wrapper.getWrapper(Serializable.class);
+        Wrapper wrapper = Wrapper.getWrapper(Serializable.class);
         methods = wrapper.getMethodNames();
         System.out.println(methods.length);
         System.out.println(methods[0]);
