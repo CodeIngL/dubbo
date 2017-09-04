@@ -112,11 +112,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private volatile List<Configurator> configurators; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
     // Map<url, Invoker> cache service url to invoker mapping.
-    //url级别的invoker映射
+    // url级别的invoker映射，key为url的fullString，同时该url是合并的url集合多种形式的参数
     private volatile Map<String, Invoker<T>> urlInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
     // Map<methodName, Invoker> cache service method to invokers mapping.
-    //方法级别的invoker映射
+    // 方法级别的invoker映射
     private volatile Map<String, List<Invoker<T>>> methodInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
@@ -550,6 +550,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         return providerUrl;
     }
 
+    /**
+     * 路由
+     * @param invokers
+     * @param method
+     * @return
+     */
     private List<Invoker<T>> route(List<Invoker<T>> invokers, String method) {
         Invocation invocation = new RpcInvocation(method, new Class<?>[0], new Object[0]);
         List<Router> routers = getRouters();
@@ -566,7 +572,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     /**
      * 将invokers列表转成与方法的映射关系
      *
-     * @param invokersMap Invoker列表
+     * @param invokersMap url级别上的invoker映射
      * @return Invoker与方法的映射关系
      */
     private Map<String, List<Invoker<T>>> toMethodInvokers(Map<String, Invoker<T>> invokersMap) {
@@ -575,28 +581,31 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         List<Invoker<T>> invokersList = new ArrayList<Invoker<T>>();
         if (invokersMap != null && invokersMap.size() > 0) {
             for (Invoker<T> invoker : invokersMap.values()) {
+                //获得invoker上的方法参数
                 String parameter = invoker.getUrl().getParameter(Constants.METHODS_KEY);
                 if (parameter != null && parameter.length() > 0) {
+                    //拆分方法参数，确定到每一个方法
                     String[] methods = Constants.COMMA_SPLIT_PATTERN.split(parameter);
-                    if (methods != null && methods.length > 0) {
-                        for (String method : methods) {
-                            if (method != null && method.length() > 0
-                                    && !Constants.ANY_VALUE.equals(method)) {
-                                List<Invoker<T>> methodInvokers = newMethodInvokerMap.get(method);
-                                if (methodInvokers == null) {
-                                    methodInvokers = new ArrayList<Invoker<T>>();
-                                    newMethodInvokerMap.put(method, methodInvokers);
-                                }
-                                methodInvokers.add(invoker);
+                    for (String method : methods) {
+                        if (method != null && method.length() > 0 && !Constants.ANY_VALUE.equals(method)) {
+                            //对于非通配符而是具体的方法的处理，将将方法和invoker构建相应的映射。
+                            //当然方法名对应的是一个invoker列表这一点，有服务提供方的集群决定的。
+                            List<Invoker<T>> methodInvokers = newMethodInvokerMap.get(method);
+                            if (methodInvokers == null) {
+                                methodInvokers = new ArrayList<Invoker<T>>();
+                                newMethodInvokerMap.put(method, methodInvokers);
                             }
+                            methodInvokers.add(invoker);
                         }
                     }
                 }
                 invokersList.add(invoker);
             }
         }
+        //设置通配的invoker，通配自然对应了所有的invoker列表。
         newMethodInvokerMap.put(Constants.ANY_VALUE, invokersList);
         if (serviceMethods != null && serviceMethods.length > 0) {
+            //进行处理方法级别
             for (String method : serviceMethods) {
                 List<Invoker<T>> methodInvokers = newMethodInvokerMap.get(method);
                 if (methodInvokers == null || methodInvokers.size() == 0) {
