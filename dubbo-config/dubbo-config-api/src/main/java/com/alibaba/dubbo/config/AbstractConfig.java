@@ -279,8 +279,9 @@ public abstract class AbstractConfig implements Serializable {
     /**
      * 将config中一些信息形成键值对，加入入参parameters中<br/>
      * it equals to appendParameters(parameters, config, null)
+     *
      * @param parameters 参数集合
-     * @param config 配置类实例
+     * @param config     配置类实例
      * @see #appendAttributes(Map, Object, String)
      */
     protected static void appendParameters(Map<String, String> parameters, Object config) {
@@ -332,16 +333,16 @@ public abstract class AbstractConfig implements Serializable {
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
-                    //is or get
-                    int i = name.startsWith("get") ? 3 : 2;
-                    //方法名变成xxx.xxx.xxx
-                    String prop = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
-                    String key;
+                    String key = null;
                     //有parameter注解，key直接使用注解配置的
-                    if (parameter != null && parameter.key() != null && parameter.key().length() > 0) {
-                        key = parameter.key();
-                    } else {
-                        key = prop;
+                    if (parameter != null){
+                        key = parameter.key().trim();
+                    }
+                    if (key == null || key.length() == 0){
+                        //is or get
+                        //方法名变成xxx.xxx.xxx
+                        int i = name.startsWith("get") ? 3 : 2;
+                        key = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
                     }
                     //反射获得get返回值
                     Object value = method.invoke(config, new Object[0]);
@@ -438,10 +439,8 @@ public abstract class AbstractConfig implements Serializable {
                     Parameter parameter = method.getAnnotation(Parameter.class);
                     if (parameter == null || !parameter.attribute())
                         continue;
-                    String key;
-                    if (parameter != null && parameter.key() != null && parameter.key().length() > 0) {
-                        key = parameter.key();
-                    } else {
+                    String key = parameter.key().trim();
+                    if (key.length() == 0) {
                         int i = name.startsWith("get") ? 3 : 2;
                         key = name.substring(i, i + 1).toLowerCase() + name.substring(i + 1);
                     }
