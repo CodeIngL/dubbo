@@ -16,8 +16,17 @@
 package com.alibaba.dubbo.config;
 
 /**
- * ConsumerConfig(消费方的默认的模本配置)
- * 通过配置该类，配置通用的属性对应ReferenceConfig来说
+ * ConsumerConfig(消费方的默认的模板配置)
+ * <p>
+ * 在具体消费应用的ReferenceConfig没有配置相关属性时，总会尝试使用该模板作为配置。<br/>
+ * 具体表现为下面几个方面:
+ * <ul>
+ * <li>消费方引用具体的ReferenceConfig，没用配置相关嵌套的配置类，尝试使用该模板类的持有嵌套配置类，来实现默认的配置</li><br/>
+ * <li>消费方引用构建具体的url参数集合时，该模板配置类，相关信息写入参数集合，前缀为default，作为默认值</li><br/>
+ * <li>一个特别的属性:消费方的check没有配置的时候，使用该模板配置类的check属性作为默认值</li><br/>
+ * <li>一个特别的属性:消费方的generic没有配置的时候，使用该模板配置类的generic属性作为默认值</li><br/>
+ * </ul>
+ * </p>
  *
  * @author william.liangf
  * @export

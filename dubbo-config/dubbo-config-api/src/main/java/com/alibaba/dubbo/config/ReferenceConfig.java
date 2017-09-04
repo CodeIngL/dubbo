@@ -96,7 +96,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // 方法配置类集合，接口方法对应的相关配置
     private List<MethodConfig> methods;
 
-    // 缺省配置
+    // 缺省配置(ReferenceConfig对应的模板配置类)
     private ConsumerConfig consumer;
 
     // 协议
@@ -204,13 +204,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
 
-        // 获取消费配置类全局配置(consumer代表的配置类是可选的)
+        // 获取模板配置类全局配置(consumer代表的各类ReferenceConfig的模板)
         checkConsumer();
 
         // 尝试对引用(本身)配置类完成基本属性的填充
         appendProperties(this);
 
-        // 泛接口不存在尝试使用消费配置类来获得
+        // 泛接口不存在尝试使用模板配置类来获得
         if (generic == null) {
             if (consumer != null) {
                 setGeneric(consumer.getGeneric());
@@ -273,8 +273,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
+        checkApplication();
 
-        //完成嵌套配置的转移和默认值的设置
+        //对应ReferenceConfig不存在相关配置类，尝试使用模板配置类完成默认值的设定
         if (consumer != null) {
             if (application == null) {
                 application = consumer.getApplication();
@@ -305,7 +306,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 monitor = application.getMonitor();
             }
         }
-        checkApplication();
         checkStubAndMock(interfaceClass);
 
         //构建本接口对应元信息url的剩下参数信息map。
@@ -507,6 +507,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (c == null && consumer != null) {
             c = consumer.isCheck();
         }
+        //默认是true，即会检测invoker的可用性
         if (c == null) {
             c = true; // default true
         }
