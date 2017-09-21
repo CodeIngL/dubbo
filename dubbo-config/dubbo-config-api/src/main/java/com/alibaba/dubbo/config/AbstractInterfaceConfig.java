@@ -210,17 +210,13 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
         for (RegistryConfig config : registries) {
-            //获得地址
-            String address = config.getAddress();
-            if (address == null || address.length() == 0) {
-                //本机
-                address = Constants.ANYHOST_VALUE;
-            }
             //获得系统配置地址
-            String sysaddress = System.getProperty("dubbo.registry.address");
-            if (sysaddress != null && sysaddress.length() > 0) {
-                //系统配置的地址
-                address = sysaddress;
+            String address = System.getProperty("dubbo.registry.address");
+            if (StringUtils.isEmpty(address)){
+                address = config.getAddress();
+                if (StringUtils.isEmpty(address)) {
+                    address = Constants.ANYHOST_VALUE;//本机
+                }
             }
             if (RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                 continue;
