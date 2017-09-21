@@ -27,7 +27,7 @@ import com.alibaba.dubbo.remoting.exchange.Exchanger;
 import com.alibaba.dubbo.remoting.telnet.TelnetHandler;
 
 /**
- * ProviderConfig
+ * ProviderConfig:ServiceConfig的配置模板类，提供多个ServiceConfig的部分模板配置，for减少配置
  * 
  * @see com.alibaba.dubbo.config.ProtocolConfig
  * @see com.alibaba.dubbo.config.ServiceConfig

@@ -125,6 +125,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 该项排除
+     *
      * @return 是否已经导出
      * @see #appendProperties(AbstractConfig)
      */
@@ -135,6 +136,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 该项排除
+     *
      * @return 是否为导出
      * @see #appendProperties(AbstractConfig)
      */
@@ -196,120 +198,74 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         exported = true;
 
+        //设置基本的属性，通过遍历set方法实现，基本类型属性的设置
+        //多个配置区分的类为其id;
+        appendProperties(this);
         //检查接口名字，必填
-        if (interfaceName == null || interfaceName.length() == 0) {
-            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
-        }
-
+        checkInterfaceName();
+        //检查引用是否实现接口具体对象
+        checkRef();
+        //检查通用属性
+        checkGeneric();
+        //检验,设置属性
+        checkStubAndMock(interfaceClass);
+        //设置上下文路径
+        checkPath();
         //检查默认情况，设置基本数据
         checkProvider();
         //冗余相关属性，服务类属性和提供者一致，都是复杂类型
-        if (provider != null) {
-            if (application == null) {
-                application = provider.getApplication();
-            }
-            if (module == null) {
-                module = provider.getModule();
-            }
-            if (registries == null) {
-                registries = provider.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = provider.getMonitor();
-            }
-            if (protocols == null || protocols.size() == 0) {
-                protocols = provider.getProtocols();
-            }
-        }
-        if (module != null) {
-            if (registries == null) {
-                registries = module.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = module.getMonitor();
-            }
-        }
-        if (application != null) {
-            if (registries == null) {
-                registries = application.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = application.getMonitor();
-            }
-        }
-        //设置接口类型
-        if (ref instanceof GenericService) {
-            //导出服务是通用接口
-            interfaceClass = GenericService.class;
-            if (StringUtils.isEmpty(generic)) {
-                generic = Boolean.TRUE.toString();
-            }
-        } else {
-            try {
-                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
-                        .getContextClassLoader());
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-
-            //检查接口和方法，接口类，是否都包含相关method的方法
-            //接口，必须全部包含methods代表的方法
-            checkInterfaceAndMethods(interfaceClass, methods);
-
-            //检查引用是否实现接口具体对象
-            checkRef();
-
-            //设置不是通用接口属性标志
-            generic = Boolean.FALSE.toString();
-        }
-        //local equal to stub。官方建议使用stub
-        //检验local
-        if (local != null) {
-            if ("true".equals(local)) {
-                //本地服务名
-                local = interfaceName + "Local";
-            }
-            Class<?> localClass;
-            try {
-                localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-            if (!interfaceClass.isAssignableFrom(localClass)) {
-                throw new IllegalStateException("The local implemention class " + localClass.getName() + " not implement interface " + interfaceName);
-            }
-        }
-        //检验stub
-        if (stub != null) {
-            if ("true".equals(stub)) {
-                stub = interfaceName + "Stub";
-            }
-            Class<?> stubClass;
-            try {
-                stubClass = ClassHelper.forNameWithThreadContextClassLoader(stub);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-            if (!interfaceClass.isAssignableFrom(stubClass)) {
-                throw new IllegalStateException("The stub implemention class " + stubClass.getName() + " not implement interface " + interfaceName);
-            }
-        }
+        checkModule();
         //检验,设置属性
         checkApplication();
-        //检验,设置属性
-        checkRegistry();
+        //检查接口和方法，接口类，是否都包含相关method的方法
+        checkInterfaceAndMethods(interfaceClass, methods);
         //检验,设置属性
         checkProtocol();
-        //设置属性
-        appendProperties(this);
-        //检验,设置属性
-        checkStubAndMock(interfaceClass);
+        //导出url
+        doExportUrls();
+    }
+
+    private void checkPath() {
         //设置path，url的应用路径部分
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }
-        //导出url
-        doExportUrls();
+    }
+
+    /**
+     * 设置通用接口属性标志
+     */
+    private void checkGeneric() {
+        if (ref instanceof GenericService) {
+            generic = Boolean.TRUE.toString();
+            return;
+        }
+        generic = Boolean.FALSE.toString();
+    }
+
+    private void checkInterfaceName() {
+        if (interfaceName == null || interfaceName.length() == 0) {
+            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
+        }
+    }
+
+    protected void checkInterfaceAndMethods(Class<?> interfaceClass, List<MethodConfig> methods) {
+        if (ref instanceof GenericService) {
+            return;
+        }
+        super.checkInterfaceAndMethods(interfaceClass, methods);
+    }
+
+    private void checkModule() {
+        if (module == null) {
+            return;
+        }
+        if (registries == null) {
+            registries = module.getRegistries();
+        }
+        if (monitor == null) {
+            monitor = module.getMonitor();
+        }
     }
 
     /**
@@ -317,14 +273,24 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * Ref必须是interfaceClass的实现类
      */
     private void checkRef() {
-        // 检查引用不为空，并且引用必需实现接口
-        if (ref == null) {
-            throw new IllegalStateException("ref not allow null!");
-        }
-        if (!interfaceClass.isInstance(ref)) {
-            throw new IllegalStateException("The class "
-                    + ref.getClass().getName() + " unimplemented interface "
-                    + interfaceClass + "!");
+        try {
+            // 检查引用不为空，并且引用必需实现接口
+            if (ref == null) {
+                throw new IllegalStateException("ref not allow null!");
+            }
+            // 如果ref代表通用接口,那么interfaceClass属性就为GenericService.class
+            if (ref instanceof GenericService) {
+                interfaceClass = GenericService.class;
+                return;
+            }
+            // 使用interface的名字来获得interfaceClass
+            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
+            if (interfaceClass.isInstance(ref)){
+                return;
+            }
+            throw new IllegalStateException("The class " + ref.getClass().getName() + " unimplemented interface " + interfaceClass + "!");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
@@ -662,6 +628,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 设置provider
+     *
      * @see #appendProperties(AbstractConfig)
      */
     private void checkProvider() {
@@ -671,10 +638,28 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         //设置服务提供者的相关属性
         appendProperties(provider);
+
+        //嵌套配置类不存在尝试使用模板配置类
+        if (module == null) {
+            module = provider.getModule();
+        }
+        if (application == null) {
+            application = provider.getApplication();
+        }
+        if (registries == null) {
+            registries = provider.getRegistries();
+        }
+        if (monitor == null) {
+            monitor = provider.getMonitor();
+        }
+        if (protocols == null || protocols.size() == 0) {
+            protocols = provider.getProtocols();
+        }
     }
 
     /**
      * 校验设置protocols
+     *
      * @see #appendProperties(AbstractConfig)
      */
     private void checkProtocol() {
@@ -746,6 +731,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     /**
      * 该项排除
+     *
      * @return 上下文路径
      * @see #appendProperties(AbstractConfig)
      */

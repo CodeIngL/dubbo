@@ -147,26 +147,32 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // 兼容旧版本
         if (application == null) {
             String applicationName = ConfigUtils.getProperty("dubbo.application.name");
-            if (applicationName != null && applicationName.length() > 0) {
+            if (StringUtils.isNotEmpty(applicationName)) {
                 application = new ApplicationConfig();
             }
         }
         if (application == null) {
-            throw new IllegalStateException(
-                    "No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
+            throw new IllegalStateException("No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
         }
         appendProperties(application);
 
+        if (registries == null) {
+            registries = application.getRegistries();
+        }
+        if (monitor == null) {
+            monitor = application.getMonitor();
+        }
         //属性变化下
         String wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_KEY);
-        if (wait != null && wait.trim().length() > 0) {
+        if (StringUtils.isNotEmpty(wait)) {
             System.setProperty(Constants.SHUTDOWN_WAIT_KEY, wait.trim());
-        } else {
-            wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);
-            if (wait != null && wait.trim().length() > 0) {
-                System.setProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY, wait.trim());
-            }
+            return;
         }
+        wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);
+        if (StringUtils.isEmpty(wait)) {
+            return;
+        }
+        System.setProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY, wait.trim());
     }
 
     /**
@@ -322,7 +328,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             //方法配置类的名字(必须配置)
             //接口引用的方法必须包含method中配置的方法
             for (MethodConfig methodBean : methods) {
-
                 if (!interfaceMethodNames.contains(methodBean.getName())) {
                     throw new IllegalStateException("<dubbo:method> name attribute is required and in interface's method name! Please check: <dubbo:service interface=\"" + interfaceClass.getName()
                             + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>; you method's name is: " + methodBean.getName());
