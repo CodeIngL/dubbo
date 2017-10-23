@@ -207,34 +207,38 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param urls 相关的已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
      */
     public synchronized void notify(List<URL> urls) {
-        //invoker的urls
+        // invoker的urls
         List<URL> invokerUrls = new ArrayList<URL>();
-        //路由的urls
+        // 路由的urls
         List<URL> routerUrls = new ArrayList<URL>();
-        //配置的urls
+        // 配置的urls
         List<URL> configuratorUrls = new ArrayList<URL>();
+        // 遍历
         for (URL url : urls) {
-            //获得url中协议
+            // 获得url中的协议属性
             String protocol = url.getProtocol();
-            //获得url中目录默认为（providers）
+            // 获得url中的目录属性（默认为providers)
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
+            // 分类管理
             if (Constants.ROUTERS_CATEGORY.equals(category) || Constants.ROUTE_PROTOCOL.equals(protocol)) {
-                //目录分类是router或者协议是routers加入路由列表中
+                // 目录分类是router或者协议是routers加入路由列表中
                 routerUrls.add(url);
             } else if (Constants.CONFIGURATORS_CATEGORY.equals(category) || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
-                //目录分类是configurators，或者协议是override加入配置列表中
+                // 目录分类是configurators或者协议是override加入配置列表中
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
-                //目录分类是providers加入调用者列表中
+                // 目录分类是providers加入调用者列表中
                 invokerUrls.add(url);
             } else {
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
             }
         }
+
         // configurators 的处理
         if (configuratorUrls != null && configuratorUrls.size() > 0) {
             this.configurators = toConfigurators(configuratorUrls);
         }
+
         // routers 的处理
         if (routerUrls != null && routerUrls.size() > 0) {
             List<Router> routers = toRouters(routerUrls);
@@ -392,25 +396,23 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private List<Router> toRouters(List<URL> urls) {
         List<Router> routers = new ArrayList<Router>();
-        if (urls == null || urls.size() < 1) {
+        if (urls == null || urls.size() == 0) {
             return routers;
         }
-        if (urls != null && urls.size() > 0) {
-            for (URL url : urls) {
-                if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {
-                    continue;
-                }
-                String routerType = url.getParameter(Constants.ROUTER_KEY);
-                if (routerType != null && routerType.length() > 0) {
-                    url = url.setProtocol(routerType);
-                }
-                try {
-                    Router router = routerFactory.getRouter(url);
-                    if (!routers.contains(router))
-                        routers.add(router);
-                } catch (Throwable t) {
-                    logger.error("convert router url to router error, url: " + url, t);
-                }
+        for (URL url : urls) {
+            if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {
+                continue;
+            }
+            String routerType = url.getParameter(Constants.ROUTER_KEY);
+            if (routerType != null && routerType.length() > 0) {
+                url = url.setProtocol(routerType);
+            }
+            try {
+                Router router = routerFactory.getRouter(url);
+                if (!routers.contains(router))
+                    routers.add(router);
+            } catch (Throwable t) {
+                logger.error("convert router url to router error, url: " + url, t);
             }
         }
         return routers;
@@ -694,7 +696,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
 
         List<Invoker<T>> invokers = null;
-        //缓存
+        //使用缓存中进行调用，一个方法可能对应一个invoker列表，局部引用，防止缓存突然变化
         Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
             //从调用对象中获取需要调用分方法名
@@ -715,7 +717,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 invokers = localMethodInvokerMap.get(Constants.ANY_VALUE);
             }
             if (invokers == null) {
-                //尝试使用默认策略获取
+                //尝试使用默认策略获取，这tm的是什么策略
                 Iterator<List<Invoker<T>>> iterator = localMethodInvokerMap.values().iterator();
                 if (iterator.hasNext()) {
                     invokers = iterator.next();

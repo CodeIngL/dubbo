@@ -21,6 +21,8 @@ import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.cluster.Directory;
 
 /**
+ * 当一个接口引用有多个组的时候，采用该集群策略进行调用
+ * @see MergeableClusterInvoker
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  */
 public class MergeableCluster implements Cluster {

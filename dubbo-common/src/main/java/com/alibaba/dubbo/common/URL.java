@@ -360,7 +360,9 @@ public final class URL implements Serializable {
 
     /**
      * 名字具有疑惑性。
-     * 获得整个集群地址url列表
+     * 获得整个集群地址url列表，
+     * 获得本身的地址，获得备份的地址
+     * 备份的地址仅仅至多替换了host和port，如果有port的话
      *
      * @return 集群地址的url列表
      */

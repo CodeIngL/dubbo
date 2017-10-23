@@ -292,7 +292,7 @@ public class DubboProtocol extends AbstractProtocol {
     /**
      * 启动网络服务
      * <ul>
-     * <li>从url元信息中获取地址</li><br/>
+     * <li>从url元信息中获取地址：端口存在的情况下是host+port，否则是host</li><br/>
      * <li>尝试从元信息中获得键值对，键为“isserver”，没有默认为true</li><br/>
      * <li>尝试从缓存中获得服务对象，无则新建,{@link #createServer(URL)}</li><br/>
      * </ul>
@@ -311,8 +311,7 @@ public class DubboProtocol extends AbstractProtocol {
             if (server == null) {
                 serverMap.put(key, createServer(url));
             } else {
-                //server支持reset,配合override功能使用
-                server.reset(url);
+                server.reset(url);//server支持reset,配合override功能使用
             }
         }
     }

@@ -21,7 +21,8 @@ import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.cluster.Directory;
 
 /**
- * 失败转移，当出现失败，重试其它服务器，通常用于读操作，但重试会带来更长延迟。 
+ * 失败转移，当出现失败，重试其它服务器，通常用于读操作，但重试会带来更长延迟。
+ * 默认的聚集调用策略
  * 
  * <a href="http://en.wikipedia.org/wiki/Failover">Failover</a>
  * (失败可重试的集群方式)

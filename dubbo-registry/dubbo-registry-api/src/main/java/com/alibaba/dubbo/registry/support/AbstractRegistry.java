@@ -133,6 +133,7 @@ public abstract class AbstractRegistry implements Registry {
         // 加载文件配置
         loadProperties();
 
+        // 新创建的注册中心，注册了也要通知其他方，以免遗漏
         // 通知整个集群地址
         notify(url.getBackupUrls());
     }
@@ -310,7 +311,8 @@ public abstract class AbstractRegistry implements Registry {
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
-            if (key != null && key.length() > 0 && key.equals(url.getServiceKey())
+            if (key != null && key.length() > 0
+                    && key.equals(url.getServiceKey())
                     && (Character.isLetter(key.charAt(0)) || key.charAt(0) == '_')
                     && value != null && value.length() > 0) {
                 String[] arr = value.trim().split(URL_SPLIT);
@@ -405,7 +407,7 @@ public abstract class AbstractRegistry implements Registry {
         if (logger.isInfoEnabled()) {
             logger.info("Subscribe: " + url);
         }
-        //缓存操作
+        //缓存操作。对于目录服务持有的相关的订阅集合，其一个受订阅的url会有多个监听者进行对我们的监听
         Set<NotifyListener> listeners = subscribed.get(url);
         if (listeners == null) {
             subscribed.putIfAbsent(url, new ConcurrentHashSet<NotifyListener>());
@@ -488,12 +490,14 @@ public abstract class AbstractRegistry implements Registry {
         if (urls == null || urls.isEmpty()) return;
 
         //遍历所有的监听者，对已经受订阅的相关url进行通知。
+        //通知订阅了相关的url（本集群的url)进行处理
         for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
 
             URL url = entry.getKey();
 
             //对于不匹配的直接忽略掉，只需要和集群地址的第一个也就是主地址进行匹配就可以了
             //这里是注册事件，对于url列表来说，其path为RegistryService，其interface为RegistryService
+            //因为urls集群除了host以及port可能存在的不同之外，其他的信息是全部相同的。
             if (!UrlUtils.isMatch(url, urls.get(0))) {
                 continue;
             }
@@ -547,11 +551,11 @@ public abstract class AbstractRegistry implements Registry {
         //队候选的url列表进行分组匹配，分组依据u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY)一致
         //key为目录的信息，value为对应目录的元信息列表集合
         //不匹配的忽略的掉
+        //对传递进来的参数urls列表进行简单分组，由于是方法调用，面向的场景很多，也就无法保证该urls列表和url就是适配过的，因此这里还要进行一次适配。
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
-            //进行精确匹配每一个元素
+            //对元素进行适配，不匹配的就不处理了，在匹配的情况下，根据目录进行不同分类。
             if (UrlUtils.isMatch(url, u)) {
-                //对url进行目录分类
                 String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
                 List<URL> categoryList = result.get(category);
                 if (categoryList == null) {

@@ -33,20 +33,42 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
     //持有的invoker列表
     private final List<Invoker<T>> invokers;
 
+    /**
+     *
+     * @param invokers
+     */
     public StaticDirectory(List<Invoker<T>> invokers) {
         this(null, invokers, null);
     }
 
+    /**
+     *
+     * @param invokers
+     * @param routers
+     */
     public StaticDirectory(List<Invoker<T>> invokers, List<Router> routers) {
         this(null, invokers, routers);
     }
 
+    /**
+     *
+     * @param url
+     * @param invokers
+     */
     public StaticDirectory(URL url, List<Invoker<T>> invokers) {
         this(url, invokers, null);
     }
 
+    /**
+     *
+     * @param url 注册中心的url(带上集群调用策略)
+     * @param invokers 多个invoker
+     * @param routers 路由集合
+     */
     public StaticDirectory(URL url, List<Invoker<T>> invokers, List<Router> routers) {
+        //自带注册中心的url为空的情况下使用invoker中的第一个url作为url
         super(url == null && invokers != null && invokers.size() > 0 ? invokers.get(0).getUrl() : url, routers);
+        //invoker非空抛错
         if (invokers == null || invokers.size() == 0)
             throw new IllegalArgumentException("invokers == null");
         this.invokers = invokers;

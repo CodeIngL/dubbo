@@ -302,7 +302,7 @@ public class RegistryProtocol implements Protocol {
      * 消费方注册中心引用实现
      * <p>
      * <ul>
-     * <li>第一步进行协议的转换说明，注册中心url的protocol（协议）一定是registry，真正的注册协议在其参数属性中，键为registry</li><br/>
+     * <li>第一步进行协议的转换说明，注册中心url的protocol（协议）一定是registry，真正的注册协议在其参数属性中，键为registry(消费端本身的信息在键为refer键中)</li><br/>
      * <li>第二步进行协议的转换过程，注册中心url重新设置其protocol为参数映射中registry对应的值，移除参数中registry的键值对</li></li><br/>
      * <li>通过转换过的注册中心协议获得相应的注册中心</li></li><br/>
      * <li>对应消费接口引用为RegistryService关于注册中心的直接返回，没有必要继续操作</li></li><br/>
@@ -319,7 +319,7 @@ public class RegistryProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-        //协议转换回来，当protcol为registry只是临时代表这个需要注册到注册中心上，但是真正的协议类型还是元信息中的registry的值
+        //协议转换回来，当protcol为registry只是临时代表这个需要注册到注册中心上，但是真正的协议类型还是元信息中的registry的值（默认的注册中心是dubbo注册中心）
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
         //获得注册中心，特定注册中心由url的protocol(协议）决定。ex:zookeeper
         Registry registry = registryFactory.getRegistry(url);

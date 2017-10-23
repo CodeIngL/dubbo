@@ -47,7 +47,7 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
 
     private volatile boolean destroyed = false;
 
-    //目录服务所需要进行消费的url
+    //目录服务所需要进行消费的url，其对应注册中心相关的需要被订阅的url（比如相应的目录下)
     private volatile URL consumerUrl;
 
     //路由列表

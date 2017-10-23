@@ -46,6 +46,8 @@ import com.alibaba.dubbo.rpc.cluster.Merger;
 import com.alibaba.dubbo.rpc.cluster.merger.MergerFactory;
 
 /**
+ * merge集群调用策略下的invoker实际执行者
+ * @see MergeableCluster
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  */
 @SuppressWarnings("unchecked")

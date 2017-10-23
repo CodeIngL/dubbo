@@ -270,14 +270,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
         checkApplication();
         //对应ReferenceConfig不存在相关配置类，尝试使用模板配置类完成默认值的设定
-        if (module != null) {
-            if (registries == null) {
-                registries = module.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = module.getMonitor();
-            }
-        }
+        checkModule();
         if (application != null) {
             if (registries == null) {
                 registries = application.getRegistries();
@@ -339,6 +332,17 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         StaticContext.getSystemContext().putAll(attributes);
         //创建代理
         ref = createProxy(map);
+    }
+
+    private void checkModule() {
+        if (module != null) {
+            if (registries == null) {
+                registries = module.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = module.getMonitor();
+            }
+        }
     }
 
     /**

@@ -247,11 +247,12 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         //检查合法性
         checkWhetherDestroyed();
 
+        //使用目录服务来从调用对象中获取相关的调用者列表
+        List<Invoker<T>> invokers = list(invocation);
+
         //负载均衡策略，默认的策略是随机策略
         LoadBalance loadbalance;
 
-        //使用目录服务来从调用对象中获取相关的调用者列表
-        List<Invoker<T>> invokers = list(invocation);
         //选择合适的负载均衡策略
         if (invokers != null && invokers.size() > 0) {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(0).getUrl()
@@ -269,7 +270,6 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * 检查可用性，简单检查标志
      */
     protected void checkWhetherDestroyed() {
-
         if (destroyed) {
             throw new RpcException("Rpc cluster invoker for " + getInterface() + " on consumer " + NetUtils.getLocalHost()
                     + " use dubbo version " + Version.getVersion()
