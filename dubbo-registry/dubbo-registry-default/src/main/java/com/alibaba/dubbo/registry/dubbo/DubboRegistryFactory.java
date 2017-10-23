@@ -119,6 +119,7 @@ public class DubboRegistryFactory extends AbstractRegistryFactory {
         return url.setPath(RegistryService.class.getName())
                 .removeParameter(Constants.EXPORT_KEY).removeParameter(Constants.REFER_KEY)
                 .addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
+                //
                 .addParameter(Constants.CLUSTER_STICKY_KEY, "true")
                 .addParameter(Constants.LAZY_CONNECT_KEY, "true")
                 .addParameter(Constants.RECONNECT_KEY, "false")
