@@ -95,11 +95,13 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
      * @return 注册中心实例
      */
     public Registry getRegistry(URL url) {
-        //写入path，增加键值对，移除会变化的部分，主要是export键和refer键（只剩下本省的注册中心的信息了）
+        // 构建属于注册中心url信息的utl，写入path，增加键值对，移除会变化的部分。
+        // 主要是export键和refer键（只剩下注册中心的信息了）
         url = url.setPath(RegistryService.class.getName())
                 .addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
                 .removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
         //获得注册中心和该注册中心url对应的key值:protocol://username:password@ip:port/group/com.alibaba.dubbo.registry:version
+        //构建注册中心相关身份key，不需要url的相关参数，能区分不同的注册中心就可以了
         String key = url.toServiceString();
         //锁定注册中心获取过程，保证注册中心单一实例
         //尝试从缓存中取，没有则新建

@@ -207,27 +207,23 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param urls 相关的已注册信息列表，总不为空，含义同{@link com.alibaba.dubbo.registry.RegistryService#lookup(URL)}的返回值。
      */
     public synchronized void notify(List<URL> urls) {
-        // invoker的urls
         List<URL> invokerUrls = new ArrayList<URL>();
-        // 路由的urls
         List<URL> routerUrls = new ArrayList<URL>();
-        // 配置的urls
         List<URL> configuratorUrls = new ArrayList<URL>();
-        // 遍历
+        // 遍历分类，分类管理
+        // 目录分类是router || 协议是routers加入路由列表（routerUrls）中
+        // 目录分类是configurators || 协议是override加入配置列表（configuratorUrls）中
+        // 目录分类是providers加入调用者列表（invokerUrls）中
         for (URL url : urls) {
             // 获得url中的协议属性
             String protocol = url.getProtocol();
             // 获得url中的目录属性（默认为providers)
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
-            // 分类管理
             if (Constants.ROUTERS_CATEGORY.equals(category) || Constants.ROUTE_PROTOCOL.equals(protocol)) {
-                // 目录分类是router或者协议是routers加入路由列表中
                 routerUrls.add(url);
             } else if (Constants.CONFIGURATORS_CATEGORY.equals(category) || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
-                // 目录分类是configurators或者协议是override加入配置列表中
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
-                // 目录分类是providers加入调用者列表中
                 invokerUrls.add(url);
             } else {
                 logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
@@ -379,6 +375,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             override.remove(Constants.ANYHOST_KEY);
             if (override.size() == 0) {
                 //对于遇见空参数，清空全部，并继续？？why is not break;
+                //上面的原因，继续是合理的，因为有其他选项
                 configurators.clear();
                 continue;
             }
@@ -419,7 +416,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     /**
-     * 对注册在provider不同的服务，实现对转换为消费方的invoker，服务提供方方可能是集群，那么多个invoker是对的
+     * 对注册在provider不同的服务，实现对转换为消费方的invoker，
+     * 服务提供方方可能是集群，那么多个invoker是对的，
+     * 多个服务方对节点同时写入，也会形成多个invoker。
      * 将urls转成invokers,如果url已经被refer过，不再重新引用。
      *
      * @param urls 元信息列表(服务方元信息)，一个或者多个，多个的情况是多个服务方注册同一个服务
@@ -428,7 +427,6 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
         //新的缓存结构
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<String, Invoker<T>>();
-        //为空直接返回
         if (urls == null || urls.size() == 0) {
             return newUrlInvokerMap;
         }
@@ -436,8 +434,21 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         //获取消费方配置的协议,
         String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);
         for (URL providerUrl : urls) {
+
+            //empty的产生是由于目录下木有相关的节点而生成的一个占位，因此这里要忽略掉,实际上一般不会发生。忽略配置为empty的元信息
+            if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
+                continue;
+            }
+
+            //验证下是否支持配置,不支持记录错误日记，忽略掉
+            if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
+                logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost()
+                        + ", supported protocol: " + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
+                continue;
+            }
+
+            //如果reference端配置了protocol（可以是多个），则只选择匹配的protocol(多个服务方会有多个urls，选择合适且正确)
             if (queryProtocols != null && queryProtocols.length() > 0) {
-                //如果reference端配置了protocol，则只选择匹配的protocol(服务方集群的方式下会有多个)
                 boolean accept = false;
                 String[] acceptProtocols = queryProtocols.split(",");
                 for (String acceptProtocol : acceptProtocols) {
@@ -451,27 +462,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 }
             }
 
-            //empty的产生是由于目录下木有相关的节点而生成的一个占位，因此这里要忽略掉
-            if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {
-                //忽略配置为empty的元信息
-                continue;
-            }
-
-            //验证下是否支持配置,不支持记录错误日记，忽略掉
-            if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {
-                logger.error(new IllegalStateException("Unsupported protocol " + providerUrl.getProtocol() + " in notified url: " + providerUrl + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost()
-                        + ", supported protocol: " + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));
-                continue;
-            }
-
             //合并参数
             URL url = mergeUrl(providerUrl);
-
             String key = url.toFullString(); // URL参数是排序的
             if (keys.contains(key)) { // 重复URL
                 continue;
             }
             keys.add(key);
+
             // 缓存key为没有合并消费端参数的URL，不管消费端如何合并参数，如果服务端URL发生变化，则重新refer
             // 尝试先从缓存中获取，缓存中已经有的话，不需要重新去引用远程的服务
             Map<String, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
@@ -517,11 +515,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private URL mergeUrl(URL providerUrl) {
 
-        //合并本地消费方接口的相关参数，以及远程注册中心上的相关参数
-        //大部分使用消费方的除了基本的信息
-        providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // 合并消费端参数
+        //本地消费端配置的参数，和远程参数进行合并
+        providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap);
 
-        //使用configurators对上面的url再次进行相关的操作
+        //使用configurators再次进行合并
         List<Configurator> localConfigurators = this.configurators; // local reference
         if (localConfigurators != null && localConfigurators.size() > 0) {
             for (Configurator configurator : localConfigurators) {

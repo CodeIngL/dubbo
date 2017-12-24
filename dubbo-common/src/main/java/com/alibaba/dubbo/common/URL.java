@@ -1193,6 +1193,7 @@ public final class URL implements Serializable {
             return this;
         }
 
+        //有一个键值对不同就是不一样。
         boolean hasAndEqual = true;
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
             String value = getParameters().get(entry.getKey());
@@ -1209,6 +1210,12 @@ public final class URL implements Serializable {
         return new URL(protocol, username, password, host, port, path, map);
     }
 
+    /**
+     * 参数合并
+     * 有则不更新，无则更新
+     * @param parameters
+     * @return
+     */
     public URL addParametersIfAbsent(Map<String, String> parameters) {
         if (parameters == null || parameters.size() == 0) {
             return this;

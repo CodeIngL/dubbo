@@ -32,15 +32,14 @@ public class ClusterUtils {
      * 合并参数工具类<br/>
      * 线程相关的不使用提供者的信息<br/>
      *
-     * @param remoteUrl 主元信息url
-     * @param localMap 待合并的参数映射
+     * @param remoteUrl 远程url
+     * @param localMap 待合并的参数信息
      * @return 合并后的元信息
      */
     public static URL mergeUrl(URL remoteUrl, Map<String, String> localMap) {
         Map<String, String> map = new HashMap<String, String>();
+
         Map<String, String> remoteMap = remoteUrl.getParameters();
-        
-        
         if (remoteMap != null && remoteMap.size() > 0) {
             map.putAll(remoteMap);
             //线程池配置不使用提供者的
@@ -63,26 +62,28 @@ public class ClusterUtils {
             map.remove(Constants.DEFAULT_KEY_PREFIX + Constants.ALIVE_KEY);//default.alive
         }
 
+        //本地覆盖远程的，如果键一样的话
         if (localMap != null && localMap.size() > 0) {
             map.putAll(localMap);
         }
+        //相关的键值对重新使用远端的数据
         if (remoteMap != null && remoteMap.size() > 0) { 
-            // dubbo使用提供者的
+            // dubbo这个键使用远端提供者的
             String dubbo = remoteMap.get(Constants.DUBBO_VERSION_KEY);
             if (dubbo != null && dubbo.length() > 0) {
                 map.put(Constants.DUBBO_VERSION_KEY, dubbo);
             }
-            // 版本号使用提供者的
+            // version这个键版使用远端提供者的
             String version = remoteMap.get(Constants.VERSION_KEY);
             if (version != null && version.length() > 0) {
                 map.put(Constants.VERSION_KEY, version);
             }
-            // 分组信息使用提供者的
+            // group这个键使用远端提供者的
             String group = remoteMap.get(Constants.GROUP_KEY);
             if (group != null && group.length() > 0) {
                 map.put(Constants.GROUP_KEY, group);
             }
-            // 方法名使用提供者的
+            // methods这个键使用远端提供者的
             String methods = remoteMap.get(Constants.METHODS_KEY);
             if (methods != null && methods.length() > 0) {
                 map.put(Constants.METHODS_KEY, methods);

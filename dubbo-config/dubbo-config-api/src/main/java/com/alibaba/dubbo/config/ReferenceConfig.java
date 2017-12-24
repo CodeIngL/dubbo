@@ -155,7 +155,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (destroyed) {
             throw new IllegalStateException("Already destroyed!");
         }
-        //ref==null是很粗略的检查是否已经存在引用了，因为init是一个重量级操作，时间跨度比较大。另一个属性initialized来避免竞争
+        // ref==null是很粗略的检查是否已经存在引用了。
+        // init是一个重量级操作，时间跨度比较大。
+        // 另一个属性initialized来避免竞争
         if (ref == null) {
             init();
         }

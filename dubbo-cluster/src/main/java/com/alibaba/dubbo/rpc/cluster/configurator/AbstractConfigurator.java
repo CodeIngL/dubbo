@@ -25,6 +25,8 @@ import com.alibaba.dubbo.rpc.cluster.Configurator;
 
 /**
  * AbstractOverrideConfigurator
+ * 空总是小一些
+ * 比较方式host的值的str化比较
  *
  * @author william.liangf
  */

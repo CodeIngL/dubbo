@@ -180,73 +180,68 @@ public abstract class AbstractConfig implements Serializable {
                     //方法名转换.
                     //ex: setStudentName will transform to "student-name"
                     String suffix = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
-                    String value = null;
+
+                    String idPn = prefix + config.getId() + "." + suffix;
+                    String pn = prefix + suffix;
+                    boolean hasId = !idPn.equals(pn);
 
                     //config对象的有Id属性
                     //ex:id equal to "aaaaa"
-                    if (config.getId() != null && config.getId().length() > 0) {
-                        //ex:dubbo.xxx.aaaaa.student-name
-                        String pn = prefix + config.getId() + "." + suffix;
-                        //尝试从操作系统中获得
-                        value = System.getProperty(pn);
-                        if (!StringUtils.isBlank(value)) {
-                            logger.info("Use System Property " + pn + " to config dubbo");
-                        }
-                    }
                     //config对象的没有Id有效值or系统没有相关值
-                    if (value == null || value.length() == 0) {
-                        //使用另一个key:
-                        //dubbo.xxx.student-name
-                        String pn = prefix + suffix;
-                        //尝试从系统获得
+                    //dubbo.xxx.student-name
+                    //尝试从系统获得
+                    String value = System.getProperty(idPn);
+                    if (StringUtils.isBlank(value) && hasId) {
                         value = System.getProperty(pn);
-                        if (!StringUtils.isBlank(value)) {
-                            logger.info("Use System Property " + pn + " to config dubbo");
-                        }
+                    }
+                    if (!StringUtils.isBlank(value)) {
+                        logger.info("Use System Property " + pn + " to config dubbo");
+                        method.invoke(config, new Object[]{convertPrimitive(method.getParameterTypes()[0], value)});
+                        return;
                     }
                     //上述的方式，在操作系统中均没有值配置
-                    if (value == null || value.length() == 0) {
-                        Method getter;
-                        //获得get或者is方法
+                    Method getter;
+                    //获得get或者is方法
+                    try {
+                        getter = config.getClass().getMethod("get" + name.substring(3), new Class<?>[0]);
+                    } catch (NoSuchMethodException e) {
                         try {
-                            getter = config.getClass().getMethod("get" + name.substring(3), new Class<?>[0]);
-                        } catch (NoSuchMethodException e) {
-                            try {
-                                getter = config.getClass().getMethod("is" + name.substring(3), new Class<?>[0]);
-                            } catch (NoSuchMethodException e2) {
-                                getter = null;
-                            }
-                        }
-                        //存在相关方法
-                        if (getter != null) {
-                            //放射调用方法，返回值为空需要处理，
-                            //不为空说明已经设置。忽略值的设置
-                            if (getter.invoke(config, new Object[0]) == null) {
-                                //获取值的key的表示和上面一致:
-                                if (config.getId() != null && config.getId().length() > 0) {
-                                    //从Config工具类中获得
-                                    //ex:dubbo.xxx.aaaaa.student-name
-                                    value = ConfigUtils.getProperty(prefix + config.getId() + "." + suffix);
-                                }
-                                if (value == null || value.length() == 0) {
-                                    //从Config工具类中获得
-                                    //ex:dubbo.xxx.student-name
-                                    value = ConfigUtils.getProperty(prefix + suffix);
-                                }
-                                if (value == null || value.length() == 0) {
-                                    //从本地缓存map中获取
-                                    String legacyKey = legacyProperties.get(prefix + suffix);
-                                    if (legacyKey != null && legacyKey.length() > 0) {
-                                        value = convertLegacyValue(legacyKey, ConfigUtils.getProperty(legacyKey));
-                                    }
-                                }
-                            }
+                            getter = config.getClass().getMethod("is" + name.substring(3), new Class<?>[0]);
+                        } catch (NoSuchMethodException e2) {
+                            getter = null;
                         }
                     }
-                    if (value != null && value.length() > 0) {
-                        //方法设置
-                        method.invoke(config, new Object[]{convertPrimitive(method.getParameterTypes()[0], value)});
+                    //不存在相关方法，直接返回
+                    if (getter == null) {
+                        return;
                     }
+                    //不为空说明已经设置。忽略值的设置
+                    if (getter.invoke(config, new Object[0]) != null) {
+                        return;
+                    }
+
+                    //放射调用方法，返回值为空需要处理，
+                    //获取值的key的表示和上面一致:
+                    //从Config工具类中获得
+                    //ex:dubbo.xxx.aaaaa.student-name
+                    //从Config工具类中获得
+                    //ex:dubbo.xxx.student-name
+                    //从本地缓存map中获取
+                    value = ConfigUtils.getProperty(idPn);
+                    if (StringUtils.isBlank(value) && hasId) {
+                        value = ConfigUtils.getProperty(pn);
+                    }
+                    if (StringUtils.isBlank(value)) {
+                        String legacyKey = legacyProperties.get(pn);
+                        if (!StringUtils.isBlank(legacyKey)) {
+                            value = convertLegacyValue(legacyKey, ConfigUtils.getProperty(legacyKey));
+                        }
+                    }
+                    if (StringUtils.isBlank(value)) {
+                        return;
+                    }
+                    //方法设置
+                    method.invoke(config, new Object[]{convertPrimitive(method.getParameterTypes()[0], value)});
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
@@ -335,10 +330,10 @@ public abstract class AbstractConfig implements Serializable {
                     }
                     String key = null;
                     //有parameter注解，key直接使用注解配置的
-                    if (parameter != null){
+                    if (parameter != null) {
                         key = parameter.key().trim();
                     }
-                    if (key == null || key.length() == 0){
+                    if (key == null || key.length() == 0) {
                         //is or get
                         //方法名变成xxx.xxx.xxx
                         int i = name.startsWith("get") ? 3 : 2;
