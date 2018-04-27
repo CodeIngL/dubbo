@@ -42,9 +42,9 @@
     </licenses>
 
     <scm>
-        <url>https://github.com/apache/incubator-dubbo</url>
-        <connection>scm:git:https://github.com/apache/incubator-dubbo.git</connection>
-        <developerConnection>scm:git:https://github.com/apache/incubator-dubbo.git</developerConnection>
+        <url>git@github.com:apache/incubator-dubbo.git</url>
+        <connection>scm:git:git@github.com:apache/incubator-dubbo.git</connection>
+        <developerConnection>scm:git:git@github.com:apache/incubator-dubbo.git</developerConnection>
       <tag>HEAD</tag>
   </scm>
     <mailingLists>
@@ -591,6 +591,17 @@
                             <version>8.9</version>
                         </dependency>
                     </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.3</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                        <useReleaseProfile>false</useReleaseProfile>
+                        <releaseProfiles>release</releaseProfiles>
+                        <goals>deploy</goals>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
