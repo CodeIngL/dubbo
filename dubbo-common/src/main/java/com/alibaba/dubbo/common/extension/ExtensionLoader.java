@@ -564,14 +564,13 @@ public class ExtensionLoader<T> {
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
         if (defaultAnnotation != null) {
-            String value = defaultAnnotation.value();
-            if ((value = value.trim()).length() > 0) {
-                String[] names = NAME_SEPARATOR.split(value);
-                if (names.length > 1) {
-                    throw new IllegalStateException("more than 1 default extension name on extension " + type.getName()
-                            + ": " + Arrays.toString(names));
-                }
-                if (names.length == 1) cachedDefaultName = names[0];
+            String value = defaultAnnotation.value().trim();
+            if (value.contains(",")) {
+                throw new IllegalStateException("more than 1 default extension name on extension " + type.getName()
+                        + ": " + value);
+            }
+            if (value.length() > 0) {
+                cachedDefaultName = value;
             }
         }
 
