@@ -634,34 +634,20 @@ public class ExtensionLoader<T> {
             }
             wrappers.add(clazz);
         } else {
-            clazz.getConstructor();
-            if (name == null || name.length() == 0) {
-                name = findAnnotationName(clazz);
-                if (name == null || name.length() == 0) {
-                    if (clazz.getSimpleName().length() > type.getSimpleName().length()
-                            && clazz.getSimpleName().endsWith(type.getSimpleName())) {
-                        name = clazz.getSimpleName().substring(0, clazz.getSimpleName().length() - type.getSimpleName().length()).toLowerCase();
-                    } else {
-                        throw new IllegalStateException("No such extension name for the class " + clazz.getName() + " in the config " + resourceURL);
-                    }
-                }
-            }
             String[] names = NAME_SEPARATOR.split(name);
-            if (names != null && names.length > 0) {
-                Activate activate = clazz.getAnnotation(Activate.class);
-                if (activate != null) {
-                    cachedActivates.put(names[0], activate);
+            Activate activate = clazz.getAnnotation(Activate.class);
+            if (activate != null) {
+                cachedActivates.put(names[0], activate);
+            }
+            for (String n : names) {
+                if (!cachedNames.containsKey(clazz)) {
+                    cachedNames.put(clazz, n);
                 }
-                for (String n : names) {
-                    if (!cachedNames.containsKey(clazz)) {
-                        cachedNames.put(clazz, n);
-                    }
-                    Class<?> c = extensionClasses.get(n);
-                    if (c == null) {
-                        extensionClasses.put(n, clazz);
-                    } else if (c != clazz) {
-                        throw new IllegalStateException("Duplicate extension " + type.getName() + " name " + n + " on " + c.getName() + " and " + clazz.getName());
-                    }
+                Class<?> c = extensionClasses.get(n);
+                if (c == null) {
+                    extensionClasses.put(n, clazz);
+                } else if (c != clazz) {
+                    throw new IllegalStateException("Duplicate extension " + type.getName() + " name " + n + " on " + c.getName() + " and " + clazz.getName());
                 }
             }
         }
@@ -674,19 +660,6 @@ public class ExtensionLoader<T> {
         } catch (NoSuchMethodException e) {
             return false;
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    private String findAnnotationName(Class<?> clazz) {
-        com.alibaba.dubbo.common.Extension extension = clazz.getAnnotation(com.alibaba.dubbo.common.Extension.class);
-        if (extension == null) {
-            String name = clazz.getSimpleName();
-            if (name.endsWith(type.getSimpleName())) {
-                name = name.substring(0, name.length() - type.getSimpleName().length());
-            }
-            return name.toLowerCase();
-        }
-        return extension.value();
     }
 
     @SuppressWarnings("unchecked")
