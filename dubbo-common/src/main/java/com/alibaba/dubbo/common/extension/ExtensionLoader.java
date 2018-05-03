@@ -90,21 +90,14 @@ public class ExtensionLoader<T> {
         cachedClasses.set(loadExtensionClasses());
     }
 
-    private static <T> boolean withExtensionAnnotation(Class<T> type) {
-        return type.isAnnotationPresent(SPI.class);
-    }
-
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         if (type == null)
             throw new IllegalArgumentException("Extension type == null");
-        if (!type.isInterface()) {
+        if (!type.isInterface())
             throw new IllegalArgumentException("Extension type(" + type + ") is not interface!");
-        }
-        if (!withExtensionAnnotation(type)) {
-            throw new IllegalArgumentException("Extension type(" + type +
-                    ") is not extension, because WITHOUT @" + SPI.class.getSimpleName() + " Annotation!");
-        }
+        if (!type.isAnnotationPresent(SPI.class))
+            throw new IllegalArgumentException("Extension type(" + type + ") is not extension, because WITHOUT @SPI Annotation!");
 
         ExtensionLoader<T> loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         if (loader == null) {
@@ -547,8 +540,7 @@ public class ExtensionLoader<T> {
             }
             if (urls != null) {
                 while (urls.hasMoreElements()) {
-                    java.net.URL resourceURL = urls.nextElement();
-                    loadResource(extensionClasses, classLoader, resourceURL);
+                    loadResource(extensionClasses, classLoader, urls.nextElement());
                 }
             }
         } catch (Throwable t) {
