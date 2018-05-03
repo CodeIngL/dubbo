@@ -560,9 +560,7 @@ public class ExtensionLoader<T> {
                 throw new IllegalStateException("more than 1 default extension name on extension " + type.getName()
                         + ": " + value);
             }
-            if (value.length() > 0) {
-                cachedDefaultName = value;
-            }
+            cachedDefaultName = value;
         }
 
         Map<String, Class<?>> extensionClasses = new HashMap<String, Class<?>>();
