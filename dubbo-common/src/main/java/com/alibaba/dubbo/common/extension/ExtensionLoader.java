@@ -432,28 +432,19 @@ public class ExtensionLoader<T> {
     }
 
     private IllegalStateException findException(String name) {
+        StringBuilder builder = new StringBuilder().append("extension ")
+                .append(type.getName())
+                .append(" by name ")
+                .append(name)
+                .append("can't find, possible causes: ");
         for (Map.Entry<String, IllegalStateException> entry : exceptions.entrySet()) {
-            if (entry.getKey().toLowerCase().contains(name.toLowerCase())) {
-                return entry.getValue();
-            }
+            builder.append(" (")
+                    .append(entry.getKey())
+                    .append(":")
+                    .append(StringUtils.toString(entry.getValue()))
+                    .append(") ");
         }
-        StringBuilder buf = new StringBuilder("No such extension " + type.getName() + " by name " + name);
-
-
-        int i = 1;
-        for (Map.Entry<String, IllegalStateException> entry : exceptions.entrySet()) {
-            if (i == 1) {
-                buf.append(", possible causes: ");
-            }
-
-            buf.append("\r\n(");
-            buf.append(i++);
-            buf.append(") ");
-            buf.append(entry.getKey());
-            buf.append(":\r\n");
-            buf.append(StringUtils.toString(entry.getValue()));
-        }
-        return new IllegalStateException(buf.toString());
+        return new IllegalStateException(builder.toString());
     }
 
     @SuppressWarnings("unchecked")
