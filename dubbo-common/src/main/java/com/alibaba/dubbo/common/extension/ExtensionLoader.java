@@ -26,19 +26,10 @@ import com.alibaba.dubbo.common.utils.ConfigUtils;
 import com.alibaba.dubbo.common.utils.Holder;
 import com.alibaba.dubbo.common.utils.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
@@ -604,33 +595,16 @@ public class ExtensionLoader<T> {
     }
 
     private void loadResource(Map<String, Class<?>> extensionClasses, ClassLoader classLoader, java.net.URL resourceURL) {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(resourceURL.openStream(), "utf-8"));
-            try {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    final int ci = line.indexOf('#');
-                    if (ci >= 0) line = line.substring(0, ci);
-                    line = line.trim();
-                    if (line.length() > 0) {
-                        try {
-                            String name = null;
-                            int i = line.indexOf('=');
-                            if (i > 0) {
-                                name = line.substring(0, i).trim();
-                                line = line.substring(i + 1).trim();
-                            }
-                            if (line.length() > 0) {
-                                loadClass(extensionClasses, resourceURL, Class.forName(line, true, classLoader), name);
-                            }
-                        } catch (Throwable t) {
-                            IllegalStateException e = new IllegalStateException("Failed to load extension class(interface: " + type + ", class line: " + line + ") in " + resourceURL + ", cause: " + t.getMessage(), t);
-                            exceptions.put(line, e);
-                        }
-                    }
+        try (InputStream inputStream = resourceURL.openStream()) {
+            Properties properties = new Properties();
+            properties.load(inputStream);
+            for (Map.Entry entry : properties.entrySet()) {
+                try {
+                    loadClass(extensionClasses, resourceURL, Class.forName(String.valueOf(entry.getValue()), true, classLoader), String.valueOf(entry.getKey()));
+                } catch (Throwable t) {
+                    IllegalStateException e = new IllegalStateException("Failed to load extension class(interface: " + type + ", class line: " + String.valueOf(entry.getValue()) + ") in " + resourceURL + ", cause: " + t.getMessage(), t);
+                    exceptions.put(String.valueOf(entry.getValue()), e);
                 }
-            } finally {
-                reader.close();
             }
         } catch (Throwable t) {
             logger.error("Exception when load extension class(interface: " +
