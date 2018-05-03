@@ -538,10 +538,8 @@ public class ExtensionLoader<T> {
             } else {
                 urls = ClassLoader.getSystemResources(fileName);
             }
-            if (urls != null) {
-                while (urls.hasMoreElements()) {
-                    loadResource(extensionClasses, classLoader, urls.nextElement());
-                }
+            while (urls.hasMoreElements()) {
+                loadResource(extensionClasses, classLoader, urls.nextElement());
             }
         } catch (Throwable t) {
             logger.error("Exception when load extension class(interface: " +
