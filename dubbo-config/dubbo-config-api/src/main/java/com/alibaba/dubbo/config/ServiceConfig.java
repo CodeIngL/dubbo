@@ -466,44 +466,46 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
 
         String scope = url.getParameter(Constants.SCOPE_KEY);
+        this.urls.add(url);
         // don't export when none is configured
-        if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
-
-            // export to local if the config is not remote (export to remote only when config is remote)
-            if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
-                exportLocal(url);
+        if (Constants.SCOPE_NONE.equals(scope)) {
+            return;
+        }
+        // export to local if the config is not remote (export to remote only when config is remote)
+        if (Constants.SCOPE_LOCAL.equalsIgnoreCase(scope)) {
+            exportLocal(url);
+        }
+        // export to remote if the config is not local (export to local only when config is local)
+        if (Constants.SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+            if (logger.isInfoEnabled()) {
+                logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
             }
-            // export to remote if the config is not local (export to local only when config is local)
-            if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
-                if (logger.isInfoEnabled()) {
-                    logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
-                }
-                if (registryURLs != null && !registryURLs.isEmpty()) {
-                    for (URL registryURL : registryURLs) {
-                        url = url.addParameterIfAbsent(Constants.DYNAMIC_KEY, registryURL.getParameter(Constants.DYNAMIC_KEY));
-                        URL monitorUrl = loadMonitor(registryURL);
-                        if (monitorUrl != null) {
-                            url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
-                        }
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
-                        }
-                        Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
-                        DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
-                        Exporter<?> exporter = protocol.export(wrapperInvoker);
-                        exporters.add(exporter);
+            if (registryURLs != null && !registryURLs.isEmpty()) {
+                for (URL registryURL : registryURLs) {
+                    url = url.addParameterIfAbsent(Constants.DYNAMIC_KEY, registryURL.getParameter(Constants.DYNAMIC_KEY));
+                    URL monitorUrl = loadMonitor(registryURL);
+                    if (monitorUrl != null) {
+                        url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                     }
-                } else {
-                    Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
+                    if (logger.isInfoEnabled()) {
+                        logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
+                    }
+                    Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
                     Exporter<?> exporter = protocol.export(wrapperInvoker);
                     exporters.add(exporter);
                 }
+            } else {
+                Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
+                DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
+
+                Exporter<?> exporter = protocol.export(wrapperInvoker);
+                exporters.add(exporter);
             }
+            return;
         }
-        this.urls.add(url);
+        throw new IllegalStateException("the scope value is only none, local and remote");
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
