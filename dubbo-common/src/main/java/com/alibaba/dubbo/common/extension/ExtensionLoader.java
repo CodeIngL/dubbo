@@ -80,7 +80,7 @@ public class ExtensionLoader<T> {
     private String cachedDefaultName = "";
     private volatile Throwable createAdaptiveInstanceError;
 
-    private Set<Class<?>> cachedWrapperClasses;
+    private Set<Class<?>> cachedWrapperClasses = new ConcurrentHashSet<>();
 
     private Map<String, IllegalStateException> exceptions = new ConcurrentHashMap<String, IllegalStateException>();
 
@@ -544,7 +544,7 @@ public class ExtensionLoader<T> {
             properties.load(inputStream);
             for (Map.Entry entry : properties.entrySet()) {
                 try {
-                    loadClass(extensionClasses, resourceURL, Class.forName(String.valueOf(entry.getValue()), true, classLoader), String.valueOf(entry.getKey()));
+                    loadClass(extensionClasses, Class.forName(String.valueOf(entry.getValue()), true, classLoader), String.valueOf(entry.getKey()));
                 } catch (Throwable t) {
                     IllegalStateException e = new IllegalStateException("Failed to load extension class(interface: " + type + ", class line: " + String.valueOf(entry.getValue()) + ") in " + resourceURL + ", cause: " + t.getMessage(), t);
                     exceptions.put(String.valueOf(entry.getValue()), e);
@@ -556,7 +556,7 @@ public class ExtensionLoader<T> {
         }
     }
 
-    private void loadClass(Map<String, Class<?>> extensionClasses, java.net.URL resourceURL, Class<?> clazz, String name) throws NoSuchMethodException {
+    private void loadClass(Map<String, Class<?>> extensionClasses, Class<?> clazz, String name) throws NoSuchMethodException {
         if (!type.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Error when load extension class(interface: " +
                     type + ", class line: " + clazz.getName() + "), class "
