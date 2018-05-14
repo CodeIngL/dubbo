@@ -193,6 +193,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public synchronized void export() {
+        if (interfaceName == null || interfaceName.length() == 0) {
+            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
+        }
+        if (unexported) {
+            throw new IllegalStateException("Already unexported!");
+        }
         if (provider != null) {
             if (export == null) {
                 export = provider.getExport();
@@ -204,7 +210,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (export != null && !export) {
             return;
         }
-
         if (delay != null && delay > 0) {
             delayExportExecutor.schedule(new Runnable() {
                 @Override
@@ -218,16 +223,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     protected synchronized void doExport() {
-        if (unexported) {
-            throw new IllegalStateException("Already unexported!");
-        }
         if (exported) {
             return;
         }
         exported = true;
-        if (interfaceName == null || interfaceName.length() == 0) {
-            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
-        }
         checkDefault();
         if (provider != null) {
             if (application == null) {
@@ -262,48 +261,45 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
+
+        try {
+            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
+                    .getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+        checkRef();
         if (ref instanceof GenericService) {
-            interfaceClass = GenericService.class;
-            if (StringUtils.isEmpty(generic)) {
-                generic = Boolean.TRUE.toString();
-            }
+            generic = Boolean.TRUE.toString();
         } else {
-            try {
-                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
-                        .getContextClassLoader());
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
             checkInterfaceAndMethods(interfaceClass, methods);
-            checkRef();
             generic = Boolean.FALSE.toString();
         }
+
         if (local != null) {
             if ("true".equals(local)) {
                 local = interfaceName + "Local";
             }
-            Class<?> localClass;
             try {
-                localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
+                Class<?> localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
+                if (!interfaceClass.isAssignableFrom(localClass)) {
+                    throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceName);
+                }
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
-            }
-            if (!interfaceClass.isAssignableFrom(localClass)) {
-                throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceName);
             }
         }
         if (stub != null) {
             if ("true".equals(stub)) {
                 stub = interfaceName + "Stub";
             }
-            Class<?> stubClass;
             try {
-                stubClass = ClassHelper.forNameWithThreadContextClassLoader(stub);
+                Class<?> stubClass = ClassHelper.forNameWithThreadContextClassLoader(stub);
+                if (!interfaceClass.isAssignableFrom(stubClass)) {
+                    throw new IllegalStateException("The stub implementation class " + stubClass.getName() + " not implement interface " + interfaceName);
+                }
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
-            }
-            if (!interfaceClass.isAssignableFrom(stubClass)) {
-                throw new IllegalStateException("The stub implementation class " + stubClass.getName() + " not implement interface " + interfaceName);
             }
         }
         checkApplication();
@@ -702,9 +698,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 && provider != null) {
             setProtocols(provider.getProtocols());
         }
-        // backward compatibility
-        if (protocols == null || protocols.isEmpty()) {
-            setProtocol(new ProtocolConfig());
+        if (protocols == null || protocols.isEmpty()){
+            throw new IllegalStateException(
+                    "No such protocol config! Please add <dubbo:protocol /> to your spring config.");
         }
         for (ProtocolConfig protocolConfig : protocols) {
             if (StringUtils.isEmpty(protocolConfig.getName())) {
