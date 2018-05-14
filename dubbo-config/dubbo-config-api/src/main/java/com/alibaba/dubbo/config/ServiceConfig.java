@@ -199,6 +199,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
         }
+        try {
+            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
         if (provider != null) {
             if (export == null) {
                 export = provider.getExport();
@@ -261,13 +266,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
-
-        try {
-            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
-                    .getContextClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
         checkRef();
         if (ref instanceof GenericService) {
             generic = Boolean.TRUE.toString();
@@ -275,33 +273,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             checkInterfaceAndMethods(interfaceClass, methods);
             generic = Boolean.FALSE.toString();
         }
-
-        if (local != null) {
-            if ("true".equals(local)) {
-                local = interfaceName + "Local";
-            }
-            try {
-                Class<?> localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
-                if (!interfaceClass.isAssignableFrom(localClass)) {
-                    throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceName);
-                }
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
+        if ("true".equals(local)) {
+            local = interfaceName + "Local";
         }
-        if (stub != null) {
-            if ("true".equals(stub)) {
-                stub = interfaceName + "Stub";
-            }
-            try {
-                Class<?> stubClass = ClassHelper.forNameWithThreadContextClassLoader(stub);
-                if (!interfaceClass.isAssignableFrom(stubClass)) {
-                    throw new IllegalStateException("The stub implementation class " + stubClass.getName() + " not implement interface " + interfaceName);
-                }
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
+        checkClass(local, interfaceClass, interfaceName);
+        if ("true".equals(stub)) {
+            stub = interfaceName + "Stub";
         }
+        checkClass(stub, interfaceClass, interfaceName);
         checkApplication();
         checkRegistry();
         checkProtocol();
@@ -313,6 +292,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         doExportUrls();
         ProviderModel providerModel = new ProviderModel(getUniqueServiceName(), this, ref);
         ApplicationModel.initProviderModel(getUniqueServiceName(), providerModel);
+    }
+
+    private void checkClass(String className, Class interfaceClass, String interfaceName) {
+        if (className != null) {
+            try {
+                Class<?> localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
+                if (!interfaceClass.isAssignableFrom(localClass)) {
+                    throw new IllegalStateException("The implementation class " + localClass.getName() + " not implement interface " + interfaceName);
+                }
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e.getMessage(), e);
+            }
+        }
     }
 
     private void checkRef() {
@@ -698,7 +690,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 && provider != null) {
             setProtocols(provider.getProtocols());
         }
-        if (protocols == null || protocols.isEmpty()){
+        if (protocols == null || protocols.isEmpty()) {
             throw new IllegalStateException(
                     "No such protocol config! Please add <dubbo:protocol /> to your spring config.");
         }
