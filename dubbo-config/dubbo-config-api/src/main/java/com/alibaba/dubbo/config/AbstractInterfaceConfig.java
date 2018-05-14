@@ -103,19 +103,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     private String scope;
 
     protected void checkRegistry() {
-        // for backward compatibility
-        if (registries == null || registries.isEmpty()) {
-            String address = ConfigUtils.getProperty("dubbo.registry.address");
-            if (address != null && address.length() > 0) {
-                registries = new ArrayList<RegistryConfig>();
-                String[] as = address.split("\\s*[|]+\\s*");
-                for (String a : as) {
-                    RegistryConfig registryConfig = new RegistryConfig();
-                    registryConfig.setAddress(a);
-                    registries.add(registryConfig);
-                }
-            }
-        }
         if ((registries == null || registries.isEmpty())) {
             throw new IllegalStateException((getClass().getSimpleName().startsWith("Reference")
                     ? "No such any registry to refer service in consumer "
@@ -132,13 +119,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     @SuppressWarnings("deprecation")
     protected void checkApplication() {
-        // for backward compatibility
-        if (application == null) {
-            String applicationName = ConfigUtils.getProperty("dubbo.application.name");
-            if (applicationName != null && applicationName.length() > 0) {
-                application = new ApplicationConfig();
-            }
-        }
         if (application == null) {
             throw new IllegalStateException(
                     "No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
