@@ -126,13 +126,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         appendProperties(application);
 
         String wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_KEY);
-        if (wait != null && wait.trim().length() > 0) {
+        if (StringUtils.isNotEmpty(wait)) {
             System.setProperty(Constants.SHUTDOWN_WAIT_KEY, wait.trim());
-        } else {
-            wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);
-            if (wait != null && wait.trim().length() > 0) {
-                System.setProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY, wait.trim());
-            }
         }
     }
 
@@ -186,19 +181,20 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (monitor == null) {
             String monitorAddress = ConfigUtils.getProperty("dubbo.monitor.address");
             String monitorProtocol = ConfigUtils.getProperty("dubbo.monitor.protocol");
-            if ((monitorAddress == null || monitorAddress.length() == 0) && (monitorProtocol == null || monitorProtocol.length() == 0)) {
+            if (StringUtils.isEmpty(monitorAddress) && StringUtils.isEmpty(monitorProtocol)) {
                 return null;
             }
 
             monitor = new MonitorConfig();
-            if (monitorAddress != null && monitorAddress.length() > 0) {
+            if (!StringUtils.isEmpty(monitorAddress)) {
                 monitor.setAddress(monitorAddress);
             }
-            if (monitorProtocol != null && monitorProtocol.length() > 0) {
+            if (!StringUtils.isEmpty(monitorProtocol)) {
                 monitor.setProtocol(monitorProtocol);
             }
         }
         appendProperties(monitor);
+        String address = monitor.getAddress();
         Map<String, String> map = new HashMap<String, String>();
         map.put(Constants.INTERFACE_KEY, MonitorService.class.getName());
         map.put("dubbo", Version.getVersion());
@@ -207,11 +203,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
         }
         appendParameters(map, monitor);
-        String address = monitor.getAddress();
-        String sysaddress = System.getProperty("dubbo.monitor.address");
-        if (sysaddress != null && sysaddress.length() > 0) {
-            address = sysaddress;
-        }
         if (ConfigUtils.isNotEmpty(address)) {
             if (!map.containsKey(Constants.PROTOCOL_KEY)) {
                 if (ExtensionLoader.getExtensionLoader(MonitorFactory.class).hasExtension("logstat")) {

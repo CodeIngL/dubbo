@@ -310,21 +310,13 @@ public class ConfigUtils {
     public static int getServerShutdownTimeout() {
         int timeout = Constants.DEFAULT_SERVER_SHUTDOWN_TIMEOUT;
         String value = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_KEY);
-        if (value != null && value.length() > 0) {
-            try {
-                timeout = Integer.parseInt(value);
-            } catch (Exception e) {
-            }
-        } else {
-            value = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);
-            if (value != null && value.length() > 0) {
-                try {
-                    timeout = Integer.parseInt(value) * 1000;
-                } catch (Exception e) {
-                }
-            }
+        if (StringUtils.isEmpty(value)) {
+            return timeout;
         }
-
+        try {
+            timeout = Integer.parseInt(value);
+        } catch (Exception ignored) {
+        }
         return timeout;
     }
 
