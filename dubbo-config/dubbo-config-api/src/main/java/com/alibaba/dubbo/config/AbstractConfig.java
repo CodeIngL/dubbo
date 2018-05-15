@@ -81,9 +81,9 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
-        String prefix = "dubbo." + getTagName(config.getClass()) + ".";
-        Method[] methods = config.getClass().getMethods();
-        for (Method method : methods) {
+        Class configClass =  config.getClass();
+        String prefix = "dubbo." + getTagName(configClass) + ".";
+        for (Method method : configClass.getMethods()) {
             try {
                 String name = method.getName();
                 if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers())
