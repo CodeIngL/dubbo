@@ -349,10 +349,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
-        if (name == null || name.length() == 0) {
+        if (StringUtils.isEmpty(name)) {
             name = "dubbo";
         }
-
         Map<String, String> map = new HashMap<String, String>();
         map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);
         map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
@@ -366,44 +365,45 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         appendParameters(map, protocolConfig);
         appendParameters(map, this);
         if (methods != null && !methods.isEmpty()) {
-            for (MethodConfig method : methods) {
-                appendParameters(map, method, method.getName());
-                String retryKey = method.getName() + ".retry";
+            for (MethodConfig methodConfig : methods) {
+                appendParameters(map, methodConfig, methodConfig.getName());
+                String retryKey = methodConfig.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
                     String retryValue = map.remove(retryKey);
                     if ("false".equals(retryValue)) {
-                        map.put(method.getName() + ".retries", "0");
+                        map.put(methodConfig.getName() + ".retries", "0");
                     }
                 }
-                List<ArgumentConfig> arguments = method.getArguments();
+                List<ArgumentConfig> arguments = methodConfig.getArguments();
                 if (arguments != null && !arguments.isEmpty()) {
                     for (ArgumentConfig argument : arguments) {
                         // convert argument type
-                        if (argument.getType() != null && argument.getType().length() > 0) {
+                        if (StringUtils.isNotEmpty(argument.getType())) {
                             Method[] methods = interfaceClass.getMethods();
+                            if (methods == null) {
+                                continue;
+                            }
                             // visit all methods
-                            if (methods != null && methods.length > 0) {
-                                for (int i = 0; i < methods.length; i++) {
-                                    String methodName = methods[i].getName();
-                                    // target the method, and get its signature
-                                    if (methodName.equals(method.getName())) {
-                                        Class<?>[] argtypes = methods[i].getParameterTypes();
-                                        // one callback in the method
-                                        if (argument.getIndex() != -1) {
-                                            if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
-                                                appendParameters(map, argument, method.getName() + "." + argument.getIndex());
-                                            } else {
-                                                throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
-                                            }
+                            for (Method method : methods) {
+                                String methodName = method.getName();
+                                // target the method, and get its signature
+                                if (methodName.equals(methodConfig.getName())) {
+                                    Class<?>[] argtypes = method.getParameterTypes();
+                                    // one callback in the method
+                                    if (argument.getIndex() != -1) {
+                                        if (argtypes[argument.getIndex()].getName().equals(argument.getType())) {
+                                            appendParameters(map, argument, methodConfig.getName() + "." + argument.getIndex());
                                         } else {
-                                            // multiple callbacks in the method
-                                            for (int j = 0; j < argtypes.length; j++) {
-                                                Class<?> argclazz = argtypes[j];
-                                                if (argclazz.getName().equals(argument.getType())) {
-                                                    appendParameters(map, argument, method.getName() + "." + j);
-                                                    if (argument.getIndex() != -1 && argument.getIndex() != j) {
-                                                        throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
-                                                    }
+                                            throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
+                                        }
+                                    } else {
+                                        // multiple callbacks in the method
+                                        for (int j = 0; j < argtypes.length; j++) {
+                                            Class<?> argclazz = argtypes[j];
+                                            if (argclazz.getName().equals(argument.getType())) {
+                                                appendParameters(map, argument, methodConfig.getName() + "." + j);
+                                                if (argument.getIndex() != -1 && argument.getIndex() != j) {
+                                                    throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
                                                 }
                                             }
                                         }
@@ -411,7 +411,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                 }
                             }
                         } else if (argument.getIndex() != -1) {
-                            appendParameters(map, argument, method.getName() + "." + argument.getIndex());
+                            appendParameters(map, argument, methodConfig.getName() + "." + argument.getIndex());
                         } else {
                             throw new IllegalArgumentException("argument config must set index or type attribute.eg: <dubbo:argument index='0' .../> or <dubbo:argument type=xxx .../>");
                         }
@@ -429,7 +429,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             if (revision != null && revision.length() > 0) {
                 map.put("revision", revision);
             }
-
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("NO method found in service interface " + interfaceClass.getName());
@@ -451,13 +450,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         // export service
         String contextPath = protocolConfig.getContextpath();
-        if ((contextPath == null || contextPath.length() == 0) && provider != null) {
+        if (StringUtils.isEmpty(contextPath) && provider != null) {
             contextPath = provider.getContextpath();
         }
 
         String host = this.findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = this.findConfigedPorts(protocolConfig, name, map);
-        URL url = new URL(name, host, port, (contextPath == null || contextPath.length() == 0 ? "" : contextPath + "/") + path, map);
+        URL url = new URL(name, host, port, (StringUtils.isEmpty(contextPath) ? "" : contextPath + "/") + path, map);
 
         if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                 .hasExtension(url.getProtocol())) {
