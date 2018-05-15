@@ -81,7 +81,7 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
-        Class configClass =  config.getClass();
+        Class configClass = config.getClass();
         String prefix = "dubbo." + getTagName(configClass) + ".";
         for (Method method : configClass.getMethods()) {
             try {
@@ -131,57 +131,60 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
-        Method[] methods = config.getClass().getMethods();
-        for (Method method : methods) {
+        Class configClass = config.getClass();
+        for (Method method : configClass.getMethods()) {
             try {
-                String name = method.getName();
-                if ((name.startsWith("get") || name.startsWith("is"))
-                        && !"getClass".equals(name)
+                String methodName = method.getName();
+                if (!((methodName.startsWith("get") || methodName.startsWith("is"))
                         && Modifier.isPublic(method.getModifiers())
-                        && method.getParameterTypes().length == 0
-                        && isPrimitive(method.getReturnType())) {
+                        && method.getParameterTypes().length == 0)) {
+                    continue;
+                }
+                if ("getClass".equals(methodName)) {
+                    continue;
+                }
+                Class returnType = method.getReturnType();
+                if (isPrimitive(returnType) && returnType != Object.class) {
                     Parameter parameter = method.getAnnotation(Parameter.class);
-                    if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
+                    if (parameter != null && parameter.excluded()) {
                         continue;
                     }
-                    int i = name.startsWith("get") ? 3 : 2;
-                    String prop = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
+                    Object filedValue = method.invoke(config, new Object[0]);
+                    if (filedValue == null && parameter != null && parameter.required()) {
+                        throw new IllegalStateException(config.getClass().getSimpleName() + "'s" + methodName + " return value is null");
+                    }
+                    if (filedValue == null) {
+                        continue;
+                    }
                     String key;
-                    if (parameter != null && parameter.key() != null && parameter.key().length() > 0) {
+                    if (parameter != null && parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
-                        key = prop;
+                        int i = methodName.startsWith("get") ? 3 : 2;
+                        key = StringUtils.camelToSplitName(methodName.substring(i, i + 1).toLowerCase() + methodName.substring(i + 1), ".");
                     }
-                    Object value = method.invoke(config, new Object[0]);
-                    String str = String.valueOf(value).trim();
-                    if (value != null && str.length() > 0) {
-                        if (parameter != null && parameter.escaped()) {
-                            str = URL.encode(str);
-                        }
-                        if (parameter != null && parameter.append()) {
-                            String pre = (String) parameters.get(Constants.DEFAULT_KEY + "." + key);
-                            if (pre != null && pre.length() > 0) {
-                                str = pre + "," + str;
-                            }
-                            pre = (String) parameters.get(key);
-                            if (pre != null && pre.length() > 0) {
-                                str = pre + "," + str;
-                            }
-                        }
-                        if (prefix != null && prefix.length() > 0) {
-                            key = prefix + "." + key;
-                        }
-                        parameters.put(key, str);
-                    } else if (parameter != null && parameter.required()) {
-                        throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
+                    String filedValueStr = String.valueOf(filedValue).trim();
+                    if (parameter != null && parameter.escaped()) {
+                        filedValueStr = URL.encode(filedValueStr);
                     }
-                } else if ("getParameters".equals(name)
-                        && Modifier.isPublic(method.getModifiers())
-                        && method.getParameterTypes().length == 0
-                        && method.getReturnType() == Map.class) {
+                    if (parameter != null && parameter.append()) {
+                        String pre = parameters.get(Constants.DEFAULT_KEY + "." + key);
+                        if (StringUtils.isNotEmpty(pre)) {
+                            filedValueStr = pre + "," + filedValueStr;
+                        }
+                        pre = parameters.get(key);
+                        if (StringUtils.isNotEmpty(pre)) {
+                            filedValueStr = pre + "," + filedValueStr;
+                        }
+                    }
+                    if (StringUtils.isNotEmpty(prefix)) {
+                        key = prefix + "." + key;
+                    }
+                    parameters.put(key, filedValueStr);
+                } else if ("getParameters".equals(methodName) && returnType == Map.class) {
                     Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);
                     if (map != null && map.size() > 0) {
-                        String pre = (prefix != null && prefix.length() > 0 ? prefix + "." : "");
+                        String pre = (StringUtils.isNotEmpty(prefix) ? prefix + "." : "");
                         for (Map.Entry<String, String> entry : map.entrySet()) {
                             parameters.put(pre + entry.getKey().replace('-', '.'), entry.getValue());
                         }
@@ -201,32 +204,38 @@ public abstract class AbstractConfig implements Serializable {
         if (config == null) {
             return;
         }
-        Method[] methods = config.getClass().getMethods();
-        for (Method method : methods) {
+        Class configClass = config.getClass();
+        for (Method method : configClass.getMethods()) {
             try {
-                String name = method.getName();
-                if ((name.startsWith("get") || name.startsWith("is"))
-                        && !"getClass".equals(name)
+                String methodName = method.getName();
+                if (!((methodName.startsWith("get") || methodName.startsWith("is"))
                         && Modifier.isPublic(method.getModifiers())
-                        && method.getParameterTypes().length == 0
-                        && isPrimitive(method.getReturnType())) {
+                        && method.getParameterTypes().length == 0)) {
+                    continue;
+                }
+                if ("getClass".equals(methodName)) {
+                    continue;
+                }
+                if (isPrimitive(method.getReturnType())) {
                     Parameter parameter = method.getAnnotation(Parameter.class);
-                    if (parameter == null || !parameter.attribute())
+                    if (parameter == null || !parameter.attribute()) {
                         continue;
+                    }
+                    Object filedValue = method.invoke(config, new Object[0]);
+                    if (filedValue == null) {
+                        continue;
+                    }
                     String key;
-                    if (parameter.key() != null && parameter.key().length() > 0) {
+                    if (parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
-                        int i = name.startsWith("get") ? 3 : 2;
-                        key = name.substring(i, i + 1).toLowerCase() + name.substring(i + 1);
+                        int i = methodName.startsWith("get") ? 3 : 2;
+                        key = methodName.substring(i, i + 1).toLowerCase() + methodName.substring(i + 1);
                     }
-                    Object value = method.invoke(config, new Object[0]);
-                    if (value != null) {
-                        if (prefix != null && prefix.length() > 0) {
-                            key = prefix + "." + key;
-                        }
-                        parameters.put(key, value);
+                    if (StringUtils.isNotEmpty(prefix)) {
+                        key = prefix + "." + key;
                     }
+                    parameters.put(key, filedValue);
                 }
             } catch (Exception e) {
                 throw new IllegalStateException(e.getMessage(), e);
