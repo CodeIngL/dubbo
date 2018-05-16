@@ -80,35 +80,17 @@ final class NettyCodecAdapter {
         protected void decode(ChannelHandlerContext ctx, ByteBuf input, List<Object> out) throws Exception {
 
             ChannelBuffer message = new NettyBackedChannelBuffer(input);
-
             NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-
-            Object msg;
-
-            int saveReaderIndex;
-
             try {
-                // decode object.
-                do {
-                    saveReaderIndex = message.readerIndex();
-                    try {
-                        msg = codec.decode(channel, message);
-                    } catch (IOException e) {
-                        throw e;
-                    }
-                    if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
-                        message.readerIndex(saveReaderIndex);
-                        break;
-                    } else {
-                        //is it possible to go here ?
-                        if (saveReaderIndex == message.readerIndex()) {
-                            throw new IOException("Decode without read data.");
-                        }
-                        if (msg != null) {
-                            out.add(msg);
-                        }
-                    }
-                } while (message.readable());
+                int oldInputLength = message.readerIndex();
+                Object msg = codec.decode(channel, message);
+                if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
+                    message.readerIndex(oldInputLength);
+                    return;
+                }
+                if (msg != null) {
+                    out.add(msg);
+                }
             } finally {
                 NettyChannel.removeChannelIfDisconnected(ctx.channel());
             }
