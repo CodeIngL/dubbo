@@ -73,7 +73,7 @@ public class Constants {
 
     public static final String $ECHO = "$echo";
 
-    public static final int DEFAULT_IO_THREADS = Math.min(Runtime.getRuntime().availableProcessors() + 1, 32);
+    public static final int DEFAULT_IO_THREADS = Math.min(Runtime.getRuntime().availableProcessors() * 2, 32);
 
     public static final String DEFAULT_PROXY = "javassist";
 
@@ -621,7 +621,7 @@ public class Constants {
     public static final String QOS_PORT = "qos.port";
 
     public static final String ACCEPT_FOREIGN_IP = "qos.accept.foreign.ip";
-    
+
     public static final String HESSIAN2_REQUEST_KEY = "hessian2.request";
 
     public static final boolean DEFAULT_HESSIAN2_REQUEST = false;
