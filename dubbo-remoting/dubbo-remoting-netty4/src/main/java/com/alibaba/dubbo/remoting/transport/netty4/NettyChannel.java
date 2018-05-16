@@ -28,9 +28,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * NettyChannel.
@@ -39,7 +39,7 @@ final class NettyChannel extends AbstractChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyChannel.class);
 
-    private static final ConcurrentMap<Channel, NettyChannel> channelMap = new ConcurrentHashMap<Channel, NettyChannel>();
+    private static final Map<Channel, NettyChannel> channelMap = new HashMap<Channel, NettyChannel>();
 
     private final Channel channel;
 
@@ -61,7 +61,7 @@ final class NettyChannel extends AbstractChannel {
         if (ret == null) {
             NettyChannel nettyChannel = new NettyChannel(ch, url, handler);
             if (ch.isActive()) {
-                ret = channelMap.putIfAbsent(ch, nettyChannel);
+                ret = channelMap.put(ch, nettyChannel);
             }
             if (ret == null) {
                 ret = nettyChannel;

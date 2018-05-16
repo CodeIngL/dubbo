@@ -33,23 +33,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * NettyClientHandler
  */
 @io.netty.channel.ChannelHandler.Sharable
-public class NettyServerHandler extends ChannelDuplexHandler {
+public class NettyServerHandler extends NettyHandler {
 
     private final Map<String, Channel> channels = new ConcurrentHashMap<String, Channel>(); // <ip:port, channel>
 
-    private final URL url;
-
-    private final ChannelHandler handler;
-
     public NettyServerHandler(URL url, ChannelHandler handler) {
-        if (url == null) {
-            throw new IllegalArgumentException("url == null");
-        }
-        if (handler == null) {
-            throw new IllegalArgumentException("handler == null");
-        }
-        this.url = url;
-        this.handler = handler;
+        super(url, handler);
     }
 
     public Map<String, Channel> getChannels() {
@@ -59,13 +48,12 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ctx.fireChannelActive();
-
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
+        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), getUrl(), getHandler());
         try {
             if (channel != null) {
                 channels.put(NetUtils.toAddressString((InetSocketAddress) ctx.channel().remoteAddress()), channel);
             }
-            handler.connected(channel);
+            getHandler().connected(channel);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
         }
@@ -73,10 +61,10 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
+        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), getUrl(), getHandler());
         try {
             channels.remove(NetUtils.toAddressString((InetSocketAddress) ctx.channel().remoteAddress()));
-            handler.disconnected(channel);
+            getHandler().disconnected(channel);
         } finally {
             NettyChannel.removeChannelIfDisconnected(ctx.channel());
         }
@@ -89,36 +77,4 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
-            handler.received(channel, msg);
-        } finally {
-            NettyChannel.removeChannelIfDisconnected(ctx.channel());
-        }
-    }
-
-
-    @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        super.write(ctx, msg, promise);
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
-            handler.sent(channel, msg);
-        } finally {
-            NettyChannel.removeChannelIfDisconnected(ctx.channel());
-        }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-            throws Exception {
-        NettyChannel channel = NettyChannel.getOrAddChannel(ctx.channel(), url, handler);
-        try {
-            handler.caught(channel, cause);
-        } finally {
-            NettyChannel.removeChannelIfDisconnected(ctx.channel());
-        }
-    }
 }
