@@ -80,7 +80,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     // method configs
     private List<MethodConfig> methods;
     // default config
-    private ConsumerConfig consumer;
+    private ConsumerConfig consumer = new ConsumerConfig();
     private String protocol;
     // interface proxy reference
     private transient volatile T ref;
@@ -187,64 +187,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             return;
         }
         initialized = true;
-        if (interfaceName == null || interfaceName.length() == 0) {
-            throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
-        }
-        // get consumer's global configuration
-        checkDefault();
-        appendProperties(this);
-        if (getGeneric() == null && getConsumer() != null) {
-            setGeneric(getConsumer().getGeneric());
-        }
-        if (ProtocolUtils.isGeneric(getGeneric())) {
-            interfaceClass = GenericService.class;
-        } else {
-            try {
-                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
-                        .getContextClassLoader());
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-            checkInterfaceAndMethods(interfaceClass, methods);
-        }
-        String resolve = System.getProperty(interfaceName);
-        String resolveFile = null;
-        if (resolve == null || resolve.length() == 0) {
-            resolveFile = System.getProperty("dubbo.resolve.file");
-            if (resolveFile == null || resolveFile.length() == 0) {
-                File userResolveFile = new File(new File(System.getProperty("user.home")), "dubbo-resolve.properties");
-                if (userResolveFile.exists()) {
-                    resolveFile = userResolveFile.getAbsolutePath();
-                }
-            }
-            if (resolveFile != null && resolveFile.length() > 0) {
-                Properties properties = new Properties();
-                FileInputStream fis = null;
-                try {
-                    fis = new FileInputStream(new File(resolveFile));
-                    properties.load(fis);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Unload " + resolveFile + ", cause: " + e.getMessage(), e);
-                } finally {
-                    try {
-                        if (null != fis) fis.close();
-                    } catch (IOException e) {
-                        logger.warn(e.getMessage(), e);
-                    }
-                }
-                resolve = properties.getProperty(interfaceName);
-            }
-        }
-        if (resolve != null && resolve.length() > 0) {
-            url = resolve;
-            if (logger.isWarnEnabled()) {
-                if (resolveFile != null && resolveFile.length() > 0) {
-                    logger.warn("Using default dubbo resolve file " + resolveFile + " replace " + interfaceName + "" + resolve + " to p2p invoke remote service.");
-                } else {
-                    logger.warn("Using -D" + interfaceName + "=" + resolve + " to p2p invoke remote service.");
-                }
-            }
-        }
         if (consumer != null) {
             if (application == null) {
                 application = consumer.getApplication();
@@ -275,20 +217,28 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 monitor = application.getMonitor();
             }
         }
+        checkConsumer();
         checkApplication();
+        appendProperties(this);
+        checkGenericAndInterface();
+        checkUrl();
         checkStubAndMock(interfaceClass);
+        doReferUrl();
+        ConsumerModel consumerModel = new ConsumerModel(getUniqueServiceName(), this, ref, interfaceClass.getMethods());
+        ApplicationModel.initConsumerModel(getUniqueServiceName(), consumerModel);
+    }
+
+    private void doReferUrl() {
         Map<String, String> map = fetchParameters();
-        Map<Object, Object> attributes = new HashMap<Object, Object>();
         if (!isGeneric()) {
             String revision = Version.getVersion(interfaceClass, version);
-            if (revision != null && revision.length() > 0) {
+            if (StringUtils.isNotEmpty(revision)) {
                 map.put("revision", revision);
             }
-
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
-                logger.warn("NO method found in service interface " + interfaceClass.getName());
                 map.put("methods", Constants.ANY_VALUE);
+                logger.warn("NO method found in service interface " + interfaceClass.getName());
             } else {
                 map.put("methods", StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
             }
@@ -298,8 +248,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
         appendParameters(map, this);
+        String hostToRegistry = ConfigUtils.getSystemProperty(Constants.DUBBO_IP_TO_REGISTRY);
+        if (StringUtils.isEmpty(hostToRegistry)) {
+            hostToRegistry = NetUtils.getLocalHost();
+        } else if (isInvalidLocalHost(hostToRegistry)) {
+            throw new IllegalArgumentException("Specified invalid registry ip from property:" + Constants.DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
+        }
+        map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
         String prefix = StringUtils.getServiceKey(map);
         if (methods != null && !methods.isEmpty()) {
+            Map<Object, Object> attributes = new HashMap<Object, Object>();
             for (MethodConfig method : methods) {
                 appendParameters(map, method, method.getName());
                 String retryKey = method.getName() + ".retry";
@@ -312,21 +270,57 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 appendAttributes(attributes, method, prefix + "." + method.getName());
                 checkAndConvertImplicitConfig(method, map, attributes);
             }
+            StaticContext.getSystemContext().putAll(attributes);
         }
-
-        String hostToRegistry = ConfigUtils.getSystemProperty(Constants.DUBBO_IP_TO_REGISTRY);
-        if (hostToRegistry == null || hostToRegistry.length() == 0) {
-            hostToRegistry = NetUtils.getLocalHost();
-        } else if (isInvalidLocalHost(hostToRegistry)) {
-            throw new IllegalArgumentException("Specified invalid registry ip from property:" + Constants.DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
-        }
-        map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
-
         //attributes are stored by system context.
-        StaticContext.getSystemContext().putAll(attributes);
         ref = createProxy(map);
-        ConsumerModel consumerModel = new ConsumerModel(getUniqueServiceName(), this, ref, interfaceClass.getMethods());
-        ApplicationModel.initConsumerModel(getUniqueServiceName(), consumerModel);
+    }
+
+    private void checkGenericAndInterface() {
+        if (generic == null) {
+            setGeneric(consumer.getGeneric());
+        }
+        if (interfaceName == null || interfaceName.length() == 0) {
+            throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
+        }
+        if (ProtocolUtils.isGeneric(generic)) {
+            interfaceClass = GenericService.class;
+        } else {
+            try {
+                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
+                checkInterfaceAndMethods(interfaceClass, methods);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e.getMessage(), e);
+            }
+        }
+    }
+
+    private void checkUrl() {
+        String resolve = System.getProperty(interfaceName);
+        if (StringUtils.isNotEmpty(resolve)) {
+            url = resolve;
+            logger.warn("Using -D" + interfaceName + "=" + resolve + " to p2p invoke remote service.");
+        } else {
+            String resolveFile = System.getProperty("dubbo.resolve.file");
+            if (StringUtils.isEmpty(resolveFile)) {
+                File userResolveFile = new File(new File(System.getProperty("user.home")), "dubbo-resolve.properties");
+                if (userResolveFile.exists()) {
+                    resolveFile = userResolveFile.getAbsolutePath();
+                }
+            }
+            if (StringUtils.isNotEmpty(resolveFile)) {
+                try (FileInputStream fis = new FileInputStream(new File(resolveFile))) {
+                    Properties properties = new Properties();
+                    properties.load(fis);
+                    resolve = properties.getProperty(interfaceName);
+                } catch (IOException e) {
+                    throw new IllegalStateException("Unload " + resolveFile + ", cause: " + e.getMessage(), e);
+                }
+                if (StringUtils.isNotEmpty(resolve)) {
+                    logger.warn("Using default dubbo resolve file " + resolveFile + " replace " + interfaceName + "" + resolve + " to p2p invoke remote service.");
+                }
+            }
+        }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
@@ -334,7 +328,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
         final boolean isJvmRefer;
         if (isInjvm() == null) {
-            if (url != null && url.length() > 0) { // if a url is specified, don't do local reference
+            if (StringUtils.isNotEmpty(url)) { // if a url is specified, don't do local reference
                 isJvmRefer = false;
             } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
                 // by default, reference local service if there is
@@ -422,9 +416,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return (T) proxyFactory.getProxy(invoker);
     }
 
-    private void checkDefault() {
+    private void checkConsumer() {
         if (consumer == null) {
-            consumer = new ConsumerConfig();
+            throw new IllegalStateException("No provider, did you call setProvider(null)!");
         }
         appendProperties(consumer);
     }
