@@ -226,7 +226,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         convert(provider);
         checkProvider();
         checkApplication();
-        checkRegistry();
         checkProtocol();
         appendProperties(this);
         checkGenericAndInterface();
