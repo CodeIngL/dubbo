@@ -21,7 +21,6 @@ import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.Version;
 import com.alibaba.dubbo.common.bytecode.Wrapper;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
-import com.alibaba.dubbo.common.utils.ClassHelper;
 import com.alibaba.dubbo.common.utils.ConfigUtils;
 import com.alibaba.dubbo.common.utils.NamedThreadFactory;
 import com.alibaba.dubbo.common.utils.StringUtils;
@@ -232,7 +231,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             return;
         }
         exported = true;
-        checkDefault();
         if (provider != null) {
             if (application == null) {
                 application = provider.getApplication();
@@ -250,14 +248,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 protocols = provider.getProtocols();
             }
         }
-        if (module != null) {
-            if (registries == null) {
-                registries = module.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = module.getMonitor();
-            }
-        }
         if (application != null) {
             if (registries == null) {
                 registries = application.getRegistries();
@@ -266,24 +256,31 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
-        checkRef();
-        if (ref instanceof GenericService) {
-            generic = Boolean.TRUE.toString();
-        } else {
-            checkInterfaceAndMethods(interfaceClass, methods);
-            generic = Boolean.FALSE.toString();
+        if (module != null) {
+            if (registries == null) {
+                registries = module.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = module.getMonitor();
+            }
         }
+        checkProvider();
         checkApplication();
         checkRegistry();
         checkProtocol();
         appendProperties(this);
+        checkRef();
         checkStubAndMock(interfaceClass);
-        if (path == null || path.length() == 0) {
-            path = interfaceName;
-        }
+        checkPath();
         doExportUrls();
         ProviderModel providerModel = new ProviderModel(getUniqueServiceName(), this, ref);
         ApplicationModel.initProviderModel(getUniqueServiceName(), providerModel);
+    }
+
+    private void checkPath() {
+        if (StringUtils.isNotEmpty(path)) {
+            path = interfaceName;
+        }
     }
 
     private void checkRef() {
@@ -292,9 +289,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             throw new IllegalStateException("ref not allow null!");
         }
         if (!interfaceClass.isInstance(ref)) {
-            throw new IllegalStateException("The class "
-                    + ref.getClass().getName() + " unimplemented interface "
-                    + interfaceClass + "!");
+            throw new IllegalStateException("The class " + ref.getClass().getName() + " unimplemented interface " + interfaceClass + "!");
+        }
+        if (ref instanceof GenericService) {
+            generic = Boolean.TRUE.toString();
+        } else {
+            checkInterfaceAndMethods(interfaceClass, methods);
+            generic = Boolean.FALSE.toString();
         }
     }
 
@@ -653,7 +654,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         return port;
     }
 
-    private void checkDefault() {
+    private void checkProvider() {
         if (provider == null) {
             throw new IllegalStateException(
                     "No provider, did you call setProvider(null)!");
