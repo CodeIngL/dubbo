@@ -192,16 +192,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public synchronized void export() {
-        if (interfaceName == null || interfaceName.length() == 0) {
-            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
-        }
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
-        }
-        try {
-            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(e.getMessage(), e);
         }
         if (provider != null) {
             if (export == null) {
@@ -269,7 +261,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         checkRegistry();
         checkProtocol();
         appendProperties(this);
-        checkRef();
+        checkGenericAndInterface();
         checkStubAndMock(interfaceClass);
         checkPath();
         doExportUrls();
@@ -283,10 +275,18 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
-    private void checkRef() {
+    private void checkGenericAndInterface() {
         // reference should not be null, and is the implementation of the given interface
         if (ref == null) {
             throw new IllegalStateException("ref not allow null!");
+        }
+        if (interfaceName == null || interfaceName.length() == 0) {
+            throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
+        }
+        try {
+            interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e.getMessage(), e);
         }
         if (!interfaceClass.isInstance(ref)) {
             throw new IllegalStateException("The class " + ref.getClass().getName() + " unimplemented interface " + interfaceClass + "!");
