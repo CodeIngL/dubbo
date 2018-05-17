@@ -89,7 +89,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private String path;
     // method configuration
     private List<MethodConfig> methods;
-    private ProviderConfig provider;
+    private ProviderConfig provider = new ProviderConfig();
     private transient volatile boolean exported;
 
     private transient volatile boolean unexported;
@@ -655,23 +655,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private void checkDefault() {
         if (provider == null) {
-            provider = new ProviderConfig();
+            throw new IllegalStateException(
+                    "No provider, did you call setProvider(null)!");
         }
         appendProperties(provider);
     }
 
     private void checkProtocol() {
-        if ((protocols == null || protocols.isEmpty())
-                && provider != null) {
-            setProtocols(provider.getProtocols());
-        }
         if (protocols == null || protocols.isEmpty()) {
             throw new IllegalStateException(
                     "No such protocol config! Please add <dubbo:protocol /> to your spring config.");
         }
         for (ProtocolConfig protocolConfig : protocols) {
             if (StringUtils.isEmpty(protocolConfig.getName())) {
-                protocolConfig.setName(Constants.DUBBO_VERSION_KEY);
+                protocolConfig.setName("dubbo");
             }
             appendProperties(protocolConfig);
         }
