@@ -116,8 +116,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     @SuppressWarnings("deprecation")
     protected void checkApplication() {
         if (application == null) {
-            throw new IllegalStateException(
-                    "No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
+            throw new IllegalStateException("No such application config! Please add <dubbo:application name=\"...\" /> to your spring config.");
         }
         appendProperties(application);
 
@@ -253,6 +252,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     protected void checkStubAndMock(Class<?> interfaceClass) {
         if (ConfigUtils.isNotEmpty(stub)) {
+            if ("true".equals(stub)) {
+                stub = interfaceClass.getName() + "Stub";
+            }
             checkClassDefense(stub, interfaceClass.getName() + "Stub", interfaceClass, true);
         }
         if (ConfigUtils.isNotEmpty(mock)) {

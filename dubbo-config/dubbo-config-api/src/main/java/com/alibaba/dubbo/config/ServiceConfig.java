@@ -273,14 +273,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             checkInterfaceAndMethods(interfaceClass, methods);
             generic = Boolean.FALSE.toString();
         }
-        if ("true".equals(local)) {
-            local = interfaceName + "Local";
-        }
-        checkClass(local, interfaceClass, interfaceName);
-        if ("true".equals(stub)) {
-            stub = interfaceName + "Stub";
-        }
-        checkClass(stub, interfaceClass, interfaceName);
         checkApplication();
         checkRegistry();
         checkProtocol();
@@ -292,19 +284,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         doExportUrls();
         ProviderModel providerModel = new ProviderModel(getUniqueServiceName(), this, ref);
         ApplicationModel.initProviderModel(getUniqueServiceName(), providerModel);
-    }
-
-    private void checkClass(String className, Class interfaceClass, String interfaceName) {
-        if (className != null) {
-            try {
-                Class<?> localClass = ClassHelper.forNameWithThreadContextClassLoader(local);
-                if (!interfaceClass.isAssignableFrom(localClass)) {
-                    throw new IllegalStateException("The implementation class " + localClass.getName() + " not implement interface " + interfaceName);
-                }
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-        }
     }
 
     private void checkRef() {
