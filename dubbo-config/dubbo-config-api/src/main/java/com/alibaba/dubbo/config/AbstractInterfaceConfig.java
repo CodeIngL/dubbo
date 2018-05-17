@@ -49,9 +49,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     private static final long serialVersionUID = -1559314110797223229L;
 
-    // local impl class name for the service interface
-    protected String local;
-
     // local stub class name for the service interface
     protected String stub;
 
@@ -255,9 +252,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     protected void checkStubAndMock(Class<?> interfaceClass) {
-        if (ConfigUtils.isNotEmpty(local)) {
-            checkClassDefense(local, interfaceClass.getName() + "Local", interfaceClass, true);
-        }
         if (ConfigUtils.isNotEmpty(stub)) {
             checkClassDefense(stub, interfaceClass.getName() + "Stub", interfaceClass, true);
         }
@@ -275,44 +269,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
-    /**
-     * @return local
-     * @deprecated Replace to <code>getStub()</code>
-     */
-    @Deprecated
-    public String getLocal() {
-        return local;
-    }
-
-    /**
-     * @param local
-     * @deprecated Replace to <code>setStub(Boolean)</code>
-     */
-    @Deprecated
-    public void setLocal(Boolean local) {
-        if (local == null) {
-            setLocal((String) null);
-        } else {
-            setLocal(String.valueOf(local));
-        }
-    }
-
-    /**
-     * @param local
-     * @deprecated Replace to <code>setStub(String)</code>
-     */
-    @Deprecated
-    public void setLocal(String local) {
-        checkName("local", local);
-        this.local = local;
-    }
-
     public String getStub() {
         return stub;
     }
 
     public void setStub(Boolean stub) {
-        if (local == null) {
+        if (stub == null) {
             setStub((String) null);
         } else {
             setStub(String.valueOf(stub));
