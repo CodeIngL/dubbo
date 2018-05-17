@@ -37,7 +37,6 @@ import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.support.MockInvoker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -149,15 +148,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (RegistryConfig.NO_AVAILABLE.equals(address)) {
                 continue;
             }
-            Map<String, String> map = new HashMap<String, String>();
+            Map<String, String> map = fetchParameters();
+            map.put("path", RegistryService.class.getName());
             appendParameters(map, application);
             appendParameters(map, config);
-            map.put("path", RegistryService.class.getName());
-            map.put("dubbo", Version.getVersion());
-            map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-            if (ConfigUtils.getPid() > 0) {
-                map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-            }
             if (!map.containsKey("protocol")) {
                 if (ExtensionLoader.getExtensionLoader(RegistryFactory.class).hasExtension("remote")) {
                     map.put("protocol", "remote");
@@ -194,15 +188,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
         appendProperties(monitor);
-        String address = monitor.getAddress();
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = fetchParameters();
         map.put(Constants.INTERFACE_KEY, MonitorService.class.getName());
-        map.put("dubbo", Version.getVersion());
-        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-        if (ConfigUtils.getPid() > 0) {
-            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-        }
         appendParameters(map, monitor);
+        String address = monitor.getAddress();
         if (ConfigUtils.isNotEmpty(address)) {
             if (!map.containsKey(Constants.PROTOCOL_KEY)) {
                 if (ExtensionLoader.getExtensionLoader(MonitorFactory.class).hasExtension("logstat")) {

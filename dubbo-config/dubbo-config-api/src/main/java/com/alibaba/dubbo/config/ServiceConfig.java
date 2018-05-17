@@ -352,13 +352,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (StringUtils.isEmpty(name)) {
             name = "dubbo";
         }
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = fetchParameters();
         map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);
-        map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
-        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-        if (ConfigUtils.getPid() > 0) {
-            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-        }
         appendParameters(map, application);
         appendParameters(map, module);
         appendParameters(map, provider, Constants.DEFAULT_KEY);
@@ -769,6 +764,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     public List<MethodConfig> getMethods() {
         return methods;
+    }
+
+    @Override
+    protected Map<String, String> fetchParameters() {
+        Map<String, String> map = super.fetchParameters();
+        map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);
+        return map;
     }
 
     // ======== Deprecated ========

@@ -277,14 +277,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         checkApplication();
         checkStubAndMock(interfaceClass);
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = fetchParameters();
         Map<Object, Object> attributes = new HashMap<Object, Object>();
-        map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
-        map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
-        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-        if (ConfigUtils.getPid() > 0) {
-            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-        }
         if (!isGeneric()) {
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
@@ -452,6 +446,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException(t.getMessage(), t);
         }
         return interfaceClass;
+    }
+
+    @Override
+    protected Map<String, String> fetchParameters() {
+        Map<String, String> map = super.fetchParameters();
+        map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
+        return map;
     }
 
     /**

@@ -18,6 +18,7 @@ package com.alibaba.dubbo.config;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
+import com.alibaba.dubbo.common.Version;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
@@ -120,6 +121,17 @@ public abstract class AbstractConfig implements Serializable {
         }
         tag = tag.toLowerCase();
         return tag;
+    }
+
+    protected Map<String, String> fetchParameters() {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
+        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
+        int pid = ConfigUtils.getPid();
+        if (pid > 0) {
+            map.put(Constants.PID_KEY, String.valueOf(pid));
+        }
+        return map;
     }
 
     protected static void appendParameters(Map<String, String> parameters, Object config) {
