@@ -230,7 +230,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private void doReferUrl() {
         Map<String, String> map = fetchParameters();
-        if (!isGeneric()) {
+        if (!interfaceClass.isAssignableFrom(GenericService.class)) {
             String revision = Version.getVersion(interfaceClass, version);
             if (StringUtils.isNotEmpty(revision)) {
                 map.put("revision", revision);
@@ -243,18 +243,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 map.put("methods", StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
             }
         }
-        map.put(Constants.INTERFACE_KEY, interfaceName);
         appendParameters(map, application);
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
         appendParameters(map, this);
-        String hostToRegistry = ConfigUtils.getSystemProperty(Constants.DUBBO_IP_TO_REGISTRY);
-        if (StringUtils.isEmpty(hostToRegistry)) {
-            hostToRegistry = NetUtils.getLocalHost();
-        } else if (isInvalidLocalHost(hostToRegistry)) {
-            throw new IllegalArgumentException("Specified invalid registry ip from property:" + Constants.DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
-        }
-        map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
+        map.put(Constants.REGISTER_IP_KEY, fetchIp());
+        map.put(Constants.INTERFACE_KEY, interfaceName);
         String prefix = StringUtils.getServiceKey(map);
         if (methods != null && !methods.isEmpty()) {
             Map<Object, Object> attributes = new HashMap<Object, Object>();
@@ -274,6 +268,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         //attributes are stored by system context.
         ref = createProxy(map);
+    }
+
+    private static String fetchIp() {
+        String ip = ConfigUtils.getSystemProperty(Constants.DUBBO_IP_TO_REGISTRY);
+        if (StringUtils.isEmpty(ip)) {
+            ip = NetUtils.getLocalHost();
+        } else if (isInvalidLocalHost(ip)) {
+            throw new IllegalArgumentException("Specified invalid registry ip from property:" + Constants.DUBBO_IP_TO_REGISTRY + ", value:" + ip);
+        }
+        return ip;
     }
 
     private void checkGenericAndInterface() {
@@ -325,12 +329,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
-        URL tmpUrl = new URL("temp", "localhost", 0, map);
         final boolean isJvmRefer;
         if (isInjvm() == null) {
             if (StringUtils.isNotEmpty(url)) { // if a url is specified, don't do local reference
                 isJvmRefer = false;
-            } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
+            } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(new URL("temp", "localhost", 0, map))) {
                 // by default, reference local service if there is
                 isJvmRefer = true;
             } else {
@@ -347,33 +350,29 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
         } else {
-            if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+            if (StringUtils.isNotEmpty(url)) { // user specified URL, could be peer-to-peer address, or register center's address.
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
-                if (us != null && us.length > 0) {
-                    for (String u : us) {
-                        URL url = URL.valueOf(u);
-                        if (url.getPath() == null || url.getPath().length() == 0) {
-                            url = url.setPath(interfaceName);
-                        }
-                        if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                            urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
-                        } else {
-                            urls.add(ClusterUtils.mergeUrl(url, map));
-                        }
+                for (String u : us) {
+                    URL url = URL.valueOf(u);
+                    if (StringUtils.isEmpty(url.getPath())) {
+                        url = url.setPath(interfaceName);
+                    }
+                    if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+                        urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                    } else {
+                        urls.add(ClusterUtils.mergeUrl(url, map));
                     }
                 }
             } else { // assemble URL from register center's configuration
                 List<URL> us = loadRegistries(false);
-                if (us != null && !us.isEmpty()) {
-                    for (URL u : us) {
-                        URL monitorUrl = loadMonitor(u);
-                        if (monitorUrl != null) {
-                            map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                        }
-                        urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                for (URL u : us) {
+                    URL monitorUrl = loadMonitor(u);
+                    if (monitorUrl != null) {
+                        map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                     }
+                    urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
                 }
-                if (urls == null || urls.isEmpty()) {
+                if (urls.isEmpty()) {
                     throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
                 }
             }
