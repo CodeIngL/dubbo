@@ -232,11 +232,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         exported = true;
         if (provider != null) {
-            if (application == null) {
-                application = provider.getApplication();
-            }
             if (module == null) {
                 module = provider.getModule();
+            }
+            if (application == null) {
+                application = provider.getApplication();
             }
             if (registries == null) {
                 registries = provider.getRegistries();
@@ -248,20 +248,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 protocols = provider.getProtocols();
             }
         }
-        if (application != null) {
-            if (registries == null) {
-                registries = application.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = application.getMonitor();
-            }
-        }
         if (module != null) {
             if (registries == null) {
                 registries = module.getRegistries();
             }
             if (monitor == null) {
                 monitor = module.getMonitor();
+            }
+        }
+        if (application != null) {
+            if (registries == null) {
+                registries = application.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = application.getMonitor();
             }
         }
         checkProvider();
@@ -656,8 +656,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private void checkProvider() {
         if (provider == null) {
-            throw new IllegalStateException(
-                    "No provider, did you call setProvider(null)!");
+            throw new IllegalStateException("No provider, did you call setProvider(null)!");
         }
         appendProperties(provider);
     }
