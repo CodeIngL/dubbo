@@ -431,7 +431,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         this.scope = scope;
     }
 
-    public void convert(AbstractInterfaceConfig config){
+    public void convert(AbstractInterfaceConfig config) {
         doConvert(config);
         if (config != null) {
             if (module == null) {
@@ -465,6 +465,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
-    protected abstract void doConvert(AbstractInterfaceConfig config);
+    protected void doConvert(AbstractInterfaceConfig config) {
+
+    }
 
 }
