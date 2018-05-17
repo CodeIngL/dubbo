@@ -187,36 +187,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             return;
         }
         initialized = true;
-        if (consumer != null) {
-            if (application == null) {
-                application = consumer.getApplication();
-            }
-            if (module == null) {
-                module = consumer.getModule();
-            }
-            if (registries == null) {
-                registries = consumer.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = consumer.getMonitor();
-            }
-        }
-        if (module != null) {
-            if (registries == null) {
-                registries = module.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = module.getMonitor();
-            }
-        }
-        if (application != null) {
-            if (registries == null) {
-                registries = application.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = application.getMonitor();
-            }
-        }
+        convert(consumer);
         checkConsumer();
         checkApplication();
         appendProperties(this);
@@ -417,7 +388,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private void checkConsumer() {
         if (consumer == null) {
-            throw new IllegalStateException("No provider, did you call setProvider(null)!");
+            throw new IllegalStateException("No consumer, did you call setConsumer(null)!");
         }
         appendProperties(consumer);
     }
@@ -538,4 +509,8 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return buf.toString();
     }
 
+    @Override
+    protected void doConvert(AbstractInterfaceConfig config) {
+        return;
+    }
 }

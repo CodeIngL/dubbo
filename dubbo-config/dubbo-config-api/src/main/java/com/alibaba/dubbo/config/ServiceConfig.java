@@ -223,39 +223,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             return;
         }
         exported = true;
-        if (provider != null) {
-            if (module == null) {
-                module = provider.getModule();
-            }
-            if (application == null) {
-                application = provider.getApplication();
-            }
-            if (registries == null) {
-                registries = provider.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = provider.getMonitor();
-            }
-            if (protocols == null) {
-                protocols = provider.getProtocols();
-            }
-        }
-        if (module != null) {
-            if (registries == null) {
-                registries = module.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = module.getMonitor();
-            }
-        }
-        if (application != null) {
-            if (registries == null) {
-                registries = application.getRegistries();
-            }
-            if (monitor == null) {
-                monitor = application.getMonitor();
-            }
-        }
+        convert(provider);
         checkProvider();
         checkApplication();
         checkRegistry();
@@ -810,5 +778,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             buf.append(":").append(version);
         }
         return buf.toString();
+    }
+
+    @Override
+    protected void doConvert(AbstractInterfaceConfig config) {
+        AbstractServiceConfig serviceConfig = (AbstractServiceConfig) config;
+        if (serviceConfig != null) {
+            if (protocols == null) {
+                protocols = serviceConfig.getProtocols();
+            }
+        }
     }
 }

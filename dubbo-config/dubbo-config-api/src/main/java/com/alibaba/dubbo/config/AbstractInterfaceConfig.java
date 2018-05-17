@@ -431,4 +431,40 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         this.scope = scope;
     }
 
+    public void convert(AbstractInterfaceConfig config){
+        doConvert(config);
+        if (config != null) {
+            if (module == null) {
+                module = config.getModule();
+            }
+            if (application == null) {
+                application = config.getApplication();
+            }
+            if (registries == null) {
+                registries = config.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = config.getMonitor();
+            }
+        }
+        if (module != null) {
+            if (registries == null) {
+                registries = module.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = module.getMonitor();
+            }
+        }
+        if (application != null) {
+            if (registries == null) {
+                registries = application.getRegistries();
+            }
+            if (monitor == null) {
+                monitor = application.getMonitor();
+            }
+        }
+    }
+
+    protected abstract void doConvert(AbstractInterfaceConfig config);
+
 }
