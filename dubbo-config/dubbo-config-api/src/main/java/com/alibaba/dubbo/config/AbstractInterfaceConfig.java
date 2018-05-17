@@ -238,47 +238,39 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    private void checkClassDefense(String classDefenseName, String defaultName, Class<?> interfaceClass, boolean wrapped) {
+        Class<?> localClass = ConfigUtils.isDefault(classDefenseName) ? ReflectUtils.forName(defaultName) : ReflectUtils.forName(classDefenseName);
+        if (!interfaceClass.isAssignableFrom(localClass)) {
+            throw new IllegalStateException("The implementation class " + localClass.getName() + " not implement interface " + interfaceClass.getName());
+        }
+        try {
+            if (wrapped) {
+                ReflectUtils.findConstructor(localClass, interfaceClass);
+            } else {
+                localClass.getConstructor(new Class<?>[0]);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() + "(" + interfaceClass.getName() + ")\" in local implementation class " + localClass.getName());
+        }
+    }
+
     protected void checkStubAndMock(Class<?> interfaceClass) {
         if (ConfigUtils.isNotEmpty(local)) {
-            Class<?> localClass = ConfigUtils.isDefault(local) ? ReflectUtils.forName(interfaceClass.getName() + "Local") : ReflectUtils.forName(local);
-            if (!interfaceClass.isAssignableFrom(localClass)) {
-                throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceClass.getName());
-            }
-            try {
-                ReflectUtils.findConstructor(localClass, interfaceClass);
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() + "(" + interfaceClass.getName() + ")\" in local implementation class " + localClass.getName());
-            }
+            checkClassDefense(local, interfaceClass.getName() + "Local", interfaceClass, true);
         }
         if (ConfigUtils.isNotEmpty(stub)) {
-            Class<?> localClass = ConfigUtils.isDefault(stub) ? ReflectUtils.forName(interfaceClass.getName() + "Stub") : ReflectUtils.forName(stub);
-            if (!interfaceClass.isAssignableFrom(localClass)) {
-                throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceClass.getName());
-            }
-            try {
-                ReflectUtils.findConstructor(localClass, interfaceClass);
-            } catch (NoSuchMethodException e) {
-                throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() + "(" + interfaceClass.getName() + ")\" in local implementation class " + localClass.getName());
-            }
+            checkClassDefense(stub, interfaceClass.getName() + "Stub", interfaceClass, true);
         }
         if (ConfigUtils.isNotEmpty(mock)) {
             if (mock.startsWith(Constants.RETURN_PREFIX)) {
-                String value = mock.substring(Constants.RETURN_PREFIX.length());
                 try {
+                    String value = mock.substring(Constants.RETURN_PREFIX.length());
                     MockInvoker.parseMockValue(value);
                 } catch (Exception e) {
                     throw new IllegalStateException("Illegal mock json value in <dubbo:service ... mock=\"" + mock + "\" />");
                 }
             } else {
-                Class<?> mockClass = ConfigUtils.isDefault(mock) ? ReflectUtils.forName(interfaceClass.getName() + "Mock") : ReflectUtils.forName(mock);
-                if (!interfaceClass.isAssignableFrom(mockClass)) {
-                    throw new IllegalStateException("The mock implementation class " + mockClass.getName() + " not implement interface " + interfaceClass.getName());
-                }
-                try {
-                    mockClass.getConstructor(new Class<?>[0]);
-                } catch (NoSuchMethodException e) {
-                    throw new IllegalStateException("No such empty constructor \"public " + mockClass.getSimpleName() + "()\" in mock implementation class " + mockClass.getName());
-                }
+                checkClassDefense(stub, interfaceClass.getName() + "Stub", interfaceClass, false);
             }
         }
     }
