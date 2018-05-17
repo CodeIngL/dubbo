@@ -36,6 +36,7 @@ import com.alibaba.dubbo.rpc.ProxyFactory;
 import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.support.MockInvoker;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -213,23 +214,24 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             throw new IllegalStateException("The interface class " + interfaceClass + " is not a interface!");
         }
         // check if methods exist in the interface
-        if (methods != null && !methods.isEmpty()) {
-            for (MethodConfig methodBean : methods) {
-                String methodName = methodBean.getName();
-                if (methodName == null || methodName.length() == 0) {
-                    throw new IllegalStateException("<dubbo:method> name attribute is required! Please check: <dubbo:service interface=\"" + interfaceClass.getName() + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>");
+        if (methods == null || methods.isEmpty()) {
+            return;
+        }
+        for (MethodConfig methodBean : methods) {
+            String methodName = methodBean.getName();
+            if (StringUtils.isEmpty(methodName)) {
+                throw new IllegalStateException("<dubbo:method> name attribute is required! Please check: <dubbo:service interface=\"" + interfaceClass.getName() + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>");
+            }
+            boolean hasMethod = false;
+            for (Method method : interfaceClass.getMethods()) {
+                if (methodName.equals(method.getName())) {
+                    hasMethod = true;
+                    break;
                 }
-                boolean hasMethod = false;
-                for (java.lang.reflect.Method method : interfaceClass.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        hasMethod = true;
-                        break;
-                    }
-                }
-                if (!hasMethod) {
-                    throw new IllegalStateException("The interface " + interfaceClass.getName()
-                            + " not found method " + methodName);
-                }
+            }
+            if (!hasMethod) {
+                throw new IllegalStateException("The interface " + interfaceClass.getName()
+                        + " not found method " + methodName);
             }
         }
     }
