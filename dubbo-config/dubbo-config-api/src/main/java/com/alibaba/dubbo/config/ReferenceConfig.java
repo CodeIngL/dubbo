@@ -208,10 +208,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
-                map.put("methods", Constants.ANY_VALUE);
                 logger.warn("NO method found in service interface " + interfaceClass.getName());
+                map.put(Constants.METHODS_KEY, Constants.ANY_VALUE);
             } else {
-                map.put("methods", StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
+                map.put(Constants.METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
             }
         }
         appendParameters(map, application);

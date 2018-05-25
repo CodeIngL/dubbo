@@ -296,11 +296,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
-        if (StringUtils.isEmpty(name)) {
-            name = "dubbo";
-        }
         Map<String, String> map = fetchParameters();
-        map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);
+        if (!interfaceClass.isAssignableFrom(GenericService.class)) {
+            String revision = Version.getVersion(interfaceClass, version);
+            if (StringUtils.isNotEmpty(revision)) {
+                map.put("revision", revision);
+            }
+            String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
+            if (methods.length == 0) {
+                logger.warn("NO method found in service interface " + interfaceClass.getName());
+                map.put(Constants.METHODS_KEY, Constants.ANY_VALUE);
+            } else {
+                map.put(Constants.METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
+            }
+        }
         appendParameters(map, application);
         appendParameters(map, module);
         appendParameters(map, provider, Constants.DEFAULT_KEY);
@@ -363,21 +372,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             } // end of methods for
         }
 
-        if (ProtocolUtils.isGeneric(generic)) {
+        if (interfaceClass.isAssignableFrom(GenericService.class)) {
             map.put(Constants.GENERIC_KEY, generic);
             map.put(Constants.METHODS_KEY, Constants.ANY_VALUE);
-        } else {
-            String revision = Version.getVersion(interfaceClass, version);
-            if (revision != null && revision.length() > 0) {
-                map.put("revision", revision);
-            }
-            String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
-            if (methods.length == 0) {
-                logger.warn("NO method found in service interface " + interfaceClass.getName());
-                map.put(Constants.METHODS_KEY, Constants.ANY_VALUE);
-            } else {
-                map.put(Constants.METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
-            }
         }
         if (!ConfigUtils.isEmpty(token)) {
             if (ConfigUtils.isDefault(token)) {
