@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static com.alibaba.dubbo.common.Constants.LOCALHOST_KEY;
 import static com.alibaba.dubbo.common.utils.NetUtils.isInvalidLocalHost;
 
 /**
@@ -372,7 +373,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (isInjvm() == null) {
             if (StringUtils.isNotEmpty(url)) { // if a url is specified, don't do local reference
                 isJvmRefer = false;
-            } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(new URL("temp", "localhost", 0, map))) {
+            } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(new URL("temp", LOCALHOST_KEY, 0, map))) {
                 // by default, reference local service if there is
                 isJvmRefer = true;
             } else {
