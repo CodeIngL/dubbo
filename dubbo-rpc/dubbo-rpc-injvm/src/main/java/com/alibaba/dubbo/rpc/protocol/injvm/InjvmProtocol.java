@@ -95,9 +95,9 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         final boolean isJvmRefer;
         String scope = url.getParameter(Constants.SCOPE_KEY);
         // Since injvm protocol is configured explicitly, we don't need to set any extra flag, use normal refer process.
-        if (Constants.LOCAL_PROTOCOL.toString().equals(url.getProtocol())) {
+        if (Constants.LOCAL_PROTOCOL.equals(url.getProtocol())) {
             isJvmRefer = false;
-        } else if (Constants.SCOPE_LOCAL.equals(scope) || (url.getParameter("injvm", false))) {
+        } else if (Constants.SCOPE_LOCAL.equals(scope)) {
             // if it's declared as local reference
             // 'scope=local' is equivalent to 'injvm=true', injvm will be deprecated in the future release
             isJvmRefer = true;

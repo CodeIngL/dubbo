@@ -369,20 +369,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private boolean isJvmRefer(Map<String, String> map) {
-        final boolean isJvmRefer;
-        if (isInjvm() == null) {
-            if (StringUtils.isNotEmpty(url)) { // if a url is specified, don't do local reference
-                isJvmRefer = false;
-            } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(new URL("temp", LOCALHOST_KEY, 0, map))) {
-                // by default, reference local service if there is
-                isJvmRefer = true;
-            } else {
-                isJvmRefer = false;
-            }
-        } else {
-            isJvmRefer = isInjvm().booleanValue();
+        if (StringUtils.isNotEmpty(url)) { // if a url is specified, don't do local reference
+            return false;
+        } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(new URL("temp", LOCALHOST_KEY, 0, map))) {
+            // by default, reference local service if there is
+            return true;
         }
-        return isJvmRefer;
+        return false;
     }
 
     private void checkConsumer() {
