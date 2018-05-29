@@ -72,12 +72,12 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
             return invokers.iterator().next().invoke(invocation);
         }
 
-        Class<?> returnType;
+        Class<?> returnType = null;
         try {
             returnType = getInterface().getMethod(
                     invocation.getMethodName(), invocation.getParameterTypes()).getReturnType();
         } catch (NoSuchMethodException e) {
-            returnType = null;
+            //ignore
         }
 
         Map<String, Future<Result>> results = new HashMap<String, Future<Result>>();
