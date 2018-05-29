@@ -53,7 +53,6 @@ import static com.alibaba.dubbo.common.Constants.QOS_PORT;
 
 /**
  * RegistryProtocol
- *
  */
 public class RegistryProtocol implements Protocol {
 
@@ -245,7 +244,7 @@ public class RegistryProtocol implements Protocol {
      */
     private URL getProviderUrl(final Invoker<?> origininvoker) {
         String export = origininvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);
-        if (export == null || export.length() == 0) {
+        if (StringUtils.isEmpty(export)) {
             throw new IllegalArgumentException("The registry export url is null! registry: " + origininvoker.getUrl());
         }
 
@@ -277,9 +276,8 @@ public class RegistryProtocol implements Protocol {
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
-        if (group != null && group.length() > 0) {
-            if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length > 1
-                    || "*".equals(group)) {
+        if (StringUtils.isNotEmpty(group)) {
+            if (group.contains(",") || "*".equals(group)) {
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
