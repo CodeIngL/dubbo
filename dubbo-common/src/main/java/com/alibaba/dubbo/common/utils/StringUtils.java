@@ -344,7 +344,7 @@ public final class StringUtils {
      * @return Parameters instance.
      */
     public static Map<String, String> parseQueryString(String qs) {
-        if (qs == null || qs.length() == 0)
+        if (isEmpty(qs))
             return new HashMap<String, String>();
         return parseKeyValuePair(qs, "\\&");
     }
@@ -352,12 +352,12 @@ public final class StringUtils {
     public static String getServiceKey(Map<String, String> ps) {
         StringBuilder buf = new StringBuilder();
         String group = ps.get(Constants.GROUP_KEY);
-        if (group != null && group.length() > 0) {
+        if (isNotEmpty(group)) {
             buf.append(group).append("/");
         }
         buf.append(ps.get(Constants.INTERFACE_KEY));
         String version = ps.get(Constants.VERSION_KEY);
-        if (version != null && version.length() > 0) {
+        if (isNotEmpty(version)) {
             buf.append(":").append(version);
         }
         return buf.toString();
@@ -365,26 +365,27 @@ public final class StringUtils {
 
     public static String toQueryString(Map<String, String> ps) {
         StringBuilder buf = new StringBuilder();
-        if (ps != null && ps.size() > 0) {
-            for (Map.Entry<String, String> entry : new TreeMap<String, String>(ps).entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                if (key != null && key.length() > 0
-                        && value != null && value.length() > 0) {
-                    if (buf.length() > 0) {
-                        buf.append("&");
-                    }
-                    buf.append(key);
-                    buf.append("=");
-                    buf.append(value);
+        if (ps == null || ps.size() == 0) {
+            return buf.toString();
+        }
+        ps.remove(null);
+        ps.remove("");
+        for (Map.Entry<String, String> entry : new TreeMap<String, String>(ps).entrySet()) {
+            String value = entry.getValue();
+            if (isNotEmpty(value)) {
+                if (buf.length() > 0) {
+                    buf.append("&");
                 }
+                buf.append(entry.getKey());
+                buf.append("=");
+                buf.append(value);
             }
         }
         return buf.toString();
     }
 
     public static String camelToSplitName(String camelName, String split) {
-        if (camelName == null || camelName.length() == 0) {
+        if (isEmpty(camelName)) {
             return camelName;
         }
         StringBuilder buf = null;
