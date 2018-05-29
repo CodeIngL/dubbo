@@ -237,11 +237,9 @@ public class DubboProtocol extends AbstractProtocol {
         Boolean isCallbackservice = url.getParameter(Constants.IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice) {
             String stubServiceMethods = url.getParameter(Constants.STUB_EVENT_METHODS_KEY);
-            if (stubServiceMethods == null || stubServiceMethods.length() == 0) {
-                if (logger.isWarnEnabled()) {
-                    logger.warn(new IllegalStateException("consumer [" + url.getParameter(Constants.INTERFACE_KEY) +
-                            "], has set stubproxy support event ,but no stub methods founded."));
-                }
+            if (StringUtils.isEmpty(stubServiceMethods)) {
+                logger.warn(new IllegalStateException("consumer [" + url.getParameter(Constants.INTERFACE_KEY) +
+                        "], has set stubproxy support event ,but no stub methods founded."));
             } else {
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
@@ -395,7 +393,7 @@ public class DubboProtocol extends AbstractProtocol {
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
 
         // BIO is not allowed since it has severe performance issue.
-        if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
+        if (StringUtils.isNotEmpty(str) && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported client type: " + str + "," +
                     " supported client type is " + StringUtils.join(ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
         }
