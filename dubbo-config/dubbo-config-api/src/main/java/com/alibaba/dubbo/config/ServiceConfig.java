@@ -353,9 +353,6 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                             Class<?> argclazz = argtypes[j];
                                             if (argclazz.getName().equals(argument.getType())) {
                                                 appendParameters(map, argument, methodConfig.getName() + "." + j);
-                                                if (argument.getIndex() != -1 && argument.getIndex() != j) {
-                                                    throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
-                                                }
                                             }
                                         }
                                     }
