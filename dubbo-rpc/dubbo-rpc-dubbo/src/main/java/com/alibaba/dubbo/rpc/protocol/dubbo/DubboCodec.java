@@ -41,6 +41,8 @@ import com.alibaba.dubbo.rpc.RpcInvocation;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static com.alibaba.dubbo.common.Constants.DECODE_IN_IO_THREAD_KEY;
+import static com.alibaba.dubbo.common.Constants.DEFAULT_DECODE_IN_IO_THREAD;
 import static com.alibaba.dubbo.rpc.protocol.dubbo.CallbackServiceCodec.encodeInvocationArgument;
 
 /**
@@ -81,9 +83,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                         data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
                     } else {
                         DecodeableRpcResult result;
-                        if (channel.getUrl().getParameter(
-                                Constants.DECODE_IN_IO_THREAD_KEY,
-                                Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
+                        if (channel.getUrl().getParameter(DECODE_IN_IO_THREAD_KEY,DEFAULT_DECODE_IN_IO_THREAD)) {
                             result = new DecodeableRpcResult(channel, res, is,
                                     (Invocation) getRequestData(id), proto);
                             result.decode();
@@ -123,8 +123,8 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                 } else {
                     DecodeableRpcInvocation inv;
                     if (channel.getUrl().getParameter(
-                            Constants.DECODE_IN_IO_THREAD_KEY,
-                            Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
+                            DECODE_IN_IO_THREAD_KEY,
+                            DEFAULT_DECODE_IN_IO_THREAD)) {
                         inv = new DecodeableRpcInvocation(channel, req, is, proto);
                         inv.decode();
                     } else {

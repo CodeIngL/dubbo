@@ -18,6 +18,7 @@ package com.alibaba.dubbo.rpc.support;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
+import com.alibaba.dubbo.common.utils.StringUtils;
 
 public class ProtocolUtils {
 
@@ -31,12 +32,12 @@ public class ProtocolUtils {
 
     public static String serviceKey(int port, String serviceName, String serviceVersion, String serviceGroup) {
         StringBuilder buf = new StringBuilder();
-        if (serviceGroup != null && serviceGroup.length() > 0) {
+        if (StringUtils.isNotEmpty(serviceGroup)) {
             buf.append(serviceGroup);
             buf.append("/");
         }
         buf.append(serviceName);
-        if (serviceVersion != null && serviceVersion.length() > 0 && !"0.0.0".equals(serviceVersion)) {
+        if (StringUtils.isNotEmpty(serviceVersion) && !"0.0.0".equals(serviceVersion)) {
             buf.append(":");
             buf.append(serviceVersion);
         }

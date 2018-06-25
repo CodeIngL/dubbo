@@ -18,6 +18,7 @@ package com.alibaba.dubbo.rpc.filter;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.extension.Activate;
+import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
@@ -115,11 +116,11 @@ public class AccessLogFilter implements Filter {
                 sn.append("[").append(new SimpleDateFormat(MESSAGE_DATE_FORMAT).format(new Date())).append("] ").append(context.getRemoteHost()).append(":").append(context.getRemotePort())
                         .append(" -> ").append(context.getLocalHost()).append(":").append(context.getLocalPort())
                         .append(" - ");
-                if (null != group && group.length() > 0) {
+                if (StringUtils.isNotEmpty(group)) {
                     sn.append(group).append("/");
                 }
                 sn.append(serviceName);
-                if (null != version && version.length() > 0) {
+                if (StringUtils.isNotEmpty(version)) {
                     sn.append(":").append(version);
                 }
                 sn.append(" ");

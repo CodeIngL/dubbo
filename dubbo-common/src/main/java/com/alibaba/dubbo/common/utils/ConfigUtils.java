@@ -87,7 +87,7 @@ public class ConfigUtils {
         List<String> names = new ArrayList<String>();
 
         // add initial values
-        String[] configs = (cfg == null || cfg.trim().length() == 0) ? new String[0] : Constants.COMMA_SPLIT_PATTERN.split(cfg);
+        String[] configs = (StringUtils.isEmpty(cfg)) ? new String[0] : Constants.COMMA_SPLIT_PATTERN.split(cfg);
         for (String config : configs) {
             if (config != null && config.trim().length() > 0) {
                 names.add(config);
@@ -119,7 +119,7 @@ public class ConfigUtils {
     }
 
     public static String replaceProperty(String expression, Map<String, String> params) {
-        if (expression == null || expression.length() == 0 || expression.indexOf('$') < 0) {
+        if (StringUtils.isEmpty(expression) || expression.indexOf('$') < 0) {
             return expression;
         }
         Matcher matcher = VARIABLE_PATTERN.matcher(expression);

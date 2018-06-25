@@ -21,6 +21,7 @@ import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
 import com.alibaba.dubbo.common.utils.ReflectUtils;
+import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.RpcInvocation;
 
@@ -63,7 +64,7 @@ public class RpcUtils {
                     && invocation.getInvoker().getUrl() != null
                     && !invocation.getMethodName().startsWith("$")) {
                 String service = invocation.getInvoker().getUrl().getServiceInterface();
-                if (service != null && service.length() > 0) {
+                if (StringUtils.isNotEmpty(service)) {
                     Class<?> cls = ReflectUtils.forName(service);
                     Method method = cls.getMethod(invocation.getMethodName(), invocation.getParameterTypes());
                     if (method.getReturnType() == void.class) {
@@ -108,30 +109,33 @@ public class RpcUtils {
     }
 
     public static String getMethodName(Invocation invocation) {
+        Object[] arguments = invocation.getArguments();
         if (Constants.$INVOKE.equals(invocation.getMethodName())
-                && invocation.getArguments() != null
-                && invocation.getArguments().length > 0
-                && invocation.getArguments()[0] instanceof String) {
+                && arguments != null
+                && arguments.length > 0
+                && arguments[0] instanceof String) {
             return (String) invocation.getArguments()[0];
         }
         return invocation.getMethodName();
     }
 
     public static Object[] getArguments(Invocation invocation) {
+        Object[] arguments = invocation.getArguments();
         if (Constants.$INVOKE.equals(invocation.getMethodName())
-                && invocation.getArguments() != null
-                && invocation.getArguments().length > 2
-                && invocation.getArguments()[2] instanceof Object[]) {
+                && arguments != null
+                && arguments.length > 2
+                && arguments[2] instanceof Object[]) {
             return (Object[]) invocation.getArguments()[2];
         }
         return invocation.getArguments();
     }
 
     public static Class<?>[] getParameterTypes(Invocation invocation) {
+        Object[] arguments = invocation.getArguments();
         if (Constants.$INVOKE.equals(invocation.getMethodName())
-                && invocation.getArguments() != null
-                && invocation.getArguments().length > 1
-                && invocation.getArguments()[1] instanceof String[]) {
+                && arguments != null
+                && arguments.length > 1
+                && arguments[1] instanceof String[]) {
             String[] types = (String[]) invocation.getArguments()[1];
             if (types == null) {
                 return new Class<?>[0];
@@ -146,23 +150,17 @@ public class RpcUtils {
     }
 
     public static boolean isAsync(URL url, Invocation inv) {
-        boolean isAsync;
         if (Boolean.TRUE.toString().equals(inv.getAttachment(Constants.ASYNC_KEY))) {
-            isAsync = true;
-        } else {
-            isAsync = url.getMethodParameter(getMethodName(inv), Constants.ASYNC_KEY, false);
+            return true;
         }
-        return isAsync;
+        return url.getMethodParameter(getMethodName(inv), Constants.ASYNC_KEY, false);
     }
 
     public static boolean isOneway(URL url, Invocation inv) {
-        boolean isOneway;
         if (Boolean.FALSE.toString().equals(inv.getAttachment(Constants.RETURN_KEY))) {
-            isOneway = true;
-        } else {
-            isOneway = !url.getMethodParameter(getMethodName(inv), Constants.RETURN_KEY, true);
+            return true;
         }
-        return isOneway;
+        return !url.getMethodParameter(getMethodName(inv), Constants.RETURN_KEY, true);
     }
 
 }

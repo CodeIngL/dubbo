@@ -74,7 +74,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
             //no mock
             result = this.invoker.invoke(invocation);
         } else if (value.startsWith("force")) {
-            if (logger.isWarnEnabled()) {
+            if (logger.isInfoEnabled()) {
                 logger.info("force-mock: " + invocation.getMethodName() + " force-mock enabled , url : " + directory.getUrl());
             }
             //force:direct mock
