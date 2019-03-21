@@ -998,9 +998,9 @@ public class ExtensionLoader<T> {
         if (!hasAdaptiveAnnotation)
             throw new IllegalStateException("No adaptive method on extension " + type.getName() + ", refuse to create the adaptive class!");
         //导包
-        codeBuidler.append("package " + type.getPackage().getName() + ";");
-        codeBuidler.append("\nimport " + ExtensionLoader.class.getName() + ";");
-        codeBuidler.append("\npublic class " + type.getSimpleName() + "$Adpative" + " implements " + type.getCanonicalName() + " {");
+        codeBuidler.append("package " + type.getPackage().getName() + ";\n");
+        codeBuidler.append("import " + ExtensionLoader.class.getName() + ";\n");
+        codeBuidler.append("public class " + type.getSimpleName() + "$Adpative" + " implements " + type.getCanonicalName() + " {");
 
         //遍历方法
         //方法上没有标注@Adaptive
