@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
  */
 package com.alibaba.dubbo.config;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 import com.alibaba.dubbo.common.Constants;
@@ -37,6 +38,14 @@ import com.alibaba.dubbo.rpc.InvokerListener;
 import com.alibaba.dubbo.rpc.ProxyFactory;
 import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.support.MockInvoker;
+
+import static com.alibaba.dubbo.common.Constants.*;
+import static com.alibaba.dubbo.common.Version.getVersion;
+import static com.alibaba.dubbo.common.utils.ConfigUtils.getPid;
+import static com.alibaba.dubbo.common.utils.StringUtils.isEmpty;
+import static com.alibaba.dubbo.common.utils.StringUtils.isNotEmpty;
+import static com.alibaba.dubbo.config.RegistryConfig.NO_AVAILABLE;
+import static java.lang.System.currentTimeMillis;
 
 /**
  * AbstractDefaultConfig
@@ -106,13 +115,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // 兼容旧版本
         if (registries == null || registries.size() == 0) {
             String address = ConfigUtils.getProperty("dubbo.registry.address");
-            if (address != null && address.length() > 0) {
+            if (isNotEmpty(address)) {
                 registries = new ArrayList<RegistryConfig>();
-                String[] as = address.split("\\s*[|]+\\s*");
-                for (String a : as) {
-                    RegistryConfig registryConfig = new RegistryConfig();
-                    registryConfig.setAddress(a);
-                    registries.add(registryConfig);
+                for (String a : address.split("\\s*[|]+\\s*")) {
+                    registries.add(new RegistryConfig(a));
                 }
             }
         }
@@ -122,7 +128,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     : "No such any registry to export service in provider ")
                     + NetUtils.getLocalHost()
                     + " use dubbo version "
-                    + Version.getVersion()
+                    + getVersion()
                     + ", Please add <dubbo:registry address=\"...\" /> to your spring config. If you want unregister, please set <dubbo:service registry=\"N/A\" />");
         }
         for (RegistryConfig registryConfig : registries) {
@@ -169,7 +175,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             return;
         }
         wait = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);
-        if (StringUtils.isEmpty(wait)) {
+        if (isEmpty(wait)) {
             return;
         }
         System.setProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY, wait.trim());
@@ -210,15 +216,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
         for (RegistryConfig config : registries) {
-            //获得系统配置地址
-            String address = System.getProperty("dubbo.registry.address");
-            if (StringUtils.isEmpty(address)){
+            //再次确定远程注册中心的地址
+            String address = System.getProperty("dubbo.registry.address");//获得系统配置地址
+            if (isEmpty(address)) {
                 address = config.getAddress();
-                if (StringUtils.isEmpty(address)) {
-                    address = Constants.ANYHOST_VALUE;//本机
-                }
             }
-            if (RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+            if (isEmpty(address)) {
+                address = ANYHOST_VALUE;//本机
+            }
+            if (NO_AVAILABLE.equalsIgnoreCase(address)) {
                 continue;
             }
             //有效的注册中心地址即不是N/A
@@ -227,29 +233,19 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             appendParameters(map, application);
             //从应用中获得注册配置获得键值对
             appendParameters(map, config);
-            //继续放置
             map.put("path", RegistryService.class.getName());
-            //继续放置
-            map.put("dubbo", Version.getVersion());
-            //继续放置
-            map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-            //继续放置
-            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
-            //使用键值对解析地址
-            List<URL> urls = UrlUtils.parseURLs(address, map);
-            for (URL url : urls) {
-                //url中的map加入registry，url.getProtocol()
-                url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
-                //url中对protocol重新设置，为registry
-                url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
-                //上面这样设置的目的是为了用protocol为registry代表这个url代表了一个注册中心
-                //同时url的参数信息（registry:原先的的protocol代表注册中心的特别类型，比如zookeeper，redis
-                if ((provider && url.getParameter(Constants.REGISTER_KEY, true))) {
-                    //for服务提供者
+            map.put("dubbo", getVersion());
+            map.put(TIMESTAMP_KEY, String.valueOf(currentTimeMillis()));
+            map.put(Constants.PID_KEY, String.valueOf(getPid()));
+
+            for (URL url : UrlUtils.parseURLs(address, map)) {
+                url = url.addParameter(REGISTRY_KEY, url.getProtocol());//url中的map加入registry，url.getProtocol()
+                url = url.setProtocol(REGISTRY_PROTOCOL);//url中对protocol重新设置，为registry
+                //上面这样设置的目的是为了用protocol为registry代表这个url代表了一个注册中心。同时url的参数信息（registry:原先的的protocol代表注册中心的特别类型，比如zookeeper，redis
+                if ((provider && url.getParameter(REGISTER_KEY, true))) {//for服务提供者
                     registryList.add(url);
                 }
-                if (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true)) {
-                    //for服务消费者
+                if (!provider && url.getParameter(SUBSCRIBE_KEY, true)) {//for服务消费者
                     registryList.add(url);
                 }
             }
@@ -270,16 +266,16 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
         appendProperties(monitor);
         Map<String, String> map = new HashMap<String, String>();
-        map.put(Constants.INTERFACE_KEY, MonitorService.class.getName());
-        map.put("dubbo", Version.getVersion());
-        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-        if (ConfigUtils.getPid() > 0) {
-            map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
+        map.put(INTERFACE_KEY, MonitorService.class.getName());
+        map.put("dubbo", getVersion());
+        map.put(TIMESTAMP_KEY, String.valueOf(currentTimeMillis()));
+        if (getPid() > 0) {
+            map.put(Constants.PID_KEY, String.valueOf(getPid()));
         }
         appendParameters(map, monitor);
         String address = monitor.getAddress();
         String sysaddress = System.getProperty("dubbo.monitor.address");
-        if (sysaddress != null && sysaddress.length() > 0) {
+        if (isNotEmpty(sysaddress)) {
             address = sysaddress;
         }
         if (ConfigUtils.isNotEmpty(address)) {
@@ -291,7 +287,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 }
             }
             return UrlUtils.parseURL(address, map);
-        } else if (Constants.REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
+        } else if (REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
             return registryURL.setProtocol("dubbo").addParameter(Constants.PROTOCOL_KEY, "registry")
                     .addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
         }
@@ -313,21 +309,19 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (!interfaceClass.isInterface()) {
             throw new IllegalStateException("The interface class " + interfaceClass + " is not a interface!");
         }
-        // 检查方法是否在接口中存在
-        if (methods != null && methods.size() > 0) {
-            // 所有方法配置类中配置的方法，对应的消费方的引用接口必须有相应的方法
-            // 匹配规则这两者名字相等
-            Set<String> interfaceMethodNames = new HashSet<String>();
-            for (java.lang.reflect.Method method : interfaceClass.getMethods()) {
-                interfaceMethodNames.add(method.getName());
-            }
-            //方法配置类的名字(必须配置)
-            //接口引用的方法必须包含method中配置的方法
-            for (MethodConfig methodBean : methods) {
-                if (!interfaceMethodNames.contains(methodBean.getName())) {
-                    throw new IllegalStateException("<dubbo:method> name attribute is required and in interface's method name! Please check: <dubbo:service interface=\"" + interfaceClass.getName()
-                            + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>; you method's name is: " + methodBean.getName());
-                }
+        if (methods == null || methods.size() == 0) {
+            return;
+        }
+        // 所有方法配置类中配置的方法信息，必须能映射到暴露接口的方法中，这种映射关系就是两者的名字是相等的。
+        Set<String> methodName = new HashSet<String>();
+        for (Method method : interfaceClass.getMethods()) {
+            methodName.add(method.getName());
+        }
+        for (MethodConfig methodConfig : methods) {
+            String methodConfigName = methodConfig.getName();
+            if (!methodName.contains(methodConfigName)) {
+                throw new IllegalStateException("<dubbo:method> name attribute is required and in interface's method name! Please check: <dubbo:service interface=\"" + interfaceClass.getName()
+                        + "\" ... ><dubbo:method name=\"\" ... /></<dubbo:reference>; you method's name is: " + methodConfigName);
             }
         }
     }
@@ -371,9 +365,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
         //生成mock
         if (ConfigUtils.isNotEmpty(mock)) {
-            // 对应mock直接配置为代码的，需要使用工具类建议下其是否配置正确
-            // 配置为代码的特征，以return开头
-            if (mock.startsWith(Constants.RETURN_PREFIX)) {
+            if (mock.startsWith(Constants.RETURN_PREFIX)) { // 对应mock直接配置为代码字符串的，要求以return打头，我们将这字符串进行简单的解释
                 String value = mock.substring(Constants.RETURN_PREFIX.length());
                 try {
                     MockInvoker.parseMockValue(value);
@@ -381,6 +373,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     throw new IllegalStateException("Illegal mock json value in <dubbo:service ... mock=\"" + mock + "\" />");
                 }
             } else {
+                //是类的情况，由一个控制字段来决定事件的mock的类名，mock为true和default的，使用系统推导，否则使用mock的默认值
                 Class<?> mockClass = ConfigUtils.isDefault(mock) ? ReflectUtils.forName(interfaceClass.getName() + "Mock") : ReflectUtils.forName(mock);
                 if (!interfaceClass.isAssignableFrom(mockClass)) {
                     throw new IllegalStateException("The mock implemention class " + mockClass.getName() + " not implement interface " + interfaceClass.getName());
@@ -584,14 +577,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     public void setScope(String scope) {
         this.scope = scope;
-    }
-
-    public static void main(String[] args) {
-        Set<String> sets = new HashSet<String>();
-        System.out.println(sets.contains(null));
-        System.out.println(sets.contains(""));
-        sets.add(null);
-        System.out.println(sets.contains(null));
     }
 
 }

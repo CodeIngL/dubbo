@@ -25,6 +25,9 @@ import com.alibaba.dubbo.remoting.exchange.support.ExchangeHandlerDispatcher;
 import com.alibaba.dubbo.remoting.exchange.support.Replier;
 import com.alibaba.dubbo.remoting.transport.ChannelHandlerAdapter;
 
+import static com.alibaba.dubbo.common.Constants.DEFAULT_EXCHANGER;
+import static com.alibaba.dubbo.common.Constants.EXCHANGER_KEY;
+
 /**
  * Exchanger facade. (API, Static, ThreadSafe)(工具类)
  *
@@ -47,7 +50,7 @@ public class Exchangers {
      * @return Exchanger 交换器扩展类对应实例:HeaderExchanger实例
      */
     public static Exchanger getExchanger(URL url) {
-        String type = url.getParameter(Constants.EXCHANGER_KEY, Constants.DEFAULT_EXCHANGER);
+        String type = url.getParameter(EXCHANGER_KEY, DEFAULT_EXCHANGER);
         return ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type);
     }
 

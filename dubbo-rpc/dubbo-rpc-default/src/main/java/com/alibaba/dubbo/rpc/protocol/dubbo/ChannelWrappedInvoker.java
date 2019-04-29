@@ -33,6 +33,10 @@ import com.alibaba.dubbo.rpc.RpcInvocation;
 import com.alibaba.dubbo.rpc.RpcResult;
 import com.alibaba.dubbo.rpc.protocol.AbstractInvoker;
 
+import static com.alibaba.dubbo.common.Constants.*;
+import static com.alibaba.dubbo.rpc.RpcException.NETWORK_EXCEPTION;
+import static com.alibaba.dubbo.rpc.RpcException.TIMEOUT_EXCEPTION;
+
 /**
  * 基于已有channel的invoker. 
  * 
@@ -46,7 +50,7 @@ class ChannelWrappedInvoker<T> extends AbstractInvoker<T> {
     public ChannelWrappedInvoker(Class<T> serviceType, Channel channel, URL url, String serviceKey) {
 
         super(serviceType, url, new String[] { Constants.GROUP_KEY,
-                Constants.TOKEN_KEY, Constants.TIMEOUT_KEY });
+                Constants.TOKEN_KEY, TIMEOUT_KEY });
         this.channel = channel;
         this.serviceKey = serviceKey;
     }
@@ -55,18 +59,19 @@ class ChannelWrappedInvoker<T> extends AbstractInvoker<T> {
     protected Result doInvoke(Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;
         //拿不到client端export 的service path.约定为interface的名称.
-        inv.setAttachment(Constants.PATH_KEY, getInterface().getName());
-        inv.setAttachment(Constants.CALLBACK_SERVICE_KEY, serviceKey);
+        inv.setAttachment(PATH_KEY, getInterface().getName());
+        inv.setAttachment(CALLBACK_SERVICE_KEY, serviceKey);
 
         ExchangeClient currentClient = new HeaderExchangeClient(new ChannelWrapper(this.channel));
 
         try {
-            if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) { // 不可靠异步
-                currentClient.send(inv,getUrl().getMethodParameter(invocation.getMethodName(), Constants.SENT_KEY, false));
+            String methodName  = invocation.getMethodName();
+            URL url = getUrl();
+            if (url.getMethodParameter(methodName, ASYNC_KEY, false)) { // 不可靠异步
+                currentClient.send(inv,url.getMethodParameter(methodName, SENT_KEY, false));
                 return new RpcResult();
             }
-            int timeout = getUrl().getMethodParameter(invocation.getMethodName(),
-                    Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
+            int timeout = url.getMethodParameter(methodName, TIMEOUT_KEY, DEFAULT_TIMEOUT);
             if (timeout > 0) {
                 return (Result) currentClient.request(inv, timeout).get();
             } else {
@@ -75,9 +80,9 @@ class ChannelWrappedInvoker<T> extends AbstractInvoker<T> {
         } catch (RpcException e) {
             throw e;
         } catch (TimeoutException e) {
-            throw new RpcException(RpcException.TIMEOUT_EXCEPTION, e.getMessage(), e);
+            throw new RpcException(TIMEOUT_EXCEPTION, e.getMessage(), e);
         } catch (RemotingException e) {
-            throw new RpcException(RpcException.NETWORK_EXCEPTION, e.getMessage(), e);
+            throw new RpcException(NETWORK_EXCEPTION, e.getMessage(), e);
         } catch (Throwable e) { // here is non-biz exception, wrap it.
             throw new RpcException(e.getMessage(), e);
         }

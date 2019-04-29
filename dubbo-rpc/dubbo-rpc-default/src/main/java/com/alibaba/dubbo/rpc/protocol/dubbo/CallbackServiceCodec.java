@@ -130,12 +130,11 @@ class CallbackServiceCodec {
      * @param url 
      */
     @SuppressWarnings("unchecked")
-    private static Object referOrdestroyCallbackService(Channel channel, URL url, Class<?> clazz ,Invocation inv ,int instid, boolean isRefer){
-        Object proxy = null;
+    private static Object referOrDestroyCallbackService(Channel channel, URL url, Class<?> clazz , Invocation inv , int instid, boolean isRefer){
         String invokerCacheKey = getServerSideCallbackInvokerCacheKey(channel, clazz.getName(), instid);
         String proxyCacheKey = getServerSideCallbackServiceCacheKey(channel, clazz.getName(), instid);
-        proxy = channel.getAttribute(proxyCacheKey) ;
-        String countkey = getServerSideCountKey(channel, clazz.getName());
+        Object proxy = channel.getAttribute(proxyCacheKey) ;
+        String countKey = getServerSideCountKey(channel, clazz.getName());
         if (isRefer){
             if( proxy == null ){
             	URL referurl = URL.valueOf("callback://" + url.getAddress() + "/" + clazz.getName() + "?" + Constants.INTERFACE_KEY + "=" + clazz.getName());
@@ -146,7 +145,7 @@ class CallbackServiceCodec {
                     proxy = proxyFactory.getProxy(invoker);
                     channel.setAttribute(proxyCacheKey, proxy);
                     channel.setAttribute(invokerCacheKey, invoker);
-                    increaseInstanceCount(channel, countkey);
+                    increaseInstanceCount(channel, countKey);
                     
                     //convert error fail fast .
                     //ignore concurrent problem. 
@@ -174,7 +173,7 @@ class CallbackServiceCodec {
                 //取消refer 直接在map中去除，
                 channel.removeAttribute(proxyCacheKey);
                 channel.removeAttribute(invokerCacheKey);
-                decreaseInstanceCount(channel,countkey);
+                decreaseInstanceCount(channel,countKey);
             }
         } 
         return proxy;
@@ -266,20 +265,20 @@ class CallbackServiceCodec {
             }
             return inObject;
         }
-        byte callbackstatus = isCallBack(url, inv.getMethodName(), paraIndex);
-        switch (callbackstatus) {
+        byte callbackStatus = isCallBack(url, inv.getMethodName(), paraIndex);
+        switch (callbackStatus) {
             case CallbackServiceCodec.CALLBACK_NONE:
                 return inObject;
             case CallbackServiceCodec.CALLBACK_CREATE:
                 try{
-                    return referOrdestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), true);
+                    return referOrDestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), true);
                 }catch (Exception e) {
                     logger.error(e.getMessage(), e);
                     throw new IOException(StringUtils.toString(e));
                 }
             case CallbackServiceCodec.CALLBACK_DESTROY:
                 try{
-                    return referOrdestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), false);
+                    return referOrDestroyCallbackService(channel, url, pts[paraIndex], inv, Integer.parseInt(inv.getAttachment(INV_ATT_CALLBACK_KEY + paraIndex)), false);
                 }catch (Exception e) {
                     throw new IOException(StringUtils.toString(e));
                 }

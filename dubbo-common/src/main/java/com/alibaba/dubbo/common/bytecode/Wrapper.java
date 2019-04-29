@@ -90,6 +90,8 @@ public abstract class Wrapper {
     /**
      * get wrapper.
      *
+     * 对目标实现(提供服务的特定类)进行简单wrapper。
+     *
      * @param c Class instance.
      * @return Wrapper instance(not null).
      */
@@ -255,11 +257,9 @@ public abstract class Wrapper {
 
         Map<String, Method> ms = new LinkedHashMap<String, Method>(); // <method desc, Method instance>
 
-        //方法名
-        List<String> mns = new ArrayList<String>(); // method names.
+        List<String> mns = new ArrayList<String>(); // method names.方法名
 
-        //宣称的方法名
-        List<String> dmns = new ArrayList<String>(); // declaring method names.
+        List<String> dmns = new ArrayList<String>(); // declaring method names.宣称的方法名
 
         /**
          * equal
@@ -277,14 +277,10 @@ public abstract class Wrapper {
          *  if( $2.equals(字段名1)){ return ($w)w.字段名1;}
          *  if( $2.equals(字段名2)){ return ($w)w.字段名2;}
          */
-        //遍历所有公开字段
-        for (Field f : c.getFields()) {
-            //字段名
-            String fn = f.getName();
-            //字段类型
-            Class<?> ft = f.getType();
-            //对于静态或者不可序列化的字段忽略
-            if (Modifier.isStatic(f.getModifiers()) || Modifier.isTransient(f.getModifiers()))
+        for (Field f : c.getFields()) {//遍历所有公开字段
+            String fn = f.getName();//字段名
+            Class<?> ft = f.getType();//字段类型
+            if (Modifier.isStatic(f.getModifiers()) || Modifier.isTransient(f.getModifiers())) //对于静态或者不可序列化的字段忽略
                 continue;
             c1.append(" if( $2.equals(\"").append(fn).append("\") ){ w.").append(fn).append("=").append(arg(ft, "$3")).append("; return; }");
             c2.append(" if( $2.equals(\"").append(fn).append("\") ){ return ($w)w.").append(fn).append("; }");
@@ -320,28 +316,22 @@ public abstract class Wrapper {
 			throw new java.lang.reflect.InvocationTargetException(e);
 		}*/
         for (Method m : methods) {
-            //忽略Object的方法
-            if (m.getDeclaringClass() == Object.class)
+            if (m.getDeclaringClass() == Object.class)//忽略Object的方法
                 continue;
-            //方法名
-            String mn = m.getName();
-            //如果方法名等于第二个参数
-            c3.append(" if( \"").append(mn).append("\".equals( $2 ) ");
-            //方法参数长度
-            int len = m.getParameterTypes().length;
-            //且第三长度和方法参数长度一样
-            c3.append(" && ").append(" $3.length == ").append(len);
 
-            //是否有覆盖方法，方法名一致
-            boolean override = false;
+            String mn = m.getName();//方法名
+            c3.append(" if( \"").append(mn).append("\".equals( $2 ) "); //如果方法名等于第二个参数
+            int len = m.getParameterTypes().length;//方法参数长度
+            c3.append(" && ").append(" $3.length == ").append(len); //且第三长度和方法参数长度一样
+
+            boolean override = false;//是否有覆盖方法，方法名一致
             for (Method m2 : methods) {
                 if (m != m2 && m.getName().equals(m2.getName())) {
                     override = true;
                     break;
                 }
             }
-            //有覆盖方法，区分方法
-            if (override) {
+            if (override) {//有覆盖方法，区分方法
                 if (len > 0) {
                     //变量方法长度,
                     for (int l = 0; l < len; l++) {
@@ -354,8 +344,8 @@ public abstract class Wrapper {
 
             c3.append(" ) { ");
 
-            //返回类是是void
-            if (m.getReturnType() == Void.TYPE)
+
+            if (m.getReturnType() == Void.TYPE)  //返回类是是void
                 c3.append(" w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");").append(" return null;"); //调用
             else
                 c3.append(" return ($w)w.").append(mn).append('(').append(args(m.getParameterTypes(), "$4")).append(");");//调用
@@ -363,8 +353,7 @@ public abstract class Wrapper {
             c3.append(" }");
 
             mns.add(mn);
-            //如果方法的类型是C
-            //加入dmns
+            //如果方法的类型是C加入dmns
             if (m.getDeclaringClass() == c)
                 dmns.add(mn);
             //转换为特殊格式放入

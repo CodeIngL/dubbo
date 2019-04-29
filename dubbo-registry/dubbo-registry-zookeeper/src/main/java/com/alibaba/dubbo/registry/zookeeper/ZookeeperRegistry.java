@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,8 @@ import com.alibaba.dubbo.remoting.zookeeper.ZookeeperClient;
 import com.alibaba.dubbo.remoting.zookeeper.StateListener;
 import com.alibaba.dubbo.remoting.zookeeper.ZookeeperTransporter;
 import com.alibaba.dubbo.rpc.RpcException;
+
+import static com.alibaba.dubbo.common.Constants.*;
 
 /**
  * ZookeeperRegistry(zk注册中心)
@@ -160,7 +162,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     /**
      * 构建监听对url的订阅
-     * @param url 受订阅的目标url
+     *
+     * @param url      受订阅的目标url
      * @param listener url的监听者
      * @see FailbackRegistry#subscribe(URL, NotifyListener)
      */
@@ -329,11 +332,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
      */
     private String[] toCategoriesPath(URL url) {
         String[] categroies;
-        if (Constants.ANY_VALUE.equals(url.getParameter(Constants.CATEGORY_KEY))) {
-            categroies = new String[]{Constants.PROVIDERS_CATEGORY, Constants.CONSUMERS_CATEGORY,
-                    Constants.ROUTERS_CATEGORY, Constants.CONFIGURATORS_CATEGORY};
+        if (Constants.ANY_VALUE.equals(url.getParameter(CATEGORY_KEY))) {
+            categroies = new String[]{PROVIDERS_CATEGORY, CONSUMERS_CATEGORY, ROUTERS_CATEGORY, CONFIGURATORS_CATEGORY};
         } else {
-            categroies = url.getParameter(Constants.CATEGORY_KEY, new String[]{Constants.DEFAULT_CATEGORY});
+            categroies = url.getParameter(CATEGORY_KEY, new String[]{DEFAULT_CATEGORY});
         }
         String[] paths = new String[categroies.length];
         for (int i = 0; i < categroies.length; i++) {
@@ -345,16 +347,24 @@ public class ZookeeperRegistry extends FailbackRegistry {
     /**
      * 根据url中的键{@link Constants#CATEGORY_KEY}，生成相关zk上子目录的名字
      * 默认使用providers做为值
+     * 目录结构类似，
+     * /xxxx/xxxx/providers
+     * 其中通常的servicePath就能区分一个特定的接口服务，
      *
      * @param url 注册的url
      * @return 为暴露的服务添加子目录，返回到子目录的完整路径。单个
      */
     private String toCategoryPath(URL url) {
-        return toServicePath(url) + Constants.PATH_SEPARATOR + url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
+        return toServicePath(url) + Constants.PATH_SEPARATOR + url.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
     }
 
     /**
      * 生成完整的在zk上注册的暴露服务的路径
+     * tip：首先开发者需要知道的知识点是，在zookeeper上节点的存储是以类似的window下的目录的结构。
+     * <p>
+     * 这里提取了前面的路径也就是我们toCategoryPath路径，
+     * 后面的路径则是最终的服务节点，因为是被encode过的不在会出现相关的干扰。
+     * </p>
      *
      * @param url 注册的url
      * @return 为暴露的服务添加子目录，返回到子目录的完整路径：应用目录/暴露服务全类名/子目录/url的string值
@@ -365,8 +375,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
 
     /**
-     *
-     * @param consumer 主url，消费方url
+     * @param consumer  主url，消费方url
      * @param providers 子节点，消费url的一个目录下的子节点集合
      * @return 子节点能和主url匹配上的，返回
      */
@@ -388,9 +397,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
 
     /**
-     *
-     * @param consumer 主url（被目录服务消费的url）
-     * @param path 主url使用其中的一个目录形成的zknode节点
+     * @param consumer  主url（被目录服务消费的url）
+     * @param path      主url使用其中的一个目录形成的zknode节点
      * @param providers path下的子节点名称
      * @return
      */
@@ -402,7 +410,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
             //获得目录名字
             String category = i < 0 ? path : path.substring(i + 1);
             //为consumer打个桩，将其协议设定为empty，目录服务设定为当前的目录
-            URL empty = consumer.setProtocol(Constants.EMPTY_PROTOCOL).addParameter(Constants.CATEGORY_KEY, category);
+            URL empty = consumer.setProtocol(EMPTY_PROTOCOL).addParameter(CATEGORY_KEY, category);
             urls.add(empty);
         }
         return urls;

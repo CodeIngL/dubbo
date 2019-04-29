@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.alibaba.dubbo.common.utils.ClassHelper;
 import com.alibaba.dubbo.common.utils.ReflectUtils;
 
+import static java.lang.reflect.Modifier.isPublic;
+
 /**
  * Mixin
  * 
@@ -102,7 +104,7 @@ public abstract class Mixin
 			StringBuilder code = new StringBuilder();
 			for(int i=0;i<dcs.length;i++)
 			{
-				if( !Modifier.isPublic(dcs[i].getModifiers()) )
+				if( !isPublic(dcs[i].getModifiers()) )
 				{
 					String npkg = dcs[i].getPackage().getName();
 					if( pkg == null )
@@ -128,7 +130,7 @@ public abstract class Mixin
 			Set<String> worked = new HashSet<String>();
 			for(int i=0;i<ics.length;i++)
 			{
-				if( !Modifier.isPublic(ics[i].getModifiers()) )
+				if( !isPublic(ics[i].getModifiers()) )
 				{
 					String npkg = ics[i].getPackage().getName();
 					if( pkg == null )

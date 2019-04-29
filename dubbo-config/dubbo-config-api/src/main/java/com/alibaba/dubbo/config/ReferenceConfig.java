@@ -627,13 +627,4 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return invoker;
     }
 
-    public static void main(String[] args) {
-        String[] methods = Wrapper.getWrapper(GenericService.class).getMethodNames();
-        System.out.println(methods.length);
-        System.out.println(methods[0]);
-        Wrapper wrapper = Wrapper.getWrapper(Serializable.class);
-        methods = wrapper.getMethodNames();
-        System.out.println(methods.length);
-        System.out.println(methods[0]);
-    }
 }

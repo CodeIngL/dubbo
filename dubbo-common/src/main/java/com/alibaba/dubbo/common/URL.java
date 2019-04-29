@@ -348,7 +348,7 @@ public final class URL implements Serializable {
     public String getBackupAddress(int defaultPort) {
         StringBuilder address = new StringBuilder(appendDefaultPort(getAddress(), defaultPort));
         //获得集群中其他节点的地址，进行追加
-        String[] backups = getParameter(Constants.BACKUP_KEY, new String[0]);
+        String[] backups = getParameter(Constants.BACKUP_KEY, new String[0]); //backup
         if (backups != null && backups.length > 0) {
             for (String backup : backups) {
                 address.append(",");

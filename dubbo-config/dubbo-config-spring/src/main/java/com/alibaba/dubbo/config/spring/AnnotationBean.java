@@ -51,6 +51,9 @@ import com.alibaba.dubbo.config.ServiceConfig;
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.config.annotation.Service;
 
+import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.isStatic;
+
 /**
  * AnnotationBean
  * 
@@ -207,8 +210,8 @@ public class AnnotationBean extends AbstractConfig implements DisposableBean, Be
             String name = method.getName();
             if (name.length() > 3 && name.startsWith("set")
                     && method.getParameterTypes().length == 1
-                    && Modifier.isPublic(method.getModifiers())
-                    && ! Modifier.isStatic(method.getModifiers())) {
+                    && isPublic(method.getModifiers())
+                    && ! isStatic(method.getModifiers())) {
                 try {
                 	Reference reference = method.getAnnotation(Reference.class);
                 	if (reference != null) {

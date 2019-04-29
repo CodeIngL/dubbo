@@ -27,9 +27,11 @@ import com.alibaba.dubbo.rpc.RpcException;
  * @author william.liangf
  */
 public class InvokerWrapper<T> implements Invoker<T> {
-    
+
+    //服务对象的invoker包装.
     private final Invoker<T> invoker;
 
+    //服务对象的url元信息包装.
     private final URL url;
 
     public InvokerWrapper(Invoker<T> invoker, URL url){

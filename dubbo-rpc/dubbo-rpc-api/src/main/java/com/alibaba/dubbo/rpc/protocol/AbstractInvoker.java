@@ -142,13 +142,11 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         }
         RpcInvocation invocation = (RpcInvocation) inv;
         invocation.setInvoker(this);
-        //尝试添加附加的信息
-        if (attachment != null && attachment.size() > 0) {
+        if (attachment != null && attachment.size() > 0) { //尝试添加附加的信息
             invocation.addAttachmentsIfAbsent(attachment);
         }
-        //尝试添加上下文中的信息(线程内)
         Map<String, String> context = RpcContext.getContext().getAttachments();
-        if (context != null) {
+        if (context != null) {        //尝试添加上下文中的信息(线程内)
             invocation.addAttachmentsIfAbsent(context);
         }
         //继续添加

@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package com.alibaba.dubbo.registry.integration;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
@@ -39,6 +38,9 @@ import com.alibaba.dubbo.rpc.RpcException;
 import com.alibaba.dubbo.rpc.cluster.Cluster;
 import com.alibaba.dubbo.rpc.cluster.Configurator;
 import com.alibaba.dubbo.rpc.protocol.InvokerWrapper;
+
+import static com.alibaba.dubbo.common.Constants.*;
+import static com.alibaba.dubbo.common.utils.StringUtils.isEmpty;
 
 /**
  * RegistryProtocol
@@ -103,8 +105,7 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * <p>
-     * 本地暴露
-     * 注册中心注册
+     * 使用注册中心进行的暴露，除了暴露本地服务外还需要建立与注册中心的关系。
      * </p>
      *
      * @param originInvoker 默认情况下是AbstractProxyInvoker
@@ -115,32 +116,23 @@ public class RegistryProtocol implements Protocol {
      */
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
 
-        //这里会导出相应的东西
-        final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
-        //registry provider 获得注册中心
-        final Registry registry = getRegistry(originInvoker);
-        //获得协议配置的URL，该URL经过过滤，某些键值对不需要暴露（隐藏键和监控键）
-        final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
-        //使用注册中心注册注册协议配置URL已经做过操作
-        registry.register(registedProviderUrl);
+        final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker); //将本地的服务接口暴露为支持原创调用的接口
+        final Registry registry = getRegistry(originInvoker);//获得配置的注册中心
+        final URL registeredProviderUrl = getRegisteredProviderUrl(originInvoker);//获得需要注册进注册中心的元信息
+        registry.register(registeredProviderUrl);//使用注册中心进行相关的注册
 
         // 订阅override数据
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
-        //订阅的url
-        final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
+        final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registeredProviderUrl);//将注册中心上注册的url转换为需要被订阅的元信息
 
-        //新建订阅者
-        final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
+        final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl); //为这个需要订阅的元信息构建相应的监听者
 
-        //放置缓存
-        overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
+        overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener); //放置缓存
 
-        //订阅信息注册进注册中心，实现监听者对受订阅url的监听
-        registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
+        registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);//对注册中心的相关url进行订阅，这个url可以通过overrideSubscribeUrl来导出
 
-        //保证每次export都返回一个新的exporter实例
+        //返回在注册中心下真正暴露在外的服务提供者。由Export进行包装。
         return new Exporter<T>() {
-
             public Invoker<T> getInvoker() {
                 return exporter.getInvoker();
             }
@@ -152,7 +144,7 @@ public class RegistryProtocol implements Protocol {
                     logger.warn(t.getMessage(), t);
                 }
                 try {
-                    registry.unregister(registedProviderUrl);
+                    registry.unregister(registeredProviderUrl);
                 } catch (Throwable t) {
                     logger.warn(t.getMessage(), t);
                 }
@@ -163,7 +155,6 @@ public class RegistryProtocol implements Protocol {
                     logger.warn(t.getMessage(), t);
                 }
             }
-
         };
     }
 
@@ -182,22 +173,19 @@ public class RegistryProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
-        //key为需要导出的服务的url(provider的url,也就是注册url的export键对应值)去掉dynamic和enable键
-        String key = getCacheKey(originInvoker);
-        //尝试从缓存中获得，防止重复暴露
-        ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
+        String key = getCacheKey(originInvoker);//key为需要导出的服务的url(provider的url,也就是注册url的export键对应值)去掉dynamic和enable键
+        ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);//尝试从缓存中获得，防止重复暴露
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
-                    //从invoker中获得相应的配置服务提供url
-                    final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+                    final Invoker<?> invokerDelegete = new InvokerDelegate<T>(originInvoker, getProviderUrl(originInvoker));//从invoker中获得相应的配置服务提供url
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>) protocol.export(invokerDelegete), originInvoker);
                     bounds.put(key, exporter);
                 }
             }
         }
-        return (ExporterChangeableWrapper<T>) exporter;
+        return exporter;
     }
 
     /**
@@ -214,7 +202,7 @@ public class RegistryProtocol implements Protocol {
             logger.warn(new IllegalStateException("error state, exporter should not be null"));
             return;//不存在是异常场景 直接返回
         } else {
-            final Invoker<T> invokerDelegete = new InvokerDelegete<T>(originInvoker, newInvokerUrl);
+            final Invoker<T> invokerDelegete = new InvokerDelegate<T>(originInvoker, newInvokerUrl);
             exporter.setExporter(protocol.export(invokerDelegete));
         }
     }
@@ -229,8 +217,7 @@ public class RegistryProtocol implements Protocol {
      * @return 注册中心实例
      */
     private Registry getRegistry(final Invoker<?> originInvoker) {
-        //获得注册中心URL
-        URL registryUrl = originInvoker.getUrl();
+        URL registryUrl = originInvoker.getUrl();//获得注册中心URL
         //进行转换，转换为实际的使用的注册中心协议，比如zookeeper，redis
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
@@ -246,11 +233,9 @@ public class RegistryProtocol implements Protocol {
      * @param originInvoker
      * @return
      */
-    private URL getRegistedProviderUrl(final Invoker<?> originInvoker) {
+    private URL getRegisteredProviderUrl(final Invoker<?> originInvoker) {
         URL providerUrl = getProviderUrl(originInvoker);
-        //注册中心看到的地址
-        final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl)).removeParameter(Constants.MONITOR_KEY);
-        return registedProviderUrl;
+        return providerUrl.removeParameters(getFilteredKeys(providerUrl)).removeParameter(Constants.MONITOR_KEY);//注册中心看到的地址
     }
 
     /**
@@ -262,8 +247,8 @@ public class RegistryProtocol implements Protocol {
      * @return 订阅的URL
      */
     private URL getSubscribedOverrideUrl(URL registedProviderUrl) {
-        return registedProviderUrl.setProtocol(Constants.PROVIDER_PROTOCOL)
-                .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false));
+        return registedProviderUrl.setProtocol(PROVIDER_PROTOCOL)
+                .addParameters(CATEGORY_KEY, CONFIGURATORS_CATEGORY, CHECK_KEY, String.valueOf(false));
     }
 
     /**
@@ -271,16 +256,15 @@ public class RegistryProtocol implements Protocol {
      * 通过注册中心的url从其中取出key为export的值
      * 实际上就是配置协议的url
      *
-     * @param origininvoker
+     * @param originInvoker
      * @return
      */
-    private URL getProviderUrl(final Invoker<?> origininvoker) {
-        String export = origininvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);
-        if (export == null || export.length() == 0) {
-            throw new IllegalArgumentException("The registry export url is null! registry: " + origininvoker.getUrl());
+    private URL getProviderUrl(final Invoker<?> originInvoker) {
+        String providerUrl = originInvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);
+        if (isEmpty(providerUrl)) {
+            throw new IllegalArgumentException("The registry export url is null! registry: " + originInvoker.getUrl());
         }
-        URL providerUrl = URL.valueOf(export);
-        return providerUrl;
+        return URL.valueOf(providerUrl);
     }
 
     /**
@@ -294,8 +278,7 @@ public class RegistryProtocol implements Protocol {
      */
     private String getCacheKey(final Invoker<?> originInvoker) {
         URL providerUrl = getProviderUrl(originInvoker);
-        String key = providerUrl.removeParameters("dynamic", "enabled").toFullString();
-        return key;
+        return providerUrl.removeParameters("dynamic", "enabled").toFullString();
     }
 
     /**
@@ -385,13 +368,13 @@ public class RegistryProtocol implements Protocol {
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
             // 非泛化调用，在注册中心相关目录下注册相关信息，目录为:consumers
             // 对于zk来说，会产生/dubbo/接口名/consumers/url的String；这样的路径，最后一个节点是否为临时节点，由url中的信息决定（key:dynamic)
-            registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false)));
+            registry.register(subscribeUrl.addParameters(CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, CHECK_KEY, String.valueOf(false)));
         }
 
         // 目录服务进行订阅(category:providers,configurators,routers)
         // 设置了目录服务的消费url，使用注册中心去订阅该消费url，
         // 目录服务订阅其需要消费的url的在注册中心上的相关信息
-        directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
+        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
         return cluster.join(directory);
     }
 
@@ -403,17 +386,19 @@ public class RegistryProtocol implements Protocol {
      */
     private static String[] getFilteredKeys(URL url) {
         Map<String, String> params = url.getParameters();
-        if (params != null && !params.isEmpty()) {
-            List<String> filteredKeys = new ArrayList<String>();
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                if (entry != null && entry.getKey() != null && entry.getKey().startsWith(Constants.HIDE_KEY_PREFIX)) {
-                    filteredKeys.add(entry.getKey());
-                }
-            }
-            return filteredKeys.toArray(new String[filteredKeys.size()]);
-        } else {
+        if (params == null || params.size() == 0) {
             return new String[]{};
         }
+        List<String> filteredKeys = new ArrayList<String>();
+        for (String key : params.keySet()) {
+            if (key == null) {
+                continue;
+            }
+            if (key.startsWith(HIDE_KEY_PREFIX)) {
+                filteredKeys.add(key);
+            }
+        }
+        return filteredKeys.toArray(new String[filteredKeys.size()]);
     }
 
     public void destroy() {
@@ -425,9 +410,9 @@ public class RegistryProtocol implements Protocol {
     }
 
 
-    /*重新export 1.protocol中的exporter destory问题 
+    /*重新export 1.protocol中的exporter destory问题
      *1.要求registryprotocol返回的exporter可以正常destroy
-     *2.notify后不需要重新向注册中心注册 
+     *2.notify后不需要重新向注册中心注册
      *3.export 方法传入的invoker最好能一直作为exporter的invoker.
      */
     private class OverrideListener implements NotifyListener {
@@ -450,9 +435,9 @@ public class RegistryProtocol implements Protocol {
             List<URL> result = null;
             for (URL url : urls) {
                 URL overrideUrl = url;
-                if (url.getParameter(Constants.CATEGORY_KEY) == null && Constants.OVERRIDE_PROTOCOL.equals(url.getProtocol())) {
+                if (url.getParameter(CATEGORY_KEY) == null && Constants.OVERRIDE_PROTOCOL.equals(url.getProtocol())) {
                     // 兼容旧版本
-                    overrideUrl = url.addParameter(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY);
+                    overrideUrl = url.addParameter(CATEGORY_KEY, CONFIGURATORS_CATEGORY);
                 }
                 if (!UrlUtils.isMatch(subscribeUrl, overrideUrl)) {
                     if (result == null) {
@@ -470,8 +455,8 @@ public class RegistryProtocol implements Protocol {
             for (ExporterChangeableWrapper<?> exporter : exporters) {
                 Invoker<?> invoker = exporter.getOriginInvoker();
                 final Invoker<?> originInvoker;
-                if (invoker instanceof InvokerDelegete) {
-                    originInvoker = ((InvokerDelegete<?>) invoker).getInvoker();
+                if (invoker instanceof InvokerDelegate) {
+                    originInvoker = ((InvokerDelegate<?>) invoker).getInvoker();
                 } else {
                     originInvoker = invoker;
                 }
@@ -500,7 +485,7 @@ public class RegistryProtocol implements Protocol {
     /**
      * @param <T>
      */
-    public static class InvokerDelegete<T> extends InvokerWrapper<T> {
+    public static class InvokerDelegate<T> extends InvokerWrapper<T> {
 
         private final Invoker<T> invoker;
 
@@ -508,7 +493,7 @@ public class RegistryProtocol implements Protocol {
          * @param invoker
          * @param url     invoker.getUrl返回此值
          */
-        public InvokerDelegete(Invoker<T> invoker, URL url) {
+        public InvokerDelegate(Invoker<T> invoker, URL url) {
             super(invoker, url);
             this.invoker = invoker;
         }
@@ -517,8 +502,8 @@ public class RegistryProtocol implements Protocol {
          * @return
          */
         public Invoker<T> getInvoker() {
-            if (invoker instanceof InvokerDelegete) {
-                return ((InvokerDelegete<T>) invoker).getInvoker();
+            if (invoker instanceof InvokerDelegate) {
+                return ((InvokerDelegate<T>) invoker).getInvoker();
             } else {
                 return invoker;
             }

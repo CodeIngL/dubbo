@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.alibaba.dubbo.remoting;
 
 import com.alibaba.dubbo.common.URL;
-import com.alibaba.dubbo.common.Version;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.remoting.transport.ChannelHandlerAdapter;
 import com.alibaba.dubbo.remoting.transport.ChannelHandlerDispatcher;
@@ -66,14 +65,7 @@ public class Transporters {
         if (handlers == null || handlers.length == 0) {
             throw new IllegalArgumentException("handlers == null");
         }
-        ChannelHandler handler;
-        if (handlers.length == 1) {
-            handler = handlers[0];
-        } else {
-            handler = new ChannelHandlerDispatcher(handlers);
-        }
-        //Transporter$Adpative导出，默认总是netty
-        return transporter.bind(url, handler);
+        return transporter.bind(url, handlers.length == 1 ? handlers[0] : new ChannelHandlerDispatcher(handlers));//Transporter$Adpative导出，默认总是netty
     }
 
     //======= 消费端connect相关 =======

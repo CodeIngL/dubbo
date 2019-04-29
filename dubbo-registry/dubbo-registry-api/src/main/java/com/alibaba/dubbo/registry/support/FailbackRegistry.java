@@ -34,6 +34,9 @@ import com.alibaba.dubbo.common.utils.ConcurrentHashSet;
 import com.alibaba.dubbo.common.utils.NamedThreadFactory;
 import com.alibaba.dubbo.registry.NotifyListener;
 
+import static com.alibaba.dubbo.common.Constants.CHECK_KEY;
+import static com.alibaba.dubbo.common.Constants.CONSUMER_PROTOCOL;
+
 /**
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
  *
@@ -76,7 +79,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
         super(url);
 
-        int retryPeriod = url.getParameter(Constants.REGISTRY_RETRY_PERIOD_KEY, Constants.DEFAULT_REGISTRY_RETRY_PERIOD);
+        int retryPeriod = url.getParameter(Constants.REGISTRY_RETRY_PERIOD_KEY, Constants.DEFAULT_REGISTRY_RETRY_PERIOD); //retry.period
 
         this.retryFuture = retryExecutor.scheduleWithFixedDelay(new Runnable() {
             public void run() {
@@ -182,14 +185,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         failedRegistered.remove(url);
         failedUnregistered.remove(url);
         try {
-            // 子类实现，在注册中心上注册url
-            doRegister(url);
+            doRegister(url); // 子类重写，在注册中心上注册url
         } catch (Exception e) {
             Throwable t = e;
-            // 如果开启了启动时检测，则直接抛出异常
-            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
-                    && url.getParameter(Constants.CHECK_KEY, true)
-                    && !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
+            boolean check = getUrl().getParameter(CHECK_KEY, true) // 如果开启了启动时检测，则直接抛出异常，因为已经抛出异常了
+                    && url.getParameter(CHECK_KEY, true)
+                    && !CONSUMER_PROTOCOL.equals(url.getProtocol());
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
                 if (skipFailback) {
@@ -215,10 +216,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         } catch (Exception e) {
             Throwable t = e;
 
-            // 如果开启了启动时检测，则直接抛出异常
-            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
-                    && url.getParameter(Constants.CHECK_KEY, true)
-                    && !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());
+            boolean check = getUrl().getParameter(CHECK_KEY, true)// 如果开启了启动时检测，则直接抛出异常
+                    && url.getParameter(CHECK_KEY, true)
+                    && !CONSUMER_PROTOCOL.equals(url.getProtocol());
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
                 if (skipFailback) {
@@ -268,7 +268,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                         + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
             } else {
                 // 如果开启了启动时检测，则直接抛出异常
-                boolean check = getUrl().getParameter(Constants.CHECK_KEY, true) && url.getParameter(Constants.CHECK_KEY, true);
+                boolean check = getUrl().getParameter(CHECK_KEY, true) && url.getParameter(CHECK_KEY, true);
                 boolean skipFailback = t instanceof SkipFailbackWrapperException;
                 if (check || skipFailback) {
                     if (skipFailback) {
@@ -295,8 +295,8 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             Throwable t = e;
 
             // 如果开启了启动时检测，则直接抛出异常
-            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
-                    && url.getParameter(Constants.CHECK_KEY, true);
+            boolean check = getUrl().getParameter(CHECK_KEY, true)
+                    && url.getParameter(CHECK_KEY, true);
             boolean skipFailback = t instanceof SkipFailbackWrapperException;
             if (check || skipFailback) {
                 if (skipFailback) {

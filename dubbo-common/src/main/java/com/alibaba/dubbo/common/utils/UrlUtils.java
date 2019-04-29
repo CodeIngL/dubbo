@@ -24,6 +24,8 @@ import java.util.Set;
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 
+import static com.alibaba.dubbo.common.Constants.REGISTRY_SPLIT_PATTERN;
+
 public class UrlUtils {
 
 
@@ -167,7 +169,7 @@ public class UrlUtils {
             return null;
         }
         //"|或者符合;"拆分
-        String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
+        String[] addresses = REGISTRY_SPLIT_PATTERN.split(address);
         List<URL> registries = new ArrayList<URL>();
         for (String addr : addresses) {
             registries.add(parseURL(addr, defaults));

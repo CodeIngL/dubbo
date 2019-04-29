@@ -22,6 +22,8 @@ import com.alibaba.dubbo.rpc.Invoker;
 
 /**
  * AbstractExporter.
+ *
+ * 抽象的Export，通过将面向实际提供服务的invoker暴露。代表了对外支持的Invoker，仅仅发生了一个简单的转换
  * 
  * @author qianlei
  * @author william.liangf

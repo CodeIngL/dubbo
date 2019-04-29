@@ -557,10 +557,8 @@ public class ExtensionLoader<T> {
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
-                            //创建适配实例
-                            instance = createAdaptiveExtension();
-                            //设置cachedAdaptiveInstance属性
-                            cachedAdaptiveInstance.set(instance);
+                            instance = createAdaptiveExtension();//创建适配实例
+                            cachedAdaptiveInstance.set(instance);//设置cachedAdaptiveInstance属性
                         } catch (Throwable t) {
                             createAdaptiveInstanceError = t;
                             throw new IllegalStateException("fail to create adaptive instance: " + t.toString(), t);

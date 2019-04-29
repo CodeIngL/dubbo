@@ -56,6 +56,8 @@ import com.alibaba.dubbo.config.spring.ReferenceBean;
 import com.alibaba.dubbo.config.spring.ServiceBean;
 import com.alibaba.dubbo.rpc.Protocol;
 
+import static java.lang.reflect.Modifier.isPublic;
+
 /**
  * AbstractBeanDefinitionParser
  *
@@ -209,7 +211,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             String name = setter.getName();
             //set方法,公有，参数长度1
             if (name.length() > 3 && name.startsWith("set")
-                    && Modifier.isPublic(setter.getModifiers())
+                    && isPublic(setter.getModifiers())
                     && setter.getParameterTypes().length == 1) {
                 //参数类型
                 Class<?> type = setter.getParameterTypes()[0];
@@ -228,7 +230,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                 //没有get方法，get私有，get返回类型不和set一致，
                 //跳过
                 if (getter == null
-                        || !Modifier.isPublic(getter.getModifiers())
+                        || !isPublic(getter.getModifiers())
                         || !type.equals(getter.getReturnType())) {
                     continue;
                 }

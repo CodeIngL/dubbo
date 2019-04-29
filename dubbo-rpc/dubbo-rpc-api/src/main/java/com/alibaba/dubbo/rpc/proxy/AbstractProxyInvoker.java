@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,25 +26,27 @@ import com.alibaba.dubbo.rpc.RpcResult;
 
 /**
  * InvokerWrapper
- * 
+ *
+ * 最接近实际实际提供者的Invoker
+ *
  * @author william.liangf
  */
 public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
-    
+
     private final T proxy;
-    
+
     private final Class<T> type;
-    
+
     private final URL url;
 
-    public AbstractProxyInvoker(T proxy, Class<T> type, URL url){
+    public AbstractProxyInvoker(T proxy, Class<T> type, URL url) {
         if (proxy == null) {
             throw new IllegalArgumentException("proxy == null");
         }
         if (type == null) {
             throw new IllegalArgumentException("interface == null");
         }
-        if (! type.isInstance(proxy)) {
+        if (!type.isInstance(proxy)) {
             throw new IllegalArgumentException(proxy.getClass().getName() + " not implement interface " + type);
         }
         this.proxy = proxy;
@@ -69,26 +71,28 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
     /**
      * 返回一个结果
-     * @param invocation 调用对象
+     *
+     * @param inv 调用对象
      * @return rpc结果
      * @throws RpcException rpc异常
      */
-    public Result invoke(Invocation invocation) throws RpcException {
+    public Result invoke(Invocation inv) throws RpcException {
         try {
-            return new RpcResult(doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments()));
+            return new RpcResult(doInvoke(proxy, inv.getMethodName(), inv.getParameterTypes(), inv.getArguments()));
         } catch (InvocationTargetException e) {
             return new RpcResult(e.getTargetException());
         } catch (Throwable e) {
-            throw new RpcException("Failed to invoke remote proxy method " + invocation.getMethodName() + " to " + getUrl() + ", cause: " + e.getMessage(), e);
+            throw new RpcException("Failed to invoke remote proxy method " + inv.getMethodName() + " to " + getUrl() + ", cause: " + e.getMessage(), e);
         }
     }
 
     /**
      * 提供子类实现，返回rpc的对象结果
-     * @param proxy 代理
-     * @param methodName 方法名
+     *
+     * @param proxy          代理
+     * @param methodName     方法名
      * @param parameterTypes 参数类型
-     * @param arguments 参数
+     * @param arguments      参数
      * @return rpc结果对象
      * @throws Throwable 异常信息
      */
@@ -96,8 +100,8 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
 
     @Override
     public String toString() {
-        return getInterface() + " -> " + getUrl()==null?" ":getUrl().toString();
+        return getInterface() + " -> " + getUrl() == null ? " " : getUrl().toString();
     }
 
-    
+
 }

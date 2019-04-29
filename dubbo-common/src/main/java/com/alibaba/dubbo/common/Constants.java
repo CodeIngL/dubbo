@@ -57,6 +57,9 @@ public class Constants {
 
     public static final String  CACHE_KEY                          = "cache";
 
+    /**
+     * 在zookeeper下决定了构建路径的时候使用的是否是临时的节点，如果对应的值是true，则说明是临时的节点，将会依托于zookeeper进行自动的删除
+     */
     public static final String  DYNAMIC_KEY                        = "dynamic";
 
     public static final String  DUBBO_PROPERTIES_KEY               = "dubbo.properties.file";

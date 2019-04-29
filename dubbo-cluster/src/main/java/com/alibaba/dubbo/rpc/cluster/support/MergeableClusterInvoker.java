@@ -45,6 +45,8 @@ import com.alibaba.dubbo.rpc.cluster.Directory;
 import com.alibaba.dubbo.rpc.cluster.Merger;
 import com.alibaba.dubbo.rpc.cluster.merger.MergerFactory;
 
+import static java.lang.reflect.Modifier.isPublic;
+
 /**
  * merge集群调用策略下的invoker实际执行者
  * @see MergeableCluster
@@ -154,7 +156,7 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
                         .toString());
             }
             if (method != null) {
-                if (!Modifier.isPublic(method.getModifiers())) {
+                if (!isPublic(method.getModifiers())) {
                     method.setAccessible(true);
                 }
                 result = resultList.remove(0).getValue();

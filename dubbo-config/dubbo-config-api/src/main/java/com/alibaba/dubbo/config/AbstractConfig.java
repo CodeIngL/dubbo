@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2011 Alibaba Group.
- *  
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,12 @@ import com.alibaba.dubbo.common.utils.ConfigUtils;
 import com.alibaba.dubbo.common.utils.ReflectUtils;
 import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.dubbo.config.support.Parameter;
+
+import static com.alibaba.dubbo.common.Constants.DEFAULT_KEY;
+import static com.alibaba.dubbo.common.utils.StringUtils.isBlank;
+import static com.alibaba.dubbo.common.utils.StringUtils.isEmpty;
+import static com.alibaba.dubbo.common.utils.StringUtils.isNotEmpty;
+import static java.lang.reflect.Modifier.isPublic;
 
 /**
  * 配置解析的工具方法、公共方法
@@ -73,41 +79,13 @@ public abstract class AbstractConfig implements Serializable {
         this.id = id;
     }
 
-    private static final Map<String, String> legacyProperties = new HashMap<String, String>();
-
-    /*
-    * dubbo遗留属性（兼容低版本）
-     */
-    static {
-        legacyProperties.put("dubbo.protocol.name", "dubbo.service.protocol");
-        legacyProperties.put("dubbo.protocol.host", "dubbo.service.server.host");
-        legacyProperties.put("dubbo.protocol.port", "dubbo.service.server.port");
-        legacyProperties.put("dubbo.protocol.threads", "dubbo.service.max.thread.pool.size");
-        legacyProperties.put("dubbo.consumer.timeout", "dubbo.service.invoke.timeout");
-        legacyProperties.put("dubbo.consumer.retries", "dubbo.service.max.retry.providers");
-        legacyProperties.put("dubbo.consumer.check", "dubbo.service.allow.no.provider");
-        legacyProperties.put("dubbo.service.url", "dubbo.service.address");
-    }
-
-    //装换
-    private static String convertLegacyValue(String key, String value) {
-        if (value != null && value.length() > 0) {
-            if ("dubbo.service.max.retry.providers".equals(key)) {
-                return String.valueOf(Integer.parseInt(value) - 1);
-            } else if ("dubbo.service.allow.no.provider".equals(key)) {
-                return String.valueOf(!Boolean.parseBoolean(value));
-            }
-        }
-        return value;
-    }
-
     protected void appendAnnotation(Class<?> annotationClass, Object annotation) {
         Method[] methods = annotationClass.getMethods();
         for (Method method : methods) {
             if (method.getDeclaringClass() != Object.class
                     && method.getReturnType() != void.class
                     && method.getParameterTypes().length == 0
-                    && Modifier.isPublic(method.getModifiers())
+                    && isPublic(method.getModifiers())
                     && !Modifier.isStatic(method.getModifiers())) {
                 try {
                     String property = method.getName();
@@ -175,72 +153,55 @@ public abstract class AbstractConfig implements Serializable {
             try {
                 String name = method.getName();
                 //暴露的基本属性set方法
-                if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers())
+                if (name.length() > 3 && name.startsWith("set") && isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 1 && isPrimitive(method.getParameterTypes()[0])) {
-                    //方法名转换.
-                    //ex: setStudentName will transform to "student-name"
+                    //方法名转换. ex: setStudentName will transform to "student-name"
                     String suffix = StringUtils.camelToSplitName(name.substring(3, 4).toLowerCase() + name.substring(4), "-");
 
                     String idPn = prefix + config.getId() + "." + suffix;
                     String pn = prefix + suffix;
                     boolean hasId = !idPn.equals(pn);
 
-                    //config对象的有Id属性
-                    //ex:id equal to "aaaaa"
-                    //config对象的没有Id有效值or系统没有相关值
-                    //dubbo.xxx.student-name
-                    //尝试从系统获得
+                    //设置config对象属性的值，上面出现了一个id，是为了区分同一类型不同配置对象。如果id没有则使用，针对同一类型的配置
+                    //系统属性为最高优先级
+
                     String value = System.getProperty(idPn);
-                    if (StringUtils.isBlank(value) && hasId) {
+                    if (isBlank(value) && hasId) {
                         value = System.getProperty(pn);
                     }
-                    if (!StringUtils.isBlank(value)) {
+                    if (!isBlank(value)) {
                         logger.info("Use System Property " + pn + " to config dubbo");
                         method.invoke(config, new Object[]{convertPrimitive(method.getParameterTypes()[0], value)});
                         return;
                     }
-                    //上述的方式，在操作系统中均没有值配置
+
+                    //检测本身已经有值，本身的优先，通过get或者Is来获得值，有值，我们不需要操作了
                     Method getter;
-                    //获得get或者is方法
+                    Class configCls = config.getClass();
                     try {
-                        getter = config.getClass().getMethod("get" + name.substring(3), new Class<?>[0]);
+                        getter = configCls.getMethod("get" + name.substring(3), new Class<?>[0]);
                     } catch (NoSuchMethodException e) {
                         try {
-                            getter = config.getClass().getMethod("is" + name.substring(3), new Class<?>[0]);
+                            getter = configCls.getMethod("is" + name.substring(3), new Class<?>[0]);
                         } catch (NoSuchMethodException e2) {
                             getter = null;
                         }
                     }
-                    //不存在相关方法，直接返回
                     if (getter == null) {
                         return;
                     }
-                    //不为空说明已经设置。忽略值的设置
-                    if (getter.invoke(config, new Object[0]) != null) {
+                    if (getter.invoke(config, new Object[0]) != null) { //已经有值了
                         return;
                     }
 
-                    //放射调用方法，返回值为空需要处理，
-                    //获取值的key的表示和上面一致:
-                    //从Config工具类中获得
-                    //ex:dubbo.xxx.aaaaa.student-name
-                    //从Config工具类中获得
-                    //ex:dubbo.xxx.student-name
-                    //从本地缓存map中获取
+                    //从配置文件中获得对应值
                     value = ConfigUtils.getProperty(idPn);
-                    if (StringUtils.isBlank(value) && hasId) {
+                    if (isBlank(value) && hasId) {
                         value = ConfigUtils.getProperty(pn);
                     }
-                    if (StringUtils.isBlank(value)) {
-                        String legacyKey = legacyProperties.get(pn);
-                        if (!StringUtils.isBlank(legacyKey)) {
-                            value = convertLegacyValue(legacyKey, ConfigUtils.getProperty(legacyKey));
-                        }
-                    }
-                    if (StringUtils.isBlank(value)) {
+                    if (isBlank(value)) {
                         return;
                     }
-                    //方法设置
                     method.invoke(config, new Object[]{convertPrimitive(method.getParameterTypes()[0], value)});
                 }
             } catch (Exception e) {
@@ -250,10 +211,10 @@ public abstract class AbstractConfig implements Serializable {
     }
 
     /**
-     * 获得配置类的标识
-     * <p>
-     * if cls equal to DemoConfig or DemoBean ，it will return demo<br/>
-     * if cls equal to DemoSimple ，it will return demosimple
+     * 获得配置类的标识,
+     * 尝试去掉后缀Config或者Bean
+     * <p>如果cls等于DemoConfig或DemoBean，它将返回demo<br/>
+     * 如果cls等于DemoSimple，它将返回demosimple
      * </p>
      *
      * @param cls 配置类
@@ -312,75 +273,61 @@ public abstract class AbstractConfig implements Serializable {
             return;
         }
         Method[] methods = config.getClass().getMethods();
-        //遍历对象方法
-        for (Method method : methods) {
+        for (Method method : methods) {//遍历对象方法
             try {
-                String name = method.getName();
-                //刷选get.is.除掉getClass，公有，无参，返回是基本的类型，或者封装类型，或者class
-                if ((name.startsWith("get") || name.startsWith("is"))
-                        && !"getClass".equals(name)
-                        && Modifier.isPublic(method.getModifiers())
+                String methodName = method.getName();
+                //筛选get.is.除掉getClass，公有，无参，返回是基本的类型，或者某些特定类型
+                if ((methodName.startsWith("get") || methodName.startsWith("is"))
+                        && !"getClass".equals(methodName)
+                        && isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && isPrimitive(method.getReturnType())) {
-                    //获取注解
-                    Parameter parameter = method.getAnnotation(Parameter.class);
-                    //返回是Object，或者是被排除的，不需要被加入
+                    Parameter parameter = method.getAnnotation(Parameter.class);//获取方法上注解
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
-                        continue;
+                        continue;//返回是Object，或者注解指定要排除的，不需要被加入
                     }
                     String key = null;
-                    //有parameter注解，key直接使用注解配置的
                     if (parameter != null) {
-                        key = parameter.key().trim();
+                        key = parameter.key().trim();//注解指定的，直接使用注解指定的
                     }
-                    if (key == null || key.length() == 0) {
-                        //is or get
-                        //方法名变成xxx.xxx.xxx
-                        int i = name.startsWith("get") ? 3 : 2;
-                        key = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
+                    if (isEmpty(key)) {
+                        int i = methodName.startsWith("get") ? 3 : 2;//尝试从相关的get方法中提取名称
+                        key = StringUtils.camelToSplitName(methodName.substring(i, i + 1).toLowerCase() + methodName.substring(i + 1), ".");//方法名变成xxx.xxx.xxx
                     }
-                    //反射获得get返回值
-                    Object value = method.invoke(config, new Object[0]);
-                    //字符串化
-                    String str = String.valueOf(value).trim();
+                    Object value = method.invoke(config, new Object[0]);//获得get方法的返回值
+                    String str = String.valueOf(value).trim();//字符串化
                     if (value != null && str.length() > 0) {
-                        //设置了escaped，编码
-                        if (parameter != null && parameter.escaped()) {
+                        if (parameter != null && parameter.escaped()) {//设置了escaped，编码
                             str = URL.encode(str);
                         }
-                        //设置了append，使用追加的方式,为值增加前缀
-                        if (parameter != null && parameter.append()) {
-                            String pre = (String) parameters.get(Constants.DEFAULT_KEY + "." + key);
-                            if (pre != null && pre.length() > 0) {
+                        if (parameter != null && parameter.append()) {//设置了append，使用追加的方式,为值增加其他配置
+                            String pre = parameters.get(DEFAULT_KEY + "." + key);
+                            if (isNotEmpty(pre)) {
                                 str = pre + "," + str;
                             }
-                            pre = (String) parameters.get(key);
-                            if (pre != null && pre.length() > 0) {
+                            pre = parameters.get(key);
+                            if (isNotEmpty(pre)) {
                                 str = pre + "," + str;
                             }
                         }
-                        //有前缀，为键追加前缀
-                        if (prefix != null && prefix.length() > 0) {
+                        if (isNotEmpty(prefix)) {//有前缀，为键追加前缀
                             key = prefix + "." + key;
                         }
-                        //放置键值对
-                        parameters.put(key, str);
+                        parameters.put(key, str);//放置键值对
                     } else if (parameter != null && parameter.required()) {
                         throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
                     }
                 }
                 //筛选getParameters方法，返回值是Map，公有，无参
-                else if ("getParameters".equals(name)
-                        && Modifier.isPublic(method.getModifiers())
+                else if ("getParameters".equals(methodName)
+                        && isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && method.getReturnType() == Map.class) {
-                    //获得map
-                    Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);
+                    Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);//获得getParameters返回值
                     if (map != null && map.size() > 0) {
-                        String pre = (prefix != null && prefix.length() > 0 ? prefix + "." : "");
+                        String pre = (isNotEmpty(prefix) ? prefix + "." : "");
                         for (Map.Entry<String, String> entry : map.entrySet()) {
-                            //放入parameter中
-                            parameters.put(pre + entry.getKey().replace('-', '.'), entry.getValue());
+                            parameters.put(pre + entry.getKey().replace('-', '.'), entry.getValue());//放入parameter中
                         }
                     }
                 }
@@ -428,7 +375,7 @@ public abstract class AbstractConfig implements Serializable {
                 String name = method.getName();
                 if ((name.startsWith("get") || name.startsWith("is"))
                         && !"getClass".equals(name)
-                        && Modifier.isPublic(method.getModifiers())
+                        && isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
                         && isPrimitive(method.getReturnType())) {
                     Parameter parameter = method.getAnnotation(Parameter.class);
@@ -504,7 +451,7 @@ public abstract class AbstractConfig implements Serializable {
                 if (v.startsWith(Constants.REMOVE_VALUE_PREFIX)) {
                     v = v.substring(1);
                 }
-                if (Constants.DEFAULT_KEY.equals(v)) {
+                if (DEFAULT_KEY.equals(v)) {
                     continue;
                 }
                 if (!ExtensionLoader.getExtensionLoader(type).hasExtension(v)) {
@@ -588,26 +535,20 @@ public abstract class AbstractConfig implements Serializable {
     public String toString() {
         try {
             StringBuilder buf = new StringBuilder();
-            buf.append("<dubbo:");
-            buf.append(getTagName(getClass()));
-            Method[] methods = getClass().getMethods();
-            for (Method method : methods) {
+            buf.append("<dubbo:").append(getTagName(getClass()));
+            for (Method method : getClass().getMethods()) {
                 try {
-                    String name = method.getName();
-                    if ((name.startsWith("get") || name.startsWith("is"))
-                            && !"getClass".equals(name) && !"get".equals(name) && !"is".equals(name)
-                            && Modifier.isPublic(method.getModifiers())
+                    String methodName = method.getName();
+                    if ((methodName.startsWith("get") || methodName.startsWith("is"))
+                            && !"getClass".equals(methodName) && !"get".equals(methodName) && !"is".equals(methodName)
+                            && isPublic(method.getModifiers())
                             && method.getParameterTypes().length == 0
                             && isPrimitive(method.getReturnType())) {
-                        int i = name.startsWith("get") ? 3 : 2;
-                        String key = name.substring(i, i + 1).toLowerCase() + name.substring(i + 1);
+                        int i = methodName.startsWith("get") ? 3 : 2;
+                        String key = methodName.substring(i, i + 1).toLowerCase() + methodName.substring(i + 1);
                         Object value = method.invoke(this, new Object[0]);
                         if (value != null) {
-                            buf.append(" ");
-                            buf.append(key);
-                            buf.append("=\"");
-                            buf.append(value);
-                            buf.append("\"");
+                            buf.append(" ").append(key).append("=\"").append(value).append("\"");
                         }
                     }
                 } catch (Exception e) {
