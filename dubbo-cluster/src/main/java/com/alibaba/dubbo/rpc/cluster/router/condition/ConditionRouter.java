@@ -39,6 +39,7 @@ import com.alibaba.dubbo.rpc.cluster.Router;
 
 /**
  * ConditionRouter
+ * 条件路由，用于条件计算路由
  * 
  * @author william.liangf
  */
@@ -61,15 +62,24 @@ public class ConditionRouter implements Router, Comparable<Router> {
         this.priority = url.getParameter(Constants.PRIORITY_KEY, 0);
         this.force = url.getParameter(Constants.FORCE_KEY, false);
         try {
+            //规则内容
             String rule = url.getParameterAndDecoded(Constants.RULE_KEY);
             if (rule == null || rule.trim().length() == 0) {
+                //校验
                 throw new IllegalArgumentException("Illegal route rule!");
             }
+            //删除consumer和provider相关标记
             rule = rule.replace("consumer.", "").replace("provider.", "");
+            //确定左右两边条件表达式
             int i = rule.indexOf("=>");
+            //左边when条件
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();
+            //右边then结果
             String thenRule = i < 0 ? rule.trim() : rule.substring(i + 2).trim();
+
+            //条件内容
             Map<String, MatchPair> when = StringUtils.isBlank(whenRule) || "true".equals(whenRule) ? new HashMap<String, MatchPair>() : parseRule(whenRule);
+            //结果内容
             Map<String, MatchPair> then = StringUtils.isBlank(thenRule) || "false".equals(thenRule) ? null : parseRule(thenRule);
             // NOTE: When条件是允许为空的，外部业务来保证类似的约束条件
             this.whenCondition = when;
@@ -85,6 +95,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
             return invokers;
         }
         try {
+            //不匹配when我们直接忽略
             if (! matchWhen(url)) {
                 return invokers;
             }
@@ -94,6 +105,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
                 return result;
             }
             for (Invoker<T> invoker : invokers) {
+                //过滤then
                 if (matchThen(invoker.getUrl(), url)) {
                     result.add(invoker);
                 }
@@ -129,7 +141,14 @@ public class ConditionRouter implements Router, Comparable<Router> {
     public boolean matchThen(URL url, URL param) {
         return thenCondition != null && matchCondition(thenCondition, url, param);
     }
-    
+
+    /**
+     * 条件对要全部成了，才符合
+     * @param condition
+     * @param url
+     * @param param
+     * @return
+     */
     private boolean matchCondition(Map<String, MatchPair> condition, URL url, URL param) {
         Map<String, String> sample = url.toMap();
         for (Map.Entry<String, String> entry : sample.entrySet()) {
@@ -143,7 +162,13 @@ public class ConditionRouter implements Router, Comparable<Router> {
     }
     
     private static Pattern ROUTE_PATTERN = Pattern.compile("([&!=,]*)\\s*([^&!=,\\s]+)");
-    
+
+    /**
+     * 规则中提取相关匹配器
+     * @param rule 规则文本描述
+     * @return
+     * @throws ParseException
+     */
     private static Map<String, MatchPair> parseRule(String rule)
             throws ParseException {
         Map<String, MatchPair> condition = new HashMap<String, MatchPair>();
@@ -154,6 +179,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
         MatchPair pair = null;
         // 多个Value值
         Set<String> values = null;
+        //"([&!=,]*)\\s*([^&!=,\\s]+)"
         final Matcher matcher = ROUTE_PATTERN.matcher(rule);
         while (matcher.find()) { // 逐个匹配
             String separator = matcher.group(1);
@@ -163,7 +189,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
                 pair = new MatchPair();
                 condition.put(content, pair);
             }
-            // KV开始
+            // KV开始,提取key
             else if ("&".equals(separator)) {
                 if (condition.get(content) == null) {
                     pair = new MatchPair();
@@ -172,13 +198,11 @@ public class ConditionRouter implements Router, Comparable<Router> {
                     condition.put(content, pair);
                 }
             }
-            // KV的Value部分开始
+            // KV的Value部分开始，提取value
             else if ("=".equals(separator)) {
                 if (pair == null)
                     throw new ParseException("Illegal route rule \""
-                            + rule + "\", The error char '" + separator
-                            + "' at index " + matcher.start() + " before \""
-                            + content + "\".", matcher.start());
+                            + rule + "\", The error char '" + separator + "' at index " + matcher.start() + " before \"" + content + "\".", matcher.start());
 
                 values = pair.matches;
                 values.add(content);
@@ -187,9 +211,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
             else if ("!=".equals(separator)) {
                 if (pair == null)
                     throw new ParseException("Illegal route rule \""
-                            + rule + "\", The error char '" + separator
-                            + "' at index " + matcher.start() + " before \""
-                            + content + "\".", matcher.start());
+                            + rule + "\", The error char '" + separator + "' at index " + matcher.start() + " before \"" + content + "\".", matcher.start());
 
                 values = pair.mismatches;
                 values.add(content);
@@ -198,9 +220,7 @@ public class ConditionRouter implements Router, Comparable<Router> {
             else if (",".equals(separator)) { // 如果为逗号表示
                 if (values == null || values.size() == 0)
                     throw new ParseException("Illegal route rule \""
-                            + rule + "\", The error char '" + separator
-                            + "' at index " + matcher.start() + " before \""
-                            + content + "\".", matcher.start());
+                            + rule + "\", The error char '" + separator + "' at index " + matcher.start() + " before \"" + content + "\".", matcher.start());
                 values.add(content);
             } else {
                 throw new ParseException("Illegal route rule \"" + rule
@@ -215,11 +235,13 @@ public class ConditionRouter implements Router, Comparable<Router> {
         final Set<String> matches = new HashSet<String>();
         final Set<String> mismatches = new HashSet<String>();
         public boolean isMatch(String value, URL param) {
+            //匹配项，有匹配失败，就返回
             for (String match : matches) {
                 if (! UrlUtils.isMatchGlobPattern(match, value, param)) {
                     return false;
                 }
             }
+            //不匹配项，有匹配成功就失败，返回
             for (String mismatch : mismatches) {
                 if (UrlUtils.isMatchGlobPattern(mismatch, value, param)) {
                     return false;
